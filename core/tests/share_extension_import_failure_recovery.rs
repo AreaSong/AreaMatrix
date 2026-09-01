@@ -267,7 +267,7 @@ fn share_extension_import_failure_recovery_permission_denied_maps_and_keeps_payl
 }
 
 #[test]
-fn share_extension_import_failure_recovery_io_error_from_staging_root_has_no_half_product() {
+fn share_extension_import_failure_recovery_staging_path_conflict_has_no_half_product() {
     let repo = initialized_repo();
     let (_app_group, source) = share_payload("io-blocked.pdf", b"io failure payload bytes");
     let staging_root = repo.path().join(".areamatrix/staging");
@@ -280,7 +280,7 @@ fn share_extension_import_failure_recovery_io_error_from_staging_root_has_no_hal
         share_options("Shared Extension Item.pdf"),
     );
 
-    assert!(matches!(result, Err(CoreError::Io { .. })));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
     assert_eq!(
         fs::read(&source).expect("share payload survives staging IO failure"),
         b"io failure payload bytes"

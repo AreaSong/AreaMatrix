@@ -292,11 +292,11 @@ fn files_import_failure_recovery_permission_denied_keeps_provider_file_and_repo_
 }
 
 #[test]
-fn files_import_failure_recovery_staging_io_error_keeps_provider_file_and_no_final() {
+fn files_import_failure_recovery_staging_path_conflict_keeps_provider_file_and_no_final() {
     let repo = initialized_repo();
     let (_provider_scope, selected) = provider_file("io.pdf", b"io failure bytes");
     let staging_root = repo.path().join(".areamatrix/staging");
-    fs::remove_dir(&staging_root).expect("remove staging directory for IO blocker");
+    fs::remove_dir(&staging_root).expect("remove staging directory for path conflict");
     fs::write(&staging_root, b"not a directory").expect("block staging directory recreation");
 
     let result = import_file(
@@ -305,9 +305,9 @@ fn files_import_failure_recovery_staging_io_error_keeps_provider_file_and_no_fin
         files_options("Io.pdf"),
     );
 
-    assert!(matches!(result, Err(CoreError::Io { .. })));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
     assert_eq!(
-        fs::read(&selected).expect("provider source survives staging IO failure"),
+        fs::read(&selected).expect("provider source survives staging path conflict"),
         b"io failure bytes"
     );
     assert_eq!(row_count(repo.path(), "files", Some("active")), 0);

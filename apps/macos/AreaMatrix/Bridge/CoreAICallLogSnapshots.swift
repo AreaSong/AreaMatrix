@@ -1,98 +1,19 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
-enum AICallLogClearScopeSnapshot: Equatable {
-    case all
-    case selectedEntries
-    case olderThan
-}
-
-enum AICallLogFeatureSnapshot: Equatable {
-    case classification
-    case summary
-    case tags
-    case semanticSearch
-    case providerTest
-}
-
-enum AICallLogRouteSnapshot: Equatable {
-    case local
-    case remote
-}
-
-enum AICallLogSentFieldSnapshot: Equatable {
-    case fileName
-    case repoRelativePath
-    case `extension`
-    case extractedTextExcerpt
-    case aiSummary
-    case noteSummary
-    case tagCategoryContext
-}
-
-enum AICallLogStatusSnapshot: Equatable {
-    case success
-    case failed
-    case skipped
-    case unavailable
-}
-
-struct AICallLogFilterSnapshot: Equatable {
-    var feature: AICallLogFeatureSnapshot?
-    var route: AICallLogRouteSnapshot?
-    var status: AICallLogStatusSnapshot?
-    var occurredAfter: Int64?
-    var occurredBefore: Int64?
-    var searchQuery: String?
-}
-
-struct AICallLogPaginationSnapshot: Equatable {
-    var limit: Int64
-    var offset: Int64
-}
-
-struct AICallLogRecordSnapshot: Equatable {
-    var id: Int64
-    var occurredAt: Int64
-    var feature: AICallLogFeatureSnapshot
-    var fileId: Int64?
-    var fileDisplayName: String?
-    var batchId: String?
-    var scope: String?
-    var route: AICallLogRouteSnapshot?
-    var providerName: String?
-    var modelName: String?
-    var status: AICallLogStatusSnapshot
-    var durationMs: Int64?
-    var sentFields: [AICallLogSentFieldSnapshot]
-    var privacyRulesChecked: Bool
-    var privacyRuleId: String?
-    var privacyRuleName: String?
-    var matchedFieldType: AICallLogSentFieldSnapshot?
-    var resultSummary: String
-    var errorCode: String?
-}
-
-struct AICallLogPageSnapshot: Equatable {
-    var totalCount: Int64
-    var records: [AICallLogRecordSnapshot]
-    var limit: Int64
-    var offset: Int64
-    var hasMore: Bool
-    var retentionDays: Int64
-    var redactionPolicy: String
-}
-
-struct AICallLogClearRequestSnapshot: Equatable {
-    var scope: AICallLogClearScopeSnapshot
-    var entryIds: [Int64]
-    var olderThan: Int64?
-}
-
-struct AICallLogClearReportSnapshot: Equatable {
-    var deletedCount: Int64
-    var remainingCount: Int64
-    var clearedAt: Int64
-}
+typealias CoreAICallLogListing = AreaMatrixCoreBridgeContract.CoreAICallLogListing
+typealias CoreAICallLogClearing = AreaMatrixCoreBridgeContract.CoreAICallLogClearing
+typealias AICallLogClearScopeSnapshot = AreaMatrixCoreBridgeContract.AICallLogClearScopeSnapshot
+typealias AICallLogFeatureSnapshot = AreaMatrixCoreBridgeContract.AICallLogFeatureSnapshot
+typealias AICallLogRouteSnapshot = AreaMatrixCoreBridgeContract.AICallLogRouteSnapshot
+typealias AICallLogSentFieldSnapshot = AreaMatrixCoreBridgeContract.AICallLogSentFieldSnapshot
+typealias AICallLogStatusSnapshot = AreaMatrixCoreBridgeContract.AICallLogStatusSnapshot
+typealias AICallLogFilterSnapshot = AreaMatrixCoreBridgeContract.AICallLogFilterSnapshot
+typealias AICallLogPaginationSnapshot = AreaMatrixCoreBridgeContract.AICallLogPaginationSnapshot
+typealias AICallLogRecordSnapshot = AreaMatrixCoreBridgeContract.AICallLogRecordSnapshot
+typealias AICallLogPageSnapshot = AreaMatrixCoreBridgeContract.AICallLogPageSnapshot
+typealias AICallLogClearRequestSnapshot = AreaMatrixCoreBridgeContract.AICallLogClearRequestSnapshot
+typealias AICallLogClearReportSnapshot = AreaMatrixCoreBridgeContract.AICallLogClearReportSnapshot
 
 extension CoreBridge: CoreAICallLogListing {
     func listAICalls(
@@ -101,7 +22,7 @@ extension CoreBridge: CoreAICallLogListing {
         pagination: AICallLogPaginationSnapshot
     ) async throws -> AICallLogPageSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            try AICallLogPageSnapshot(listAiCalls(
+            try AICallLogPageSnapshot(self.generatedAdapter.listAICalls(
                 repoPath: repoPath,
                 filter: AiCallLogFilter(filter),
                 pagination: AiCallLogPagination(pagination)
@@ -116,7 +37,7 @@ extension CoreBridge: CoreAICallLogClearing {
         request: AICallLogClearRequestSnapshot
     ) async throws -> AICallLogClearReportSnapshot {
         try await Task.detached(priority: .userInitiated) {
-            try AICallLogClearReportSnapshot(clearAiCallLog(
+            try AICallLogClearReportSnapshot(self.generatedAdapter.clearAICallLog(
                 repoPath: repoPath,
                 request: AiCallLogClearRequest(request)
             ))

@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureLibrary
 import XCTest
 
 final class MainListIntegrationFilterTests: XCTestCase {
@@ -30,10 +31,11 @@ final class MainListIntegrationFilterTests: XCTestCase {
             return XCTFail("expected docs/contracts sidebar row")
         }
 
-        let result = MainListVisibleFileFiltering.visibleFiles(
+        let result = MainListFiltering.visibleItems(
             from: files,
-            sidebarRow: row,
-            filterText: "customer"
+            filterText: "customer",
+            isInSelectedScope: row.contains,
+            displayName: \FileEntrySnapshot.currentName
         )
 
         XCTAssertEqual(result.map(\.id), [1])
@@ -61,10 +63,11 @@ final class MainListIntegrationFilterTests: XCTestCase {
             return XCTFail("expected docs sidebar row")
         }
 
-        let result = MainListVisibleFileFiltering.visibleFiles(
+        let result = MainListFiltering.visibleItems(
             from: files,
-            sidebarRow: row,
-            filterText: "contracts"
+            filterText: "contracts",
+            isInSelectedScope: row.contains,
+            displayName: \FileEntrySnapshot.currentName
         )
 
         XCTAssertEqual(result, [])
@@ -89,7 +92,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: " 合同 ",
             scope: .all,
             sort: .newestImported,
@@ -103,7 +106,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             )
         ])
         XCTAssertEqual(model.files, [resultFile])
-        XCTAssertEqual(model.searchState.page?.totalCount, 1)
+        XCTAssertEqual(model.searchModel.searchState.page?.totalCount, 1)
         XCTAssertFalse(model.isLoading)
     }
 
@@ -122,7 +125,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "customer",
             scope: .current,
             sort: .relevance,
@@ -154,7 +157,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             errorMapper: mapper
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "合同",
             scope: .all,
             sort: .newestImported,
@@ -162,8 +165,8 @@ final class MainListIntegrationFilterTests: XCTestCase {
             filters: .empty
         )
 
-        XCTAssertEqual(model.searchState.errorMapping, mapping)
-        XCTAssertEqual(model.searchState.request?.query, "合同")
+        XCTAssertEqual(model.searchModel.searchState.errorMapping, mapping)
+        XCTAssertEqual(model.searchModel.searchState.request?.query, "合同")
         await mapper.assertMappedCoreErrors([CoreError.Db(message: "search db locked")])
         XCTAssertFalse(model.isLoading)
     }
@@ -187,16 +190,16 @@ final class MainListIntegrationFilterTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "合同",
             scope: .all,
             sort: .newestImported,
             sidebarRow: RepositoryTreeNodeSnapshot.integrationFilterFixtureTree().sidebarRows[0],
             filters: .empty
         )
-        model.clearSearch()
+        model.searchModel.clearSearch()
 
-        XCTAssertEqual(model.searchState, .idle)
+        XCTAssertEqual(model.searchModel.searchState, .idle)
         XCTAssertNil(model.errorMapping)
         XCTAssertFalse(model.isLoading)
     }
@@ -215,7 +218,7 @@ final class MainListIntegrationFilterTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .integrationFilterDbFixture(rawContext: "unused"))
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "客户合同",
             scope: .current,
             sort: .relevance,
@@ -226,8 +229,8 @@ final class MainListIntegrationFilterTests: XCTestCase {
         await fallback.assertSemanticFallbackStatusRequests([
             .semanticSearchIndexNotReady(repoPath: "/tmp/repo", callLogID: 308)
         ])
-        XCTAssertEqual(model.semanticFallbackState.status?.primaryAction, .buildSemanticIndex)
-        XCTAssertEqual(model.semanticFallbackState.status?.nonAIFallbackAction, .useNormalSearch)
+        XCTAssertEqual(model.searchModel.semanticFallbackState.status?.primaryAction, .buildSemanticIndex)
+        XCTAssertEqual(model.searchModel.semanticFallbackState.status?.nonAIFallbackAction, .useNormalSearch)
         XCTAssertTrue(CoreBridgeBoundary.allCases.contains(.getAiFallbackStatus))
     }
 }

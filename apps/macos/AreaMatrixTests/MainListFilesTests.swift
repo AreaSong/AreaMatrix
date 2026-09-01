@@ -380,7 +380,7 @@ extension MainListFilesTests {
         let loadMoreTask = Task { await model.loadMoreCurrentCategory() }
         await lister.waitForRequest()
         let request = SearchQueryRequestSnapshot.testFixture(query: "match")
-        model.searchState = .loaded(request: request, page: .testFixture(query: "match"))
+        model.searchModel.searchState = .loaded(request: request, page: .testFixture(query: "match"))
         model.files = [searchFile]
         await lister.finish()
         await loadMoreTask.value
@@ -403,7 +403,7 @@ extension MainListFilesTests {
         let loadMoreTask = Task { await model.loadMoreCurrentCategory() }
         await lister.waitForRequest()
         let request = SearchQueryRequestSnapshot.testFixture(query: "match")
-        model.searchState = .loaded(request: request, page: .testFixture(query: "match"))
+        model.searchModel.searchState = .loaded(request: request, page: .testFixture(query: "match"))
         model.files = [searchFile]
         await lister.finish()
         await loadMoreTask.value

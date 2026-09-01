@@ -1,13 +1,11 @@
+import AreaMatrixFeatureSettings
 import Foundation
 
 protocol RepoMetadataPresenceChecking {
     func metadataPresence(repoPath: String) -> RepoMetadataPresence
 }
 
-struct RepoMetadataPresence: Equatable {
-    var hasMetadataDirectory: Bool
-    var hasMetadataDatabase: Bool
-
+extension RepoMetadataPresence {
     var directoryStatusLabel: String {
         hasMetadataDirectory
             ? L10n.string("settings.repository.metadataFound")

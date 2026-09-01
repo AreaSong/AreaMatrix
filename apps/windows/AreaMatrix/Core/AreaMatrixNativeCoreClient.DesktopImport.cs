@@ -65,7 +65,18 @@ public sealed partial class AreaMatrixNativeCoreClient
         WriteOptionalString(bytes, options.OverrideCategory);
         WriteOptionalString(bytes, options.OverrideFilename);
         WriteDuplicateStrategy(bytes, options.DuplicateStrategy);
+        WriteContentLocale(bytes, options.ContentLocale);
         return RustBufferFromBytes(bytes.ToArray());
+    }
+
+    private static void WriteContentLocale(List<byte> bytes, string locale)
+    {
+        WriteEnum(bytes, locale switch
+        {
+            "ZhHans" => 1,
+            "En" => 2,
+            _ => throw BindingConfigError($"Unsupported content locale `{locale}`.")
+        });
     }
 
     private static void WriteImportDestination(List<byte> bytes, string destination)

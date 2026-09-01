@@ -83,7 +83,7 @@ enum AISummarySelectionExitAction: Equatable {
 
 extension MainRepositoryContentView {
     func handleSelectedFileIDsChange(previousIDs: Set<Int64>, ids: Set<Int64>) {
-        let action = summarySelectionExitState.handleChange(
+        let action = summaryExitController.selectionExitState.handleChange(
             previousIDs: previousIDs,
             requestedIDs: ids,
             needsConfirmation: summaryExitController.needsConfirmation
@@ -92,7 +92,7 @@ extension MainRepositoryContentView {
     }
 
     func cancelPendingSummarySelectionExit() {
-        guard let ids = summarySelectionExitState.cancelPending() else { return }
+        guard let ids = summaryExitController.selectionExitState.cancelPending() else { return }
         restoreSelectedFileIDs(ids)
     }
 
@@ -102,7 +102,7 @@ extension MainRepositoryContentView {
     }
 
     func finishPendingSummarySelectionExit() {
-        guard let request = summarySelectionExitState.takePendingForApply() else { return }
+        guard let request = summaryExitController.selectionExitState.takePendingForApply() else { return }
         applyPendingSummarySelectionExit(request)
     }
 
@@ -118,7 +118,11 @@ extension MainRepositoryContentView {
     }
 
     private func applySelectedFileIDs(_ ids: Set<Int64>, leaving previousIDs: Set<Int64>) {
-        showFailedNoteDraftBannerIfNeeded(leaving: previousIDs)
+        MainRepositoryNoteDraftRouting.showFailedDraftBannerIfNeeded(
+            leaving: previousIDs,
+            noteModel: detailNoteModel,
+            listModel: fileListModel
+        )
         if !ids.isEmpty {
             importProgressSelectionState.selectedIDs = []
         }
@@ -128,22 +132,22 @@ extension MainRepositoryContentView {
     }
 
     private func applyPendingSummarySelectionExit(_ request: AISummarySelectionExitRequest) {
-        if selectedFileIDs == request.requestedIDs {
-            summarySelectionExitState.finishDirectApply()
+        if selectionModel.fileIDs == request.requestedIDs {
+            summaryExitController.selectionExitState.finishDirectApply()
             applySelectedFileIDs(request.requestedIDs, leaving: request.previousIDs)
             return
         }
-        selectedFileIDs = request.requestedIDs
+        selectionModel.fileIDs = request.requestedIDs
     }
 
     private func restoreSelectedFileIDs(_ ids: Set<Int64>) {
         if !ids.isEmpty {
             importProgressSelectionState.selectedIDs = []
         }
-        guard selectedFileIDs != ids else {
-            summarySelectionExitState.cancelRestoreFlag()
+        guard selectionModel.fileIDs != ids else {
+            summaryExitController.selectionExitState.cancelRestoreFlag()
             return
         }
-        selectedFileIDs = ids
+        selectionModel.fileIDs = ids
     }
 }

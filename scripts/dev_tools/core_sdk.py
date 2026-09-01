@@ -18,10 +18,12 @@ from .core_sdk_artifact import (
     CORE_SDK_NAME,
     CORE_SDK_PACKAGE_NAME,
     CORE_SDK_SCHEMA_VERSION,
+    core_sdk_output_records,
     sdk_artifact_complete as _sdk_artifact_complete,
     sdk_artifact_errors as _sdk_artifact_errors,
     verify_core_sdk_pointer,
 )
+from .metrics import CORE_SDK_METRICS_FILE, record_metric
 APPLE_TARGETS = (
     "aarch64-apple-darwin",
     "x86_64-apple-darwin",
@@ -111,7 +113,7 @@ def _build_ios_slices(
     }
     for target in APPLE_TARGETS[2:]:
         proc = run_step(
-            ["cargo", "build", *profile_args, "--target", target],
+            ["cargo", "build", "--locked", *profile_args, "--target", target],
             cwd=root / "core",
             env=env,
             check=False,
@@ -437,6 +439,10 @@ def _run_core_sdk_build_inner(
         )
         metadata["fingerprint"] = fingerprint
         metadata["xcframework"] = CORE_SDK_NAME
+        output_records, output_errors = core_sdk_output_records(package)
+        if output_errors:
+            fail("unable to inventory staged CoreSDK outputs:\n- " + "\n- ".join(output_errors))
+        metadata["outputs"] = output_records
         (package / "manifest.json").write_text(
             json.dumps(metadata, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
@@ -472,6 +478,7 @@ def run_core_sdk_build(
     if verify_only:
         if force:
             fail("--verify-only cannot be combined with --force.")
+        started_at = time.monotonic()
         for command in ("rustc", "xcodebuild"):
             require_command(command)
         fingerprint, _ = core_sdk_fingerprint(
@@ -483,6 +490,19 @@ def run_core_sdk_build(
         result = verify_core_sdk_pointer(root, expected_fingerprint=fingerprint)
         if result == 0 and dependency_file:
             _write_sdk_dependency_file(root, dependency_file, root / ".build/core-sdk/current/manifest.json")
+        record_metric(
+            root,
+            CORE_SDK_METRICS_FILE,
+            {
+                "kind": "core_sdk",
+                "operation": "verify",
+                "status": result,
+                "cache": "verify",
+                "lane": "sdk",
+                "lock_wait_seconds": 0.0,
+                "duration_seconds": round(time.monotonic() - started_at, 6),
+            },
+        )
         return result
 
     started_at = time.monotonic()
@@ -500,6 +520,21 @@ def run_core_sdk_build(
         )
         return result
     finally:
+        metric_recorded = record_metric(
+            root,
+            CORE_SDK_METRICS_FILE,
+            {
+                "kind": "core_sdk",
+                "operation": "build",
+                "status": result if result is not None else "error",
+                "cache": cache,
+                "lane": "sdk",
+                "lock_wait_seconds": round(lock_wait_seconds, 6),
+                "duration_seconds": round(time.monotonic() - started_at, 6),
+            },
+        )
+        if not metric_recorded:
+            print("CoreSDK metrics: WARNING unable to persist local metrics", flush=True)
         print(
             "CoreSDK metrics: "
             f"status={result if result is not None else 'error'} cache={cache} "

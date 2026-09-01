@@ -73,10 +73,10 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/architecture/macos-frontend-architecture.md'
     line_start: 1
-    line_end: 328
+    line_end: 427
     heading: ''
     excerpt: '# macOS 前端架构稳定化'
-    sha256: 'f94d098d933ab517ae8c024d15a2255f49741cafd652b25575636e51dbd97202'
+    sha256: '6c4c5c803937d537995ee4e1983d14206b3dd038a1cef2751e786a449c37f6b7'
     source: 'discussion:exact_docs'
   - file: 'docs/architecture/concurrency.md'
     line_start: 1
@@ -101,8 +101,8 @@ docs:
     source: 'discussion:exact_docs'
   - file: 'docs/development/performance.md'
     line_start: 1
-    line_end: 110
+    line_end: 140
     heading: ''
     excerpt: '# 性能工程'
-    sha256: 'cb1ac9bcd3bc9dda7be58681c4954e980d1861546577576546007c81898c8f5f'
+    sha256: '2ab7a0c54d40d18ad710bed4a624e53e7baa2f948fe18d1048628f77de099d49'
     source: 'discussion:exact_docs'

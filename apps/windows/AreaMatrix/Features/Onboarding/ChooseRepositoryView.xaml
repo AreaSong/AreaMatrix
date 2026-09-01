@@ -37,7 +37,7 @@
             <HyperlinkButton
                 x:Name="PastePathButton"
                 Content="Paste path from clipboard"
-                TabIndex="2"
+                TabIndex="1"
                 Click="PastePathFromClipboard_Click" />
 
             <TextBlock
@@ -59,7 +59,7 @@
                 AutomationProperties.Name="Recent repositories"
                 IsItemClickEnabled="False"
                 SelectionChanged="RecentRepositoriesListView_SelectionChanged"
-                TabIndex="3">
+                TabIndex="2">
                 <ListView.ItemTemplate>
                     <DataTemplate>
                         <Grid Padding="0,8" ColumnSpacing="12">
@@ -107,12 +107,12 @@
             <Button
                 Grid.Column="1"
                 Content="Cancel"
-                TabIndex="4"
+                TabIndex="3"
                 Click="CancelButton_Click" />
             <Button
                 Grid.Column="2"
                 Content="Browse..."
-                TabIndex="1"
+                TabIndex="4"
                 Click="BrowseButton_Click" />
             <Button
                 x:Name="ContinueButton"

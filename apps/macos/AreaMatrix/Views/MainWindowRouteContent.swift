@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureLibrary
 import AreaMatrixUIFoundation
 import SwiftUI
 
@@ -372,10 +374,12 @@ private extension MainWindowRouteContent {
         importProgressPresentation: ImportProgressListPresentation = .empty
     ) -> MainRepositoryContentView {
         let displayOpening = isImportProgressReadOnly ? opening.importProgressReadOnlyOpening : opening
+        let session = displayOpening.makeRepositorySession()
         return MainRepositoryContentView(
+            session: session,
             opening: displayOpening,
             state: state,
-            assembly: .makeForProduction(opening: displayOpening, dependencies: dependencies),
+            assembly: .makeForProduction(session: session, opening: displayOpening, dependencies: dependencies),
             commandRouter: commandRouter,
             onImport: isImportProgressReadOnly ? {} : { model.chooseImportSources(opening: opening) },
             onDropImport: { urls, destination in

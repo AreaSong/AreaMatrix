@@ -22,9 +22,9 @@ public sealed partial class AreaMatrixNativeCoreClient :
 {
     private const ushort GetVersionChecksum = 61902;
     private const ushort InitRepoChecksum = 29414;
-    private const ushort LoadConfigChecksum = 64573;
+    private const ushort LoadConfigChecksum = 33004;
     private const ushort ValidateRepoPathChecksum = 43498;
-    private const ushort UpdateConfigChecksum = 60628;
+    private const ushort UpdateConfigChecksum = 26832;
     private const ushort PredictCategoryChecksum = 65047;
     private const ushort ImportFileWithResultChecksum = 52959;
     private const ushort InspectBindingContractChecksum = 34434;
@@ -103,10 +103,12 @@ public sealed partial class AreaMatrixNativeCoreClient :
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        CallVoid((ref RustCallStatus status) => native.UpdateConfig(
-            LowerString(repoPath),
-            LowerRepoConfig(newConfig),
-            ref status));
+        _ = CallWithResult(
+            (ref RustCallStatus status) => native.UpdateConfig(
+                LowerString(repoPath),
+                LowerRepoConfigPatch(newConfig),
+                ref status),
+            ReadRepoConfig);
         return Task.CompletedTask;
     }
 
@@ -198,7 +200,7 @@ public sealed partial class AreaMatrixNativeCoreClient :
                 throw new LinuxRepositoryCoreException(
                     LinuxRepositoryErrorKind.Unavailable,
                     status.ErrorBuffer.Length > 0
-                        ? Lift(status.ErrorBuffer, reader => reader.ReadString())
+                        ? Lift(status.ErrorBuffer, reader => reader.ReadStringOrRemainingUtf8())
                         : "AreaMatrix Core failed unexpectedly.");
             default:
                 FreeRustBuffer(status.ErrorBuffer);
@@ -253,9 +255,11 @@ public sealed partial class AreaMatrixNativeCoreClient :
     private static CoreRepoConfig ReadRepoConfig(UniFfiReader reader)
     {
         string repoPath = reader.ReadString();
+        long revision = reader.ReadInt64();
         string defaultMode = ReadStorageMode(reader);
         string overviewOutput = ReadOverviewOutput(reader);
         bool aiEnabled = reader.ReadBool();
+        string localePolicyState = ReadRepositoryLocalePolicyState(reader);
         string locale = reader.ReadString();
         bool iCloudWarn = reader.ReadBool();
         bool enableExtensionRules = reader.ReadBool();
@@ -272,28 +276,70 @@ public sealed partial class AreaMatrixNativeCoreClient :
             enableExtensionRules,
             enableKeywordRules,
             fallbackToInbox,
-            allowReplaceDuringImport);
+            allowReplaceDuringImport,
+            revision,
+            localePolicyState);
     }
 
     private static LinuxRepositoryCoreException ReadCoreError(UniFfiReader reader)
     {
         int variant = reader.ReadInt32();
-        string payload = reader.ReadString();
-        LinuxRepositoryErrorKind kind = variant switch
+        if (variant == 9)
         {
-            1 => LinuxRepositoryErrorKind.DiskUnavailable,
-            2 => LinuxRepositoryErrorKind.Db,
-            3 => LinuxRepositoryErrorKind.Config,
-            6 => LinuxRepositoryErrorKind.Conflict,
-            8 => LinuxRepositoryErrorKind.FileNotFound,
-            10 => LinuxRepositoryErrorKind.RepoNotInitialized,
-            11 => LinuxRepositoryErrorKind.InvalidPath,
-            12 => LinuxRepositoryErrorKind.ICloudPlaceholder,
-            13 => LinuxRepositoryErrorKind.InvalidRepository,
-            14 => LinuxRepositoryErrorKind.PermissionDenied,
-            _ => LinuxRepositoryErrorKind.Unavailable
+            string resource = reader.ReadString();
+            long expectedRevision = reader.ReadInt64();
+            long currentRevision = reader.ReadInt64();
+            return new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.RevisionConflict,
+                $"Repository configuration revision conflict for `{resource}`.",
+                resource,
+                "RevisionConflict",
+                expectedRevision,
+                currentRevision);
+        }
+
+        string payload = reader.ReadString();
+        return variant switch
+        {
+            1 => CoreError(LinuxRepositoryErrorKind.DiskUnavailable, "Io", payload),
+            2 => CoreError(LinuxRepositoryErrorKind.Db, "Db", payload),
+            3 => CoreError(LinuxRepositoryErrorKind.DbLocked, "DbLocked", payload),
+            4 => CoreError(LinuxRepositoryErrorKind.DbCorrupted, "DbCorrupted", payload),
+            5 => CoreError(LinuxRepositoryErrorKind.Config, "Config", payload),
+            6 => CoreError(LinuxRepositoryErrorKind.Validation, "Validation", payload),
+            7 => CoreError(LinuxRepositoryErrorKind.Classify, "Classify", payload),
+            8 => CoreError(LinuxRepositoryErrorKind.Conflict, "Conflict", payload, payload),
+            10 => CoreError(LinuxRepositoryErrorKind.DuplicateFile, "DuplicateFile", payload, payload),
+            11 => CoreError(LinuxRepositoryErrorKind.FileNotFound, "FileNotFound", payload, payload),
+            12 => CoreError(LinuxRepositoryErrorKind.ExpiredAction, "ExpiredAction", payload),
+            13 => CoreError(LinuxRepositoryErrorKind.RepoNotInitialized, "RepoNotInitialized", payload, payload),
+            14 => CoreError(LinuxRepositoryErrorKind.InvalidPath, "InvalidPath", payload, payload),
+            15 => CoreError(LinuxRepositoryErrorKind.ICloudPlaceholder, "ICloudPlaceholder", payload, payload),
+            16 => CoreError(
+                LinuxRepositoryErrorKind.StagingRecoveryRequired,
+                "StagingRecoveryRequired",
+                payload,
+                payload),
+            17 => CoreError(LinuxRepositoryErrorKind.PermissionDenied, "PermissionDenied", payload, payload),
+            18 => CoreError(LinuxRepositoryErrorKind.Internal, "Internal", payload),
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                $"AreaMatrix Core returned unknown CoreError variant `{variant}`.")
         };
-        return new LinuxRepositoryCoreException(kind, payload, payload);
+    }
+
+    internal static LinuxRepositoryCoreException DecodeCoreErrorForTest(byte[] bytes)
+    {
+        UniFfiReader reader = new(bytes);
+        LinuxRepositoryCoreException error = ReadCoreError(reader);
+        if (!reader.IsAtEnd)
+        {
+            throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                "AreaMatrix Core returned extra CoreError binding data.");
+        }
+
+        return error;
     }
 
     private RustBuffer LowerString(string value)
@@ -322,38 +368,106 @@ public sealed partial class AreaMatrixNativeCoreClient :
                 LinuxRepositoryErrorKind.Config,
                 $"Unsupported overview output `{options.OverviewOutput}`.")
         });
+        WriteEnum(bytes, options.LocalePolicy switch
+        {
+            "FollowInterface" => 1,
+            "ZhHans" => 2,
+            "En" => 3,
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                $"Unsupported repository locale policy `{options.LocalePolicy}`.")
+        });
+        WriteEnum(bytes, options.ContentLocale switch
+        {
+            "ZhHans" => 1,
+            "En" => 2,
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                $"Unsupported content locale `{options.ContentLocale}`.")
+        });
         return RustBufferFromBytes(bytes.ToArray());
     }
 
-    private RustBuffer LowerRepoConfig(CoreRepoConfig config)
+    private RustBuffer LowerRepoConfigPatch(CoreRepoConfig config)
     {
         List<byte> bytes = [];
-        WriteString(bytes, config.RepoPath);
-        WriteEnum(bytes, config.DefaultMode switch
-        {
-            "Moved" => 1,
-            "Copied" => 2,
-            "Indexed" => 3,
-            _ => throw new LinuxRepositoryCoreException(
-                LinuxRepositoryErrorKind.Config,
-                $"Unsupported storage mode `{config.DefaultMode}`.")
-        });
-        WriteEnum(bytes, config.OverviewOutput switch
+        WriteInt64(bytes, config.Revision);
+        WriteOptionalString(bytes, config.RepoPath);
+        WriteOptionalStorageMode(bytes, config.DefaultMode);
+        WriteOptionalOverviewOutput(bytes, config.OverviewOutput);
+        WriteOptionalBool(bytes, config.AiEnabled);
+        WriteOptionalRepositoryLocalePolicy(bytes, config.Locale, config.LocalePolicyState);
+        WriteOptionalBool(bytes, config.ICloudWarn);
+        WriteOptionalBool(bytes, config.EnableExtensionRules);
+        WriteOptionalBool(bytes, config.EnableKeywordRules);
+        WriteOptionalBool(bytes, config.FallbackToInbox);
+        WriteOptionalBool(bytes, config.AllowReplaceDuringImport);
+        return RustBufferFromBytes(bytes.ToArray());
+    }
+
+    private static void WriteOptionalOverviewOutput(List<byte> bytes, string value)
+    {
+        bytes.Add(1);
+        WriteEnum(bytes, value switch
         {
             "GeneratedOnly" => 1,
             "RootAreaMatrixFile" => 2,
             _ => throw new LinuxRepositoryCoreException(
                 LinuxRepositoryErrorKind.Config,
-                $"Unsupported overview output `{config.OverviewOutput}`.")
+                $"Unsupported overview output `{value}`.")
         });
-        WriteBool(bytes, config.AiEnabled);
-        WriteString(bytes, config.Locale);
-        WriteBool(bytes, config.ICloudWarn);
-        WriteBool(bytes, config.EnableExtensionRules);
-        WriteBool(bytes, config.EnableKeywordRules);
-        WriteBool(bytes, config.FallbackToInbox);
-        WriteBool(bytes, config.AllowReplaceDuringImport);
-        return RustBufferFromBytes(bytes.ToArray());
+    }
+
+    private static void WriteOptionalRepositoryLocalePolicy(
+        List<byte> bytes,
+        string rawValue,
+        string state)
+    {
+        int? tag = state switch
+        {
+            "FollowInterface" => 1,
+            "ZhHans" => 2,
+            "En" => 3,
+            _ => rawValue switch
+            {
+                "system" => 1,
+                "zh-Hans" => 2,
+                "en" => 3,
+                _ => null
+            }
+        };
+        if (tag is null)
+        {
+            bytes.Add(0);
+            return;
+        }
+
+        bytes.Add(1);
+        WriteEnum(bytes, tag.Value);
+    }
+
+    private static LinuxRepositoryCoreException CoreError(
+        LinuxRepositoryErrorKind kind,
+        string variant,
+        string message,
+        string? path = null)
+    {
+        return new LinuxRepositoryCoreException(kind, message, path, variant);
+    }
+
+    private static string ReadRepositoryLocalePolicyState(UniFfiReader reader)
+    {
+        return reader.ReadInt32() switch
+        {
+            1 => "Unknown",
+            2 => "FollowInterface",
+            3 => "ZhHans",
+            4 => "En",
+            5 => "Unsupported",
+            _ => throw new LinuxRepositoryCoreException(
+                LinuxRepositoryErrorKind.Config,
+                "AreaMatrix Core returned an unknown repository locale policy state.")
+        };
     }
 
     private RustBuffer RustBufferFromBytes(byte[] bytes)

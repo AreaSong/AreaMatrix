@@ -1,6 +1,6 @@
 use std::{collections::HashMap, path::Path};
 
-use rusqlite::{params, Transaction};
+use rusqlite::{params, OptionalExtension, Transaction, TransactionBehavior};
 use serde_json::json;
 use uuid::Uuid;
 
@@ -47,9 +47,29 @@ pub(crate) fn record_icloud_conflict_resolution(
     create_undo: bool,
 ) -> CoreResult<Option<String>> {
     let mut connection = open_repo_connection(repo_path)?;
+    // Serialize conflict resolution writers. The status check in the caller
+    // is only an early UI-friendly guard; this transaction is the authoritative
+    // replay gate for concurrent KeepBoth/destructive applies.
     let tx = connection
-        .transaction()
+        .transaction_with_behavior(TransactionBehavior::Immediate)
         .map_err(|error| CoreError::db(error.to_string()))?;
+    let already_resolved: Option<i64> = tx
+        .query_row(
+            "SELECT id
+             FROM change_log
+             WHERE action = ?1
+               AND json_extract(detail_json, '$.kind') = ?2
+               AND json_extract(detail_json, '$.conflict_id') = ?3
+             ORDER BY id
+             LIMIT 1",
+            params![CHANGE_LOG_ACTION, CONFLICT_KIND, conflict_id],
+            |row| row.get(0),
+        )
+        .optional()
+        .map_err(|error| CoreError::db(error.to_string()))?;
+    if already_resolved.is_some() {
+        return Err(CoreError::conflict("conflict already resolved"));
+    }
     let occurred_at = chrono::Utc::now().timestamp();
     let undo_token = if create_undo {
         Some(insert_conflict_resolution_undo(

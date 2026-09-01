@@ -22929,6 +22929,108 @@
         }
       }
     },
+    "import.session.corrupt" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import recovery data is damaged. The import cannot be resumed automatically."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入恢复数据已损坏，无法自动恢复该导入。"
+          }
+        }
+      }
+    },
+    "import.session.io" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import recovery data could not be accessed. Retry before continuing."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问导入恢复数据，请重试后再继续。"
+          }
+        }
+      }
+    },
+    "import.session.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No saved import recovery data was found."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未找到已保存的导入恢复数据。"
+          }
+        }
+      }
+    },
+    "import.session.permission" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AreaMatrix does not have permission to update import recovery data. Check repository permissions and retry."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AreaMatrix 无权更新导入恢复数据，请检查资料库权限后重试。"
+          }
+        }
+      }
+    },
+    "import.session.retryAction" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry after restoring safe access to the repository. Already imported files remain imported."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复资料库的安全访问后重试；已成功导入的文件仍保持已导入状态。"
+          }
+        }
+      }
+    },
+    "import.session.unsafePath" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Import recovery data is on an unsafe path. Reconnect the repository using its real folder and retry."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入恢复数据位于不安全的路径，请使用资料库真实文件夹重新连接后重试。"
+          }
+        }
+      }
+    },
     "import.storage.indexOnlyRisk" : {
       "extractionState" : "manual",
       "localizations" : {

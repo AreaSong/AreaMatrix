@@ -402,11 +402,10 @@ fn install_repo_config_insert_failure(repo: &Path, key: &str) {
         .execute_batch(&format!(
             "CREATE TRIGGER fail_remote_provider_insert
              BEFORE INSERT ON repo_config
-             WHEN NEW.key = '{}'
+             WHEN NEW.key = '{key}'
              BEGIN
                SELECT RAISE(ABORT, 'forced remote provider insert failure');
-             END;",
-            key
+             END;"
         ))
         .expect("install insert failure trigger");
 }
@@ -418,11 +417,10 @@ fn install_repo_config_update_failure(repo: &Path, key: &str) {
         .execute_batch(&format!(
             "CREATE TRIGGER fail_remote_provider_update
              BEFORE UPDATE ON repo_config
-             WHEN NEW.key = '{}'
+             WHEN NEW.key = '{key}'
              BEGIN
                SELECT RAISE(ABORT, 'forced remote provider update failure');
-             END;",
-            key
+             END;"
         ))
         .expect("install update failure trigger");
 }

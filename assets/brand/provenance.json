@@ -1,0 +1,170 @@
+{
+  "schemaVersion": 1,
+  "brand": "AreaMatrix",
+  "releaseEligible": false,
+  "releasePolicy": {
+    "includedRoot": "assets/brand/final",
+    "excludedRoots": [
+      "assets/brand/archive"
+    ],
+    "rule": "Only assets/brand/final may be copied into a product or release package. Archive files remain source-history material and are never a release input."
+  },
+  "wordmarkInput": {
+    "path": "SealMail-Area/tmail-flutter/assets/fonts/Inter/Inter-Bold.ttf",
+    "version": "Version 3.019;git-0a5106e0b",
+    "source": "https://github.com/rsms/inter/commit/0a5106e0bde18df09374066bf3a7998e3546307d",
+    "upstreamCommit": "0a5106e0bde18df09374066bf3a7998e3546307d",
+    "sha256": "2ad83f2446566c5ecf7c261cc07884a5d5f71965b5df8fd7bb809f83a42bf470",
+    "sourceArtifact": {
+      "type": "github-blob",
+      "owner": "linagora",
+      "repository": "tmail-flutter",
+      "commit": "0e6c107f63e4fd35615605b718963ffa6b2897a4",
+      "path": "assets/fonts/Inter/Inter-Bold.ttf",
+      "sha256": "2ad83f2446566c5ecf7c261cc07884a5d5f71965b5df8fd7bb809f83a42bf470",
+      "url": "https://github.com/linagora/tmail-flutter/blob/0e6c107f63e4fd35615605b718963ffa6b2897a4/assets/fonts/Inter/Inter-Bold.ttf"
+    },
+    "license": "OFL-1.1",
+    "licenseFile": "licenses/OFL-1.1-Inter.txt",
+    "licenseSha256": "4d7d9c95e7d7f2f0ebf76d5e0b344826b74e903a34028ee18ab54bb639e45906",
+    "outlinePath": "assets/brand/wordmark-outlines.json",
+    "outlineSha256": "26affa48ac501a7cad0ab545014b9b4c57e9f37d95667615f636ea6cac698286",
+    "generationCommand": "swift scripts/brand/generate_wordmark_outlines.swift <Inter-Bold.ttf> assets/brand/wordmark-outlines.json 'Version 3.019;git-0a5106e0b' https://github.com/rsms/inter/commit/0a5106e0bde18df09374066bf3a7998e3546307d OFL-1.1 licenses/OFL-1.1-Inter.txt",
+    "status": "technically-reconstructed; qualified license review required"
+  },
+  "archiveAssets": [
+    {
+      "path": "assets/brand/archive/early-drafts/areamatrix-app-icon.png",
+      "sha256": "d6936bf5c65b3123cfcb042114503626b66717465d82398ee3867ac6c05a91bd",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/early-drafts/areamatrix-app-icon.svg",
+      "sha256": "e8d89931bc4befef857ed165195ba2621725b65256e323cade2c850770865388",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/early-drafts/areamatrix-logo-lockup.png",
+      "sha256": "099123b0983973bbe000482ca2c43210776572a752cdc9f797320d15440ca8ce",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/early-drafts/areamatrix-logo-lockup.svg",
+      "sha256": "d93822241ecef37ae26491fd6e5325971b7c8b5d38b646c33bad53c0e07775ab",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/early-drafts/areamatrix-logo-mark.png",
+      "sha256": "5d1443a42549e88616001735ab15a49439a2db4fa5697d1017f689b9d9d6567c",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/early-drafts/areamatrix-logo-mark.svg",
+      "sha256": "bb2dd672bf2ccb04f648f90afe451d333aa83f56531c2b2d467af805c05162a0",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v2/areamatrix-v2-app-icon.png",
+      "sha256": "4be41b1bb1f352c5d4fb3b1e1b955400686fc2520f80bc6cffaf65034c0c23e0",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v2/areamatrix-v2-app-icon.svg",
+      "sha256": "3f1906bb4c0000d43f79a77ea52c9f4aeba082b0d23923ace89f4e6a9cf8ca95",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v2/areamatrix-v2-distinctive-concepts.png",
+      "sha256": "306116c35ead5267526f246faa73b1ba54f9c5289fcb8b962ab2c551c651d600",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v2/areamatrix-v2-distinctive-concepts.svg",
+      "sha256": "f12f29946ef74a81370228456a879d7975d5bafb1d631f57ba7a6962e57e0952",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v2/areamatrix-v2-logo-lockup.png",
+      "sha256": "0dbd9b55c586fe9966a61c8741c3d49f89f2605f0c175ff0418d7d0073dfb153",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v2/areamatrix-v2-logo-lockup.svg",
+      "sha256": "1469b35dcf5233a29b91698ff95aae680ec9b47c79f64e9fb138bbc5462a7783",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v3/areamatrix-v3-logo-directions.png",
+      "sha256": "cd37a44ff0415f8f04db723c9814b9f351a7ed83f2f57eebcc561b307ca008fa",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v3/areamatrix-v3-logo-directions.svg",
+      "sha256": "a39df5e02f45cac5d38c693a6f178bb70d31a26d01ca81a921cec511619f6768",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v4/areamatrix-v4-reference-inspired-directions.png",
+      "sha256": "7027515b9c57a5c8ca5156eb70168511e3664bf8349a8b720811666088a8f1a4",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    },
+    {
+      "path": "assets/brand/archive/v4/areamatrix-v4-reference-inspired-directions.svg",
+      "sha256": "041c4680597614c3abe3d0e0c2bae3dcdd9ed22b74ff60eb4f6212dd56e296e0",
+      "owner": "not-established",
+      "source": "not-established; repository history does not prove the original input",
+      "license": "unknown; authorization evidence not found",
+      "status": "evidence-blocked"
+    }
+  ],
+  "review": {
+    "technicalEvidence": "repository hash inventory and deterministic final asset boundary",
+    "qualifiedLicenseReviewer": "required before any archive asset can become release-eligible",
+    "legalReviewComplete": false
+  }
+}

@@ -1,5 +1,5 @@
-import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 import Foundation
 import XCTest
 

@@ -10,7 +10,7 @@ AreaMatrix 已经不是界面原型，而是一套由 Rust Core、UniFFI Bridge 
 
 macOS 是当前正式产品平台。欢迎页拥有完整的品牌级连续动画；初始化、主工作区、设置、导入、搜索和恢复页面则使用更克制的统一场景转场、玻璃材质、渐变背景、悬停反馈、进度和弹层动画。iOS、Windows 和 Linux 目录中存在真实代码与 Core 接入，但仍属于实验实现，不能等同于正式支持平台。
 
-本清单也记录了若干“界面已出现但能力未闭环”的入口，以及静态审阅发现的文件边界、AI 隐私和减少动态效果等风险。它们不能被描述成已经完成的能力。
+本清单也记录了若干“界面已出现但能力未闭环”的入口，以及静态审阅发现的文件边界和 AI 隐私等风险。它们不能被描述成已经完成的能力。
 
 ## 审阅基线与覆盖证据
 
@@ -676,9 +676,9 @@ Windows XAML/C# 中未发现 `Storyboard`、`DoubleAnimation`、`ConnectedAnimat
 
 ### 可访问性与动画
 
-macOS 手写 UI 中未检索到 `accessibilityReduceMotion`、`reduceMotion` 或 Reduce Transparency 分支，同时检索到 36 处 `repeatForever`。对运动敏感用户而言，Welcome 的视差、blob、glare、scan、ripple 和 deep-dive 缺少系统级降级路径。
+macOS 的共享 motion policy 和 Welcome 场景会读取系统 Reduce Motion / Reduce Transparency 设置。Reduce Motion 会停止 blob、glare、scan、ripple、Diorama、视差和 3D 旋转等连续效果，并把叙事动画收敛到可理解的静态终态；Reduce Transparency 会移除主要自定义 blur、noise 和半透明场景表面，系统 `Material` 仍由 macOS 自身适配。
 
-建议把 Reduce Motion 作为 P2 可访问性修复：关闭视差和循环动画，缩短场景位移，保留必要的 opacity 状态反馈。
+相关持续动画在页面退出和系统设置变化时会取消 Task、重置状态，并用 generation 校验拒绝过期延迟提交。真实 VoiceOver、动态切换辅助功能设置和双语言窄窗口表现仍需要在可用的 macOS GUI 环境中验证，静态源码与单元测试不能替代该证据。
 
 ## 工程与分发边界
 

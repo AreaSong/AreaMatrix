@@ -1,4 +1,53 @@
+import AreaMatrixFeatureOperation
 import Foundation
+
+extension BatchRenameModeSnapshot {
+    var displayName: String {
+        switch self {
+        case .prefix: L10n.string("Prefix")
+        case .datePrefix: L10n.string("Date prefix")
+        case .keepBaseSequence: L10n.string("Keep base + sequence")
+        case .replaceText: L10n.string("Replace text")
+        }
+    }
+}
+
+extension BatchRenameDateSourceSnapshot {
+    var displayName: String {
+        switch self {
+        case .imported: L10n.string("Imported")
+        case .modified: L10n.string("Modified")
+        case .today: L10n.string("Today")
+        }
+    }
+}
+
+extension BatchRenamePreviewStatusSnapshot {
+    var displayName: String {
+        switch self {
+        case .ok: L10n.string("Ready")
+        case .error: L10n.string("Error")
+        case .nameConflict: L10n.string("Name conflict")
+        case .missing: L10n.string("Missing")
+        case .readOnly: L10n.string("Read-only")
+        case .displayOnly: L10n.string("Display only")
+        case .unchanged: L10n.string("Unchanged")
+        case .externalChange: L10n.string("External change")
+        }
+    }
+}
+
+extension BatchRenameResultStatusSnapshot {
+    var displayName: String {
+        switch self {
+        case .renamed: L10n.string("Renamed")
+        case .displayNameUpdated: L10n.string("Display name updated")
+        case .unchanged: L10n.string("Unchanged")
+        case .skipped: L10n.string("Skipped")
+        case .failed: L10n.string("Failed")
+        }
+    }
+}
 
 struct BatchRenameRoute: Identifiable, Equatable {
     let source: MainFileBatchActionRouteSource

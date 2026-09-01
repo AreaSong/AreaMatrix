@@ -18,6 +18,23 @@ DEFAULT_REMOTE = "origin"
 DEFAULT_RECENT_RUNS = 10
 GITHUB_HOSTS = {"github.com", "www.github.com"}
 REQUIRED_WORKFLOW_NAMES = ("Core CI", "Governance CI", "macOS App CI")
+# These are the stable job contexts that protect ``main``.  ``prompt doctor``
+# is intentionally omitted because it gates the Core/macOS jobs and also runs
+# inside Governance CI; requiring its duplicated context would make the
+# classic branch-protection API ambiguous.
+REQUIRED_STATUS_CHECK_CONTEXTS = (
+    "cargo fmt",
+    "cargo clippy",
+    "cargo test",
+    "build universal binary and bindings",
+    "coverage gate",
+    "Build reusable CoreSDK",
+    "Xcode build-for-testing & layered tests",
+    "iOS Swift package build & test",
+    "SwiftFormat lint",
+    "SwiftLint",
+    "governance, prompts, skills, and task-loop",
+)
 
 
 @dataclass(frozen=True)
@@ -176,6 +193,9 @@ def _branch_protection_checks(payload: Any) -> list[dict[str, Any]]:
             _check("branch_protection", "Branch protection is enabled", "BLOCKED", "branch protection response is not an object"),
             _check("required_status_checks", "Required status checks are configured", "BLOCKED", "branch protection response is unavailable"),
             _check("required_reviews", "Required pull request reviews are configured", "BLOCKED", "branch protection response is unavailable"),
+            _check("admin_enforcement", "Branch protection applies to administrators", "BLOCKED", "branch protection response is unavailable"),
+            _check("destructive_branch_actions", "Force-push and branch deletion are disabled", "BLOCKED", "branch protection response is unavailable"),
+            _check("conversation_resolution", "Required conversation resolution is enabled", "BLOCKED", "branch protection response is unavailable"),
         ]
 
     required_status = payload.get("required_status_checks") or {}
@@ -189,6 +209,14 @@ def _branch_protection_checks(payload: Any) -> list[dict[str, Any]]:
     )
     reviews = payload.get("required_pull_request_reviews") or {}
     approving_count = reviews.get("required_approving_review_count", 0)
+    missing_contexts = sorted(set(REQUIRED_STATUS_CHECK_CONTEXTS) - set(required_checks))
+    strict_checks = required_status.get("strict") is True
+    admin_enforced = (payload.get("enforce_admins") or {}).get("enabled") is True
+    codeowner_review = reviews.get("require_code_owner_reviews") is True
+    stale_reviews = reviews.get("dismiss_stale_reviews") is True
+    force_pushes_disabled = (payload.get("allow_force_pushes") or {}).get("enabled") is False
+    deletions_disabled = (payload.get("allow_deletions") or {}).get("enabled") is False
+    conversation_resolution = (payload.get("required_conversation_resolution") or {}).get("enabled") is True
     protection_enabled = bool(
         payload.get("url")
         or payload.get("required_status_checks") is not None
@@ -207,20 +235,63 @@ def _branch_protection_checks(payload: Any) -> list[dict[str, Any]]:
         _check(
             "required_status_checks",
             "Required status checks are configured",
-            "PASS" if required_checks else "BLOCKED",
-            f"{len(required_checks)} required status check(s) configured"
-            if required_checks
-            else "no required status checks configured",
+            "PASS" if not missing_contexts and strict_checks else "BLOCKED",
+            f"{len(required_checks)} required status check(s) configured with strict up-to-date policy"
+            if not missing_contexts and strict_checks
+            else (
+                "missing required contexts: " + ", ".join(missing_contexts)
+                if missing_contexts
+                else "required status checks do not require the branch to be up to date"
+            ),
             required_checks=required_checks,
+            expected_required_checks=list(REQUIRED_STATUS_CHECK_CONTEXTS),
+            missing_required_checks=missing_contexts,
+            strict=strict_checks,
         ),
         _check(
             "required_reviews",
             "Required pull request reviews are configured",
-            "PASS" if isinstance(approving_count, int) and approving_count >= 1 else "BLOCKED",
-            f"{approving_count} approving review(s) required"
-            if isinstance(approving_count, int) and approving_count >= 1
-            else "no required approving review configured",
+            "PASS"
+            if isinstance(approving_count, int)
+            and approving_count >= 1
+            and codeowner_review
+            and stale_reviews
+            else "BLOCKED",
+            (
+                f"{approving_count} approving review(s), CODEOWNERS review, and stale-review dismissal required"
+                if isinstance(approving_count, int)
+                and approving_count >= 1
+                and codeowner_review
+                and stale_reviews
+                else "required review count, CODEOWNERS review, or stale-review dismissal is missing"
+            ),
             required_approving_review_count=approving_count,
+            require_code_owner_reviews=codeowner_review,
+            dismiss_stale_reviews=stale_reviews,
+        ),
+        _check(
+            "admin_enforcement",
+            "Branch protection applies to administrators",
+            "PASS" if admin_enforced else "BLOCKED",
+            "administrator bypass is disabled" if admin_enforced else "administrator bypass remains enabled",
+            enforce_admins=admin_enforced,
+        ),
+        _check(
+            "destructive_branch_actions",
+            "Force-push and branch deletion are disabled",
+            "PASS" if force_pushes_disabled and deletions_disabled else "BLOCKED",
+            "force-push and branch deletion are disabled"
+            if force_pushes_disabled and deletions_disabled
+            else "force-push or branch deletion is allowed",
+            allow_force_pushes=not force_pushes_disabled,
+            allow_deletions=not deletions_disabled,
+        ),
+        _check(
+            "conversation_resolution",
+            "Required conversation resolution is enabled",
+            "PASS" if conversation_resolution else "BLOCKED",
+            "all conversations must be resolved" if conversation_resolution else "conversation resolution is not required",
+            required_conversation_resolution=conversation_resolution,
         ),
     ]
 

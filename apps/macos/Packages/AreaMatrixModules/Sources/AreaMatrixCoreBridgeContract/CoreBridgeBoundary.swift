@@ -7,6 +7,8 @@ public enum CoreBridgeBoundary: String, CaseIterable, Equatable, Sendable {
     case initLogging = "init_logging"
     case inspectBindingContract = "inspect_binding_contract"
     case getPlatformCapabilities = "get_platform_capabilities"
+    case listAICalls = "list_ai_calls"
+    case clearAICallLog = "clear_ai_call_log"
     case validateRepoPath = "validate_repo_path"
     case validateInitializedRepoPath = "validate_initialized_repo_path"
     case initRepo = "init_repo"

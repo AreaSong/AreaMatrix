@@ -5,7 +5,12 @@ extension MainRepositoryContentView {
     @ViewBuilder
     var listPane: some View {
         if let error = currentListError {
-            currentListErrorPane(error)
+            MainCurrentListErrorPane(
+                error: error,
+                state: state,
+                fileListModel: fileListModel,
+                recoveryActions: mainListErrorRecoveryActions
+            )
         } else {
             listContentPane
         }
@@ -44,14 +49,14 @@ extension MainRepositoryContentView {
                 HStack(alignment: .firstTextBaseline) {
                     Text(selectedListTitle)
                         .font(.title3.weight(.semibold))
-                    Text(listCountText)
+                    Text(mainListPresentation.listCountText)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                     Spacer()
                     listLoadingIndicator
                 }
                 Divider()
-                statusBanner
+                mainListStatusRegion
                 fileTable
             }
             .padding(18)
@@ -66,6 +71,23 @@ extension MainRepositoryContentView {
                 },
                 isEnabled: !opening.isReadOnly
             ))
+        }
+    }
+
+    @ViewBuilder
+    private var mainListStatusRegion: some View {
+        if searchModel.searchState.isActive {
+            searchStatusBanner
+        } else if let banner = fileListModel.statusBanner {
+            MainListStatusBannerView(
+                banner: banner,
+                onRetry: { Task { await fileListModel.retryCurrentCategory() } },
+                onDismiss: fileListModel.clearStatusBanner
+            )
+        } else if state == .list {
+            SyncConflictEntryPanel(model: syncConflictEntryModel) { route in
+                syncConflictCoordinator.reviewRoutingState.route = route
+            }
         }
     }
 

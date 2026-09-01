@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+
 extension CoreBridge: CoreStartupRecovering {
     func recoverOnStartup(repoPath: String) async throws -> RecoveryReportSnapshot {
         let report = try await Task.detached(priority: .userInitiated) { [repoPath] in
@@ -13,9 +15,11 @@ extension CoreBridge: CoreStartupRecovering {
 
 private extension RecoveryReportSnapshot {
     init(coreReport: RecoveryReport) {
-        cleanedStagingFiles = coreReport.cleanedStagingFiles
-        revertedStagingDbRows = coreReport.revertedStagingDbRows
-        warnings = coreReport.warnings
+        self.init(
+            cleanedStagingFiles: coreReport.cleanedStagingFiles,
+            revertedStagingDbRows: coreReport.revertedStagingDbRows,
+            warnings: coreReport.warnings
+        )
     }
 }
 

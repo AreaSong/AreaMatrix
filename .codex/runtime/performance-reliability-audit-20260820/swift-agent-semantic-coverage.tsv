@@ -1,0 +1,10 @@
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/ImportPlatformServices.swift	PASS	1-315	semantic-reviewed	streaming hash, detached folder scan, bounded resources
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/ICloudPlaceholderDownloader.swift	PASS	1-72	semantic-reviewed	bounded polling and cancellation
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/RemoteProviderProbeService.swift	PASS	1-307	semantic-reviewed	URLSession cancellation and continuation locking
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/RepositoryWriteCoordinator.swift	PASS	1-78	semantic-reviewed	FIFO gate and cancellation release
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/MainExternalCreatedFileWatcher.swift	FINDING	1-436	semantic-reviewed	PERF-MAC-001 main-actor per-event filesystem work
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/InFlightFileChangeTracker.swift	FINDING	1-69	semantic-reviewed	PERF-MAC-002 lazy expiry retention
+COVERAGE	apps/macos/AreaMatrix/App/MainExternalCreatedFileActions.swift	FINDING	1-152	semantic-reviewed	PERF-MAC-003 pending window merge/sort caller
+COVERAGE	apps/macos/AreaMatrix/Features/MainList/MainFileListExternalSyncActions.swift	FINDING	1-360	semantic-reviewed	PERF-MAC-003 single drain and backlog callee
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/Observability/CoreObservabilitySinkAdapter.swift	FINDING	1-179	semantic-reviewed	PERF-MAC-004 array queue operations under lock
+COVERAGE	apps/macos/AreaMatrix/PlatformServices/Observability/RollingObservabilityStoreMaintenance.swift	PASS	1-230	semantic-reviewed	retention and manifest atomicity

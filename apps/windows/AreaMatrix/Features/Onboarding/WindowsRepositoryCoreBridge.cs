@@ -105,7 +105,9 @@ public sealed class WindowsRepositoryCoreBridge : IWindowsRepositoryCoreBridge
             config.EnableExtensionRules,
             config.EnableKeywordRules,
             config.FallbackToInbox,
-            config.AllowReplaceDuringImport);
+            config.AllowReplaceDuringImport,
+            config.Revision,
+            config.LocalePolicyState);
     }
 
     public Task UpdateConfigAsync(
@@ -125,7 +127,9 @@ public sealed class WindowsRepositoryCoreBridge : IWindowsRepositoryCoreBridge
                 newConfig.EnableExtensionRules,
                 newConfig.EnableKeywordRules,
                 newConfig.FallbackToInbox,
-                newConfig.AllowReplaceDuringImport),
+                newConfig.AllowReplaceDuringImport,
+                newConfig.Revision,
+                newConfig.LocalePolicyState),
             cancellationToken);
     }
 
@@ -217,6 +221,16 @@ public enum WindowsRepositoryRouteKind
 public enum WindowsRepositoryErrorKind
 {
     Db,
+    DbLocked,
+    DbCorrupted,
+    Validation,
+    Classify,
+    RevisionConflict,
+    ExpiredAction,
+    RepoNotInitialized,
+    ICloudPlaceholder,
+    StagingRecoveryRequired,
+    Internal,
     InvalidPath,
     SelectedFile,
     PermissionDenied,
@@ -263,7 +277,9 @@ public sealed record WindowsRepositoryConfig(
     bool EnableExtensionRules = true,
     bool EnableKeywordRules = true,
     bool FallbackToInbox = true,
-    bool AllowReplaceDuringImport = false);
+    bool AllowReplaceDuringImport = false,
+    long Revision = 0,
+    string LocalePolicyState = "Unknown");
 
 public sealed record CoreRepoPathValidation(
     string RepoPath,
@@ -460,12 +476,16 @@ public sealed record CoreRepoConfig(
     bool EnableExtensionRules = true,
     bool EnableKeywordRules = true,
     bool FallbackToInbox = true,
-    bool AllowReplaceDuringImport = false);
+    bool AllowReplaceDuringImport = false,
+    long Revision = 0,
+    string LocalePolicyState = "Unknown");
 
 public sealed record CoreRepoInitOptions(
     string Mode,
     bool CreateDefaultCategories,
-    string OverviewOutput)
+    string OverviewOutput,
+    string LocalePolicy = "FollowInterface",
+    string ContentLocale = "En")
 {
     public static CoreRepoInitOptions CreateEmptyGeneratedOnly { get; } = new(
         "CreateEmpty",
@@ -503,14 +523,26 @@ public sealed class WindowsRepositoryCoreException : Exception
     public WindowsRepositoryCoreException(
         WindowsRepositoryErrorKind kind,
         string message,
-        string? path = null)
+        string? path = null,
+        string? coreErrorVariant = null,
+        long? expectedRevision = null,
+        long? currentRevision = null)
         : base(message)
     {
         Kind = kind;
         Path = path;
+        CoreErrorVariant = coreErrorVariant;
+        ExpectedRevision = expectedRevision;
+        CurrentRevision = currentRevision;
     }
 
     public WindowsRepositoryErrorKind Kind { get; }
 
     public string? Path { get; }
+
+    public string? CoreErrorVariant { get; }
+
+    public long? ExpectedRevision { get; }
+
+    public long? CurrentRevision { get; }
 }

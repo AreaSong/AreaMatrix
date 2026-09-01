@@ -132,7 +132,7 @@ extension MainRepositoryContentView {
     func applyMainRepositoryImportProgressSelectionRelay(to content: some View) -> some View {
         content.onChange(of: importProgressSelectionState.selectedIDs) { _, ids in
             guard !ids.isEmpty else { return }
-            selectedFileIDs = []
+            selectionModel.fileIDs = []
         }
     }
 

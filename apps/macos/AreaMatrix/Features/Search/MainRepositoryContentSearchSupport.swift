@@ -37,13 +37,13 @@ extension MainRepositoryContentView {
     }
 
     var searchFilterSummaryText: String {
-        if fileListModel.isEditingSmartListFilterDraft {
+        if searchModel.isEditingSmartListFilterDraft {
             return L10n.plural("search.draftActiveFilterCount", count: searchActiveFilterCount)
         }
-        if let error = fileListModel.searchFacetsState.errorMapping {
+        if let error = searchModel.searchFacetsState.errorMapping {
             return L10n.format("search.filters.loadError", error.userMessage)
         }
-        if let facets = fileListModel.searchFacetsState.facets {
+        if let facets = searchModel.searchFacetsState.facets {
             return L10n.format(
                 "%d filters active, %d matching files",
                 facets.activeFilterCount,
@@ -54,18 +54,18 @@ extension MainRepositoryContentView {
     }
 
     var searchActiveFilterCount: Int64 {
-        if let draft = fileListModel.smartListFilterDraft {
+        if let draft = searchModel.smartListFilterDraft {
             return draft.activeFilterCount
         }
-        return fileListModel.searchFacetsState.facets?.activeFilterCount ?? searchFilters.activeFilterCount
+        return searchModel.searchFacetsState.facets?.activeFilterCount ?? searchFilters.activeFilterCount
     }
 
     var searchSaveDisabledReason: String? {
-        guard !fileListModel.canSaveCurrentSearch else { return nil }
-        if fileListModel.searchState.page?.hasDiagnosticError == true {
+        guard !searchModel.canSaveCurrentSearch else { return nil }
+        if searchModel.searchState.page?.hasDiagnosticError == true {
             return L10n.string("Fix query syntax before saving")
         }
-        if fileListModel.searchState.request == nil {
+        if searchModel.searchState.request == nil {
             return L10n.string("Enter a query before saving")
         }
         return L10n.string("Wait for search results")
@@ -75,23 +75,23 @@ extension MainRepositoryContentView {
         filterText = ""
         searchMode = .normal
         searchFilters = .empty
-        fileListModel.clearSearch()
-        selectedFileIDs = []
+        searchModel.clearSearch()
+        selectionModel.fileIDs = []
         if selectedSmartList != nil { selectedSidebarID = Self.defaultSelectedSidebarID(from: regularSidebarRows) }
         searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
         Task { await fileListModel.loadCurrentCategory(selectedSidebarRow.categoryForFileList) }
     }
 
     func beginCommandFindSearch() {
-        fileListModel.enterSearch(context: .commandFind)
+        searchModel.enterSearch(context: .commandFind)
         searchMode = .normal
         searchScope = .all
         isSearchFieldFocused = true
     }
 
     func handleSearchEscape() {
-        if searchRoutingState.isToolbarFiltersPresented {
-            searchRoutingState.isToolbarFiltersPresented = false
+        if searchModel.routingState.isToolbarFiltersPresented {
+            searchModel.routingState.isToolbarFiltersPresented = false
             return
         }
         if filterText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -102,8 +102,8 @@ extension MainRepositoryContentView {
     }
 
     func resetSearchFilters() {
-        if fileListModel.isEditingSmartListFilterDraft {
-            fileListModel.updateSmartListFilterDraft(.empty)
+        if searchModel.isEditingSmartListFilterDraft {
+            searchModel.updateSmartListFilterDraft(.empty)
             return
         }
         searchFilters = .empty
@@ -112,7 +112,7 @@ extension MainRepositoryContentView {
     var effectiveSearchFilters: SearchFilterStateSnapshot {
         SearchFilterStateRouting.effective(
             searchFilters: searchFilters,
-            draft: fileListModel.smartListFilterDraft
+            draft: searchModel.smartListFilterDraft
         )
     }
 
@@ -123,7 +123,7 @@ extension MainRepositoryContentView {
                 SearchFilterStateRouting.assign(
                     filters,
                     searchFilters: &searchFilters,
-                    fileListModel: fileListModel
+                    searchModel: searchModel
                 )
             }
         )
@@ -131,34 +131,34 @@ extension MainRepositoryContentView {
 
     var searchFiltersButton: some View {
         Button {
-            searchRoutingState.isToolbarFiltersPresented.toggle()
+            searchModel.routingState.isToolbarFiltersPresented.toggle()
         } label: {
             Label(searchFiltersButtonTitle, systemImage: "line.3.horizontal.decrease.circle")
         }
-        .popover(isPresented: $searchRoutingState.isToolbarFiltersPresented) {
+        .popover(isPresented: $searchModel.routingState.isToolbarFiltersPresented) {
             SearchFiltersPopover(
                 filters: searchFiltersBinding,
-                facetsState: fileListModel.searchFacetsState,
-                tagRegistryState: fileListModel.tagFilterRegistryState,
+                facetsState: searchModel.searchFacetsState,
+                tagRegistryState: detailTagModel.filterRegistryState,
                 tagRegistryAnchorFileID: tagRegistryAnchorFileID,
-                canSaveAsSmartList: !fileListModel.isEditingSmartListFilterDraft && fileListModel.canSaveCurrentSearch,
-                isEditingSmartListDraft: fileListModel.isEditingSmartListFilterDraft,
+                canSaveAsSmartList: !searchModel.isEditingSmartListFilterDraft && searchModel.canSaveCurrentSearch,
+                isEditingSmartListDraft: searchModel.isEditingSmartListFilterDraft,
                 saveDisabledReason: searchSaveDisabledReason,
                 onReset: {
                     resetSearchFilters()
                 },
                 onRetry: {
-                    Task { await fileListModel.retrySearchFacets() }
+                    Task { await searchModel.retrySearchFacets() }
                 },
                 onLoadTagRegistry: { fileID in
-                    Task { await fileListModel.loadTagFilterRegistry(activeFileID: fileID) }
+                    Task { await detailTagModel.loadTagFilterRegistry(activeFileID: fileID) }
                 },
                 onRetryTagRegistry: {
-                    Task { await fileListModel.retryTagFilterRegistry() }
+                    Task { await detailTagModel.retryTagFilterRegistry() }
                 },
                 onSaveAsSmartList: {
-                    searchRoutingState.isToolbarFiltersPresented = false
-                    fileListModel.openSavedSearchSheet()
+                    searchModel.routingState.isToolbarFiltersPresented = false
+                    searchModel.openSavedSearchSheet()
                 }
             )
         }

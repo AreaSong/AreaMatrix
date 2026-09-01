@@ -15,6 +15,7 @@ final class ConnectRepositoryModel: ObservableObject {
     @Published private(set) var latestValidation: MobileRepositoryValidation?
     @Published private(set) var latestCloudState: MobileCloudStorageState?
     @Published private(set) var shareImportTakeoverConnection: MobileRepositoryConnection?
+    private var activeRequestID: UUID?
 
     let bridge: any MobileRepositoryCoreBridge
     let accessService: any RepositoryAccessServicing
@@ -51,7 +52,10 @@ final class ConnectRepositoryModel: ObservableObject {
     @discardableResult
     func connectICloudRepository() async -> Bool {
         prepareForPicker()
+        let requestID = UUID()
+        activeRequestID = requestID
         guard await accessService.isICloudDriveAvailable() else {
+            guard activeRequestID == requestID, !Task.isCancelled else { return false }
             applyCloudFailure(.unavailable(
                 "iCloud Drive 不可用，"
                     + "请在系统设置中启用 iCloud Drive 后重试。"
@@ -71,17 +75,22 @@ final class ConnectRepositoryModel: ObservableObject {
             prepareForPicker()
             return true
         }
+        let requestID = UUID()
+        activeRequestID = requestID
         do {
             let url = try await accessService.resolveBookmark(for: recent)
+            guard activeRequestID == requestID, !Task.isCancelled else { return false }
             await connect(url: url)
             return false
         } catch {
+            guard activeRequestID == requestID, !Task.isCancelled else { return false }
             applyFailure(.accessExpired(recent.pathDisplay))
             return true
         }
     }
 
     func cancelSystemPicker() {
+        activeRequestID = nil
         checkState = .idle
     }
 
@@ -108,7 +117,10 @@ final class ConnectRepositoryModel: ObservableObject {
     }
 
     private func openRecentRepositoryForShareImport() async {
+        let requestID = UUID()
+        activeRequestID = requestID
         let repositories = await accessService.recentRepositories()
+        guard activeRequestID == requestID, !Task.isCancelled else { return }
         guard let recent = repositories.first else {
             applyFailure(.unavailable("Open AreaMatrix to connect a repository."))
             return
@@ -119,13 +131,16 @@ final class ConnectRepositoryModel: ObservableObject {
         }
         do {
             let url = try await accessService.resolveBookmark(for: recent)
-            try await routeShareImportRepository(url: url, recent: recent)
+            guard activeRequestID == requestID, !Task.isCancelled else { return }
+            try await routeShareImportRepository(url: url, recent: recent, requestID: requestID)
         } catch {
+            guard activeRequestID == requestID, !Task.isCancelled else { return }
             applyFailure(Self.connectionError(from: error))
         }
     }
 
     private func prepareForPicker() {
+        activeRequestID = nil
         checkState = .idle
         error = nil
         route = nil
@@ -135,6 +150,8 @@ final class ConnectRepositoryModel: ObservableObject {
     }
 
     private func connect(url: URL) async {
+        let requestID = UUID()
+        activeRequestID = requestID
         guard url.isFileURL else {
             applyFailure(.invalidPath(url.absoluteString))
             return
@@ -143,28 +160,39 @@ final class ConnectRepositoryModel: ObservableObject {
         beginChecking(url)
         do {
             let scopedAccess = try await accessService.beginAccessing(url)
-            defer { scopedAccess.stop() }
             let validation = try await bridge.validateRepoPath(repoPath: url.path)
-            try await routeValidatedRepository(validation, sourceURL: url)
+            guard activeRequestID == requestID, !Task.isCancelled else { return }
+            try await routeValidatedRepository(
+                validation,
+                sourceURL: url,
+                scopedAccess: scopedAccess,
+                requestID: requestID
+            )
         } catch {
+            guard activeRequestID == requestID, !Task.isCancelled else { return }
             applyFailure(Self.connectionError(from: error))
         }
     }
 
-    private func routeShareImportRepository(url: URL, recent: RecentRepository) async throws {
+    private func routeShareImportRepository(
+        url: URL,
+        recent: RecentRepository,
+        requestID: UUID
+    ) async throws {
         guard url.isFileURL else {
             applyFailure(.invalidPath(url.absoluteString))
             return
         }
         beginChecking(url)
         let scopedAccess = try await accessService.beginAccessing(url)
-        defer { scopedAccess.stop() }
         let validation = try await bridge.validateRepoPath(repoPath: url.path)
+        guard activeRequestID == requestID, !Task.isCancelled else { return }
         if let blockingError = Self.blockingError(for: validation) {
             applyFailure(blockingError)
             return
         }
         let config = try await bridge.loadConfig(repoPath: validation.repoPath)
+        guard activeRequestID == requestID, !Task.isCancelled else { return }
         checkState = .idle
         shareImportTakeoverConnection = MobileRepositoryConnection(
             validation: validation,
@@ -174,7 +202,8 @@ final class ConnectRepositoryModel: ObservableObject {
                 displayName: recent.displayName,
                 pathDisplay: recent.pathDisplay,
                 lastOpenedAt: recent.lastOpenedAt
-            )
+            ),
+            scopedAccess: scopedAccess
         )
     }
 
@@ -187,7 +216,13 @@ final class ConnectRepositoryModel: ObservableObject {
         latestCloudState = nil
     }
 
-    private func routeValidatedRepository(_ validation: MobileRepositoryValidation, sourceURL: URL) async throws {
+    private func routeValidatedRepository(
+        _ validation: MobileRepositoryValidation,
+        sourceURL: URL,
+        scopedAccess: RepositoryScopedAccess,
+        requestID: UUID
+    ) async throws {
+        guard activeRequestID == requestID, !Task.isCancelled else { return }
         latestValidation = validation
         if let blockingError = Self.blockingError(for: validation) {
             applyFailure(blockingError)
@@ -196,8 +231,10 @@ final class ConnectRepositoryModel: ObservableObject {
         let cloudState: MobileCloudStorageState
         do {
             cloudState = try await bridge.detectCloudStorageState(repoPath: validation.repoPath)
+            guard activeRequestID == requestID, !Task.isCancelled else { return }
         } catch {
             let failure = Self.connectionError(from: error)
+            guard activeRequestID == requestID, !Task.isCancelled else { return }
             if Self.shouldRouteCloudDetectionFailure(failure, validation: validation) {
                 applyCloudFailure(failure)
                 return
@@ -205,42 +242,59 @@ final class ConnectRepositoryModel: ObservableObject {
             throw error
         }
         latestCloudState = cloudState
+        guard activeRequestID == requestID, !Task.isCancelled else { return }
         if let cloudError = Self.cloudBlockingError(for: cloudState) {
             applyCloudFailure(cloudError)
             return
         }
         if validation.isInitialized {
             let bookmark = try await accessService.persistBookmark(for: sourceURL, lastOpenedAt: now())
-            try await openExistingRepository(validation, bookmark: bookmark)
+            guard activeRequestID == requestID, !Task.isCancelled else { return }
+            try await openExistingRepository(
+                validation,
+                bookmark: bookmark,
+                scopedAccess: scopedAccess,
+                requestID: requestID
+            )
             return
         }
         let bookmark = Self.candidateBookmark(for: sourceURL, lastOpenedAt: now())
-        routeUninitializedRepository(validation, bookmark: bookmark)
+        routeUninitializedRepository(
+            validation,
+            bookmark: bookmark,
+            scopedAccess: scopedAccess
+        )
     }
 
     private func openExistingRepository(
         _ validation: MobileRepositoryValidation,
-        bookmark: RepositoryBookmark
+        bookmark: RepositoryBookmark,
+        scopedAccess: RepositoryScopedAccess,
+        requestID: UUID
     ) async throws {
         let config = try await bridge.loadConfig(repoPath: validation.repoPath)
+        guard activeRequestID == requestID, !Task.isCancelled else { return }
         checkState = .idle
         route = .mobileLibrary(MobileRepositoryConnection(
             validation: validation,
             config: config,
-            bookmark: bookmark
+            bookmark: bookmark,
+            scopedAccess: scopedAccess
         ))
     }
 
     func openCreatedRepository(
         validation: MobileRepositoryValidation,
-        bookmark: RepositoryBookmark
+        bookmark: RepositoryBookmark,
+        scopedAccess: RepositoryScopedAccess
     ) async throws {
         let config = try await bridge.loadConfig(repoPath: validation.repoPath)
         checkState = .idle
         route = .mobileLibrary(MobileRepositoryConnection(
             validation: validation,
             config: config,
-            bookmark: bookmark
+            bookmark: bookmark,
+            scopedAccess: scopedAccess
         ))
     }
 
@@ -274,10 +328,15 @@ final class ConnectRepositoryModel: ObservableObject {
 
     private func routeUninitializedRepository(
         _ validation: MobileRepositoryValidation,
-        bookmark: RepositoryBookmark
+        bookmark: RepositoryBookmark,
+        scopedAccess: RepositoryScopedAccess
     ) {
         checkState = .idle
-        let candidate = MobileRepositoryCandidate(validation: validation, bookmark: bookmark)
+        let candidate = MobileRepositoryCandidate(
+            validation: validation,
+            bookmark: bookmark,
+            scopedAccess: scopedAccess
+        )
         switch validation.recommendedMode {
         case .createEmpty:
             route = .repositoryInitConfirm(candidate)
@@ -349,7 +408,7 @@ final class ConnectRepositoryModel: ObservableObject {
             return .accessExpired(state.repoPath)
         case .unknown:
             if state.providerKind == .iCloudDrive || state.providerKind == .unknown {
-                return .unavailable(state.statusSummary)
+                return .unavailable("Cloud storage status is unavailable. Try again.")
             }
             return nil
         }
@@ -397,6 +456,6 @@ final class ConnectRepositoryModel: ObservableObject {
         if let failure = error as? MobileRepositoryConnectionError {
             return failure
         }
-        return .unavailable(error.localizedDescription)
+        return .unavailable("The repository could not be opened. Try again or choose another folder.")
     }
 }

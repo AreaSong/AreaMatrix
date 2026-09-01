@@ -1,15 +1,16 @@
-use std::{env, ffi::OsString, path::Path, process::Command, time::Duration};
+use std::{path::Path, time::Duration};
 
 use serde::Serialize;
 
 use crate::{
     db,
-    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits},
+    external_runtime::{ExternalRuntimeError, ExternalRuntimeLimits, VerifiedExternalRuntime},
     remote_provider_config::{RemoteAiProviderKind, StoredRemoteProviderConfig},
     AiFeatureKind, CoreResult, SearchFilter, SearchPagination,
 };
 
 const REMOTE_RUNTIME_ENV: &str = "AREAMATRIX_AI_SEMANTIC_REMOTE_RUNTIME";
+const REMOTE_RUNTIME_CAPABILITY: &str = "ai-semantic-remote";
 const MAX_REASON_CHARS: usize = 512;
 const RUNTIME_TIMEOUT: Duration = Duration::from_secs(30);
 const MAX_RUNTIME_OUTPUT_BYTES: usize = 1024 * 1024;
@@ -46,9 +47,11 @@ pub(super) fn execute_remote_search(
     pagination: &SearchPagination,
 ) -> Result<RemoteSearchDraft, SemanticRemoteError> {
     let config = load_remote_config(repo)?;
-    let runtime_path = runtime_path(REMOTE_RUNTIME_ENV).ok_or(SemanticRemoteError::Unavailable)?;
+    let runtime = crate::external_runtime::resolve(REMOTE_RUNTIME_ENV, REMOTE_RUNTIME_CAPABILITY)
+        .map_err(map_runtime_error)?
+        .ok_or(SemanticRemoteError::Unavailable)?;
     let payload = SearchRuntimePayload::remote(query, filter, pagination, &config);
-    let output = run_runtime(runtime_path, &payload)?;
+    let output = run_runtime(runtime, &payload)?;
     parse_search_response(&output, &config.model_id)
 }
 
@@ -57,9 +60,11 @@ pub(super) fn execute_remote_build(
     filter: &SearchFilter,
 ) -> Result<RemoteBuildDraft, SemanticRemoteError> {
     let config = load_remote_config(repo)?;
-    let runtime_path = runtime_path(REMOTE_RUNTIME_ENV).ok_or(SemanticRemoteError::Unavailable)?;
+    let runtime = crate::external_runtime::resolve(REMOTE_RUNTIME_ENV, REMOTE_RUNTIME_CAPABILITY)
+        .map_err(map_runtime_error)?
+        .ok_or(SemanticRemoteError::Unavailable)?;
     let payload = BuildRuntimePayload::remote(filter, &config);
-    let output = run_runtime(runtime_path, &payload)?;
+    let output = run_runtime(runtime, &payload)?;
     parse_build_response(&output, &config.model_id)
 }
 
@@ -85,18 +90,13 @@ fn load_remote_config(repo: &Path) -> Result<StoredRemoteProviderConfig, Semanti
     .ok_or(SemanticRemoteError::Unavailable)
 }
 
-fn runtime_path(env_name: &str) -> Option<OsString> {
-    env::var_os(env_name).filter(|value| !value.is_empty())
-}
-
 fn run_runtime(
-    runtime_path: OsString,
+    runtime: VerifiedExternalRuntime,
     payload: &impl Serialize,
 ) -> Result<Vec<u8>, SemanticRemoteError> {
     let payload = serde_json::to_vec(payload).map_err(|_| SemanticRemoteError::Unavailable)?;
-    let mut command = Command::new(runtime_path);
     let output = crate::external_runtime::run(
-        &mut command,
+        &runtime,
         &payload,
         ExternalRuntimeLimits {
             timeout: RUNTIME_TIMEOUT,

@@ -1,6 +1,7 @@
 import AreaMatrixUIFoundation
 import SwiftUI
 
+@MainActor
 struct AreaMatrixUICatalog: View {
     @State private var selectedStatus = "ready"
     @State private var toggleValue = true

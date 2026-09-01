@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureAI
 import Foundation
 import XCTest
 

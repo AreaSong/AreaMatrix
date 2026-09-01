@@ -1,93 +1,59 @@
 import XCTest
 
-private let expectedAppCoreServiceSurface = [
-    "App/AppCoreServices.swift:static var aiCallLogClearer",
-    "App/AppCoreServices.swift:static var aiCallLogLister",
-    "App/AppCoreServices.swift:static var aiClassificationFallbackReader",
-    "App/AppCoreServices.swift:static var aiClassificationSuggester",
-    "App/AppCoreServices.swift:static var aiPrivacyRules",
-    "App/AppCoreServices.swift:static var aiPrivacyRulesManager",
-    "App/AppCoreServices.swift:static var aiSettingsLoader",
-    "App/AppCoreServices.swift:static var aiSettingsUpdater",
-    "App/AppCoreServices.swift:static var aiSummaryStore",
-    "App/AppCoreServices.swift:static var aiTagSuggestionStore",
-    "App/AppCoreServices.swift:static var batchFileImporter",
-    "App/AppCoreServices.swift:static var batchCategoryChanger",
-    "App/AppCoreServices.swift:static var batchDeleter",
-    "App/AppCoreServices.swift:static var batchRenamer",
-    "App/AppCoreServices.swift:static var bindingContractInspector",
-    "App/AppCoreServices.swift:static var categoryPredictor",
-    "App/AppCoreServices.swift:static var changeLogLister",
-    "App/AppCoreServices.swift:static var classifierImpactPreviewer",
-    "App/AppCoreServices.swift:static var classifierRuleEditor",
-    "App/AppCoreServices.swift:static var classifierRuleSaver",
-    "App/AppCoreServices.swift:static var commandIndexer",
-    "App/AppCoreServices.swift:static var configurationLoader",
-    "App/AppCoreServices.swift:static var configurationUpdater",
-    "App/AppCoreServices.swift:static var conflictBatcher",
-    "App/AppCoreServices.swift:static var coreVersionLoader",
-    "App/AppCoreServices.swift:static var coreVersionReader",
-    "App/AppCoreServices.swift:static var diagnosticsCollector",
-    "App/AppCoreServices.swift:static var emptyRepositoryOpener",
-    "App/AppCoreServices.swift:static var errorMapper",
-    "App/AppCoreServices.swift:static var externalChangesSyncer",
-    "App/AppCoreServices.swift:static var fileCategoryMover",
-    "App/AppCoreServices.swift:static var fileDeleter",
-    "App/AppCoreServices.swift:static var fileDetailer",
-    "App/AppCoreServices.swift:static var fileLister",
-    "App/AppCoreServices.swift:static var fileRenamer",
-    "App/AppCoreServices.swift:static var iCloudConflictLister",
-    "App/AppCoreServices.swift:static var iCloudConflictResolver",
-    "App/AppCoreServices.swift:static var iCloudConflictReviewer",
-    "App/AppCoreServices.swift:static var initializedRepositoryPathValidator",
-    "App/AppCoreServices.swift:static var importProgressImporter",
-    "App/AppCoreServices.swift:static var localModelStatusReader",
-    "App/AppCoreServices.swift:static var metadataRepairer",
-    "App/AppCoreServices.swift:static var missingFileRecoverer",
-    "App/AppCoreServices.swift:static var noteStore",
-    "App/AppCoreServices.swift:static var observabilityController",
-    "App/AppCoreServices.swift:static var overviewRegenerator",
-    "App/AppCoreServices.swift:static var platformCapabilityLoader",
-    "App/AppCoreServices.swift:static var redoActionStore",
-    "App/AppCoreServices.swift:static var remoteProviderConfigurer",
-    "App/AppCoreServices.swift:static var repositoryContentLocaleSnapshotter",
-    "App/AppCoreServices.swift:static var repositoryPathValidator",
-    "App/AppCoreServices.swift:static var repositoryReindexer",
-    "App/AppCoreServices.swift:static var repositoryInitializer",
-    "App/AppCoreServices.swift:static var savedSearchStore",
-    "App/AppCoreServices.swift:static var scanSessionReader",
-    "App/AppCoreServices.swift:static var searchFiltering",
-    "App/AppCoreServices.swift:static var searchQuerying",
-    "App/AppCoreServices.swift:static var semanticFallbackReader",
-    "App/AppCoreServices.swift:static var semanticSearching",
-    "App/AppCoreServices.swift:static var syncConflictDetector",
-    "App/AppCoreServices.swift:static var startupRecoverer",
-    "App/AppCoreServices.swift:static var syncConflictResolver",
-    "App/AppCoreServices.swift:static var tagStore",
-    "App/AppCoreServices.swift:static var treeLister",
-    "App/AppCoreServices.swift:static var undoActionStore"
-]
-
 final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
-    func testAppCoreServicesDefaultSurfaceStaysInventoried() throws {
+    func testAppCoreServicesHasNoStaticServiceSurface() throws {
         let appCoreServicesFile = try XCTUnwrap(productionSwiftFiles().first {
             relativeProductionPath(for: $0) == "App/AppCoreServices.swift"
         })
         let actual = try sourceRegexMatches(
             in: appCoreServicesFile,
-            pattern: #"\bstatic var [A-Za-z][A-Za-z0-9_]*"#
+            pattern: #"\bstatic\s+(?:let|var)\s+[A-Za-z][A-Za-z0-9_]*"#
         )
         .sorted()
 
         XCTAssertEqual(
             actual,
-            expectedAppCoreServiceSurface.sorted(),
-            "The default Core service surface should stay explicit so new shared defaults are reviewed, " +
-                "documented, and kept separate from high-risk direct CoreBridge defaults."
+            [],
+            "Core capabilities must be owned by an AppCoreServices instance, never exposed as static services."
         )
     }
 
-    func testAppCoreServicesConstructsCoreBridgeOnlyThroughPrivateFactory() throws {
+    func testProductionCodeHasNoStaticCoreServiceLocator() throws {
+        let violations = try productionSwiftFiles()
+            .flatMap { file in
+                try sourceRegexViolations(
+                    in: file,
+                    pattern: #"\bstatic\s+(?:let|var)\s+[A-Za-z][A-Za-z0-9_]*\s*:\s*any\s+Core[A-Za-z0-9_]+"#
+                )
+            }
+            .sorted()
+
+        XCTAssertEqual(
+            violations,
+            [],
+            "New process-global Core services are forbidden; compose protocol values through an instance container."
+        )
+    }
+
+    func testRepositoryWriteCoordinatorIsOwnedByTheCoreServiceGraph() throws {
+        let coordinatorFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "PlatformServices/RepositoryWriteCoordinator.swift"
+        })
+        let servicesFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "App/AppCoreServices.swift"
+        })
+        let coordinatorSource = try String(contentsOf: coordinatorFile, encoding: .utf8)
+        let servicesSource = try String(contentsOf: servicesFile, encoding: .utf8)
+
+        XCTAssertFalse(coordinatorSource.contains("static let shared"))
+        XCTAssertTrue(
+            servicesSource.contains(
+                "repositoryWriteCoordinator: RepositoryWriteCoordinator = RepositoryWriteCoordinator()"
+            )
+        )
+    }
+
+    func testAppCoreServicesUsesItsInjectedBridgeInstance() throws {
         let appCoreServicesFile = try XCTUnwrap(productionSwiftFiles().first {
             relativeProductionPath(for: $0) == "App/AppCoreServices.swift"
         })
@@ -95,13 +61,9 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
             in: appCoreServicesFile,
             pattern: #"\bCoreBridge\s*\("#
         )
-        let runtimeMatches = try sourceRegexMatches(
-            in: appCoreServicesFile,
-            pattern: #"\bCoreBridgeRuntime\.shared\b"#
-        )
         let factoryMatches = try sourceRegexMatches(
             in: appCoreServicesFile,
-            pattern: #"\bprivate static func coreBridge\(\) -> CoreBridge\b"#
+            pattern: #"\bprivate func coreBridge\(\) -> CoreBridge\b"#
         )
 
         XCTAssertEqual(
@@ -110,11 +72,10 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
             "AppCoreServices defaults should use the process-scoped CoreBridge runtime instead of constructing " +
                 "a bridge for every protocol lookup."
         )
-        XCTAssertEqual(runtimeMatches, ["App/AppCoreServices.swift:CoreBridgeRuntime.shared"])
         XCTAssertEqual(
             factoryMatches,
-            ["App/AppCoreServices.swift:private static func coreBridge() -> CoreBridge"],
-            "The CoreBridge factory should stay private to AppCoreServices."
+            ["App/AppCoreServices.swift:private func coreBridge() -> CoreBridge"],
+            "The injected CoreBridge accessor should stay private to AppCoreServices."
         )
     }
 
@@ -214,7 +175,7 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
             "Production repository assembly must not silently fall back to the global live container."
         )
         XCTAssertTrue(routeContentSource.contains(
-            "assembly: .makeForProduction(opening: displayOpening, dependencies: dependencies)"
+            "assembly: .makeForProduction(session: session, opening: displayOpening, dependencies: dependencies)"
         ))
         XCTAssertTrue(contentViewSource.contains("assembly: MainRepositoryContentAssembly"))
         for dependency in [
@@ -248,7 +209,9 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         let windowSource = try String(contentsOf: windowFile, encoding: .utf8)
         let routeSource = try String(contentsOf: routeFile, encoding: .utf8)
 
-        XCTAssertTrue(appSource.contains("private let dependencies = AppDependencyContainer.live"))
+        XCTAssertTrue(appSource.contains("private let coreServices: AppCoreServices"))
+        XCTAssertTrue(appSource.contains("let coreServices = AppCoreServices()"))
+        XCTAssertTrue(appSource.contains("dependencies = AppDependencyContainer.live(coreServices: coreServices)"))
         XCTAssertTrue(
             appSource.contains("MainWindow(") &&
                 appSource.contains("dependencies: dependencies")
@@ -256,6 +219,15 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertTrue(windowSource.contains("OnboardingModel(dependencies: resolvedDependencies)"))
         XCTAssertTrue(windowSource.contains("dependencies: dependencies"))
         XCTAssertTrue(routeSource.contains("let dependencies: AppDependencyContainer"))
+
+        let containerFile = try XCTUnwrap(productionSwiftFiles().first {
+            relativeProductionPath(for: $0) == "App/AppDependencyContainer.swift"
+        })
+        let containerSource = try String(contentsOf: containerFile, encoding: .utf8)
+        XCTAssertTrue(containerSource.contains("static func live(coreServices: AppCoreServices)"))
+        XCTAssertFalse(containerSource.contains("coreServices: AppCoreServices ="))
+        XCTAssertTrue(containerSource.contains("feature: .live(coreServices: coreServices)"))
+        XCTAssertFalse(containerSource.contains("static let live"))
     }
 
     func testSettingsRoutePassesFeatureDependenciesExplicitly() throws {
@@ -340,7 +312,9 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertFalse(entrySource.contains("CoreBridgeBatchFileLoader()"))
         XCTAssertFalse(entrySource.contains("AppCoreServices."))
     }
+}
 
+extension AppCoreServicesGovernanceTests {
     func testMainRepositoryActionRoutesReceiveFeatureDependenciesFromAssembly() throws {
         let assemblyFile = try XCTUnwrap(productionSwiftFiles().first {
             relativeProductionPath(for: $0) == "App/MainRepositoryContentAssembly.swift"
@@ -365,7 +339,7 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
         XCTAssertTrue(contentViewSource.contains("syncConflictsDependencies = assembly.syncConflictsDependencies"))
         XCTAssertTrue(actionRoutingSource.contains("fileActionsDependencies.repositoryPathValidator"))
         XCTAssertTrue(actionRoutingSource.contains("fileActionsDependencies.classifierRuleSaver"))
-        XCTAssertTrue(syncRoutingSource.contains("syncConflictsDependencies.syncConflictDetector"))
+        XCTAssertTrue(syncRoutingSource.contains("dependencies.syncConflictDetector"))
     }
 
     func testMainRepositoryContentStateObjectsKeepViewOwnedIdentity() throws {
@@ -377,7 +351,9 @@ final class AppCoreServicesGovernanceTests: MacOSGovernanceTestCase {
             "_dropPreviewModel = StateObject(wrappedValue: assembly.makeDropPreviewModel())",
             "_detailNoteModel = StateObject(wrappedValue: assembly.makeDetailNoteModel())",
             "_summaryExitController = StateObject(wrappedValue: assembly.makeSummaryExitController())",
-            "_fileListModel = StateObject(wrappedValue: assembly.makeFileListModel())",
+            "let fileListModel = assembly.makeFileListModel()",
+            "_fileListModel = StateObject(wrappedValue: fileListModel)",
+            "_commandPaletteModel = StateObject(wrappedValue: assembly.makeCommandPaletteModel())",
             "_syncConflictEntryModel = StateObject(wrappedValue: assembly.makeSyncConflictEntryModel())"
         ]
 

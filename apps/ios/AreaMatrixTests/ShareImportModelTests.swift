@@ -46,7 +46,7 @@ final class ShareImportModelTests: XCTestCase {
         await model.prepare()
         model.filename = "Receipt 2026.pdf"
         model.updateCategory("finance")
-        await model.save()
+        try await waitForSave(model)
 
         let imports = await bridge.importRequestsSnapshot()
         let stagedItems = await queue.immediateStagedItemsSnapshot()
@@ -74,7 +74,7 @@ final class ShareImportModelTests: XCTestCase {
         let model = makeModel(itemURLs: [source], bridge: bridge, queue: queue)
 
         await model.prepare()
-        await model.save()
+        try await waitForSave(model)
 
         let queueRequests = await queue.requestsSnapshot()
         let stagedItems = await queue.immediateStagedItemsSnapshot()
@@ -105,7 +105,7 @@ final class ShareImportModelTests: XCTestCase {
 
         await model.prepare()
         XCTAssertEqual(model.objectSummary, "2 of 3 items can be imported")
-        await model.save()
+        try await waitForSave(model)
 
         let queueRequests = await queue.requestsSnapshot()
         XCTAssertEqual(queueRequests.count, 1)
@@ -185,6 +185,163 @@ final class ShareImportModelTests: XCTestCase {
         let stagedURL = root.appendingPathComponent(ticket.items[0].stagedRelativePath)
         XCTAssertEqual(try String(contentsOf: stagedURL), "queued bytes")
     }
+}
+
+@MainActor
+extension ShareImportModelTests {
+    func testStartSaveCoalescesRepeatedRequestsIntoOneCoreImport() async throws {
+        let source = try makeSharedFile(name: "Single.pdf")
+        defer { try? FileManager.default.removeItem(at: source) }
+        let gate = ShareImportOperationGate()
+        let bridge = FakeShareImportCoreBridge(
+            prediction: .fixture(category: "receipts"),
+            importGate: gate
+        )
+        let model = makeModel(itemURLs: [source], bridge: bridge)
+
+        await model.prepare()
+        let firstTask = try XCTUnwrap(model.startSave())
+        let repeatedTask = try XCTUnwrap(model.startSave())
+        await gate.waitUntilStarted()
+
+        let inFlightImports = await bridge.importRequestsSnapshot()
+        XCTAssertEqual(inFlightImports.count, 1)
+        XCTAssertEqual(model.phase, .saving)
+        XCTAssertFalse(model.canSave)
+
+        await gate.finish()
+        await firstTask.value
+        await repeatedTask.value
+
+        let completedImports = await bridge.importRequestsSnapshot()
+        XCTAssertEqual(completedImports.count, 1)
+        XCTAssertEqual(model.phase, .saved)
+        XCTAssertEqual(model.result, .imported(.fixture(name: "Single.pdf", category: "receipts")))
+    }
+
+    func testCancelDelayedSaveSuppressesSavedResultAndCleansImmediateStaging() async throws {
+        let root = try makeTemporaryDirectory()
+        let source = try makeSharedFile(name: "Cancelled.pdf")
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: source)
+        }
+        let gate = ShareImportOperationGate()
+        let bridge = FakeShareImportCoreBridge(importGate: gate)
+        let queue = SharedContainerImportQueue(rootURL: root)
+        let accessProbe = ShareImportAccessProbe()
+        let repositoryAccess = FakeExtensionRepositoryAccess(accessProbe: accessProbe)
+        let model = makeModel(
+            itemURLs: [source],
+            bridge: bridge,
+            repositoryAccess: repositoryAccess,
+            queue: queue
+        )
+        let lifecycle = ShareImportExtensionLifecycle()
+        lifecycle.attach(model: model)
+
+        await model.prepare()
+        let saveTask = try XCTUnwrap(model.startSave())
+        await gate.waitUntilStarted()
+        let payloadRoot = root.appendingPathComponent("payloads", isDirectory: true)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: payloadRoot.path).count, 1)
+
+        lifecycle.cancel()
+        let cancellationTask = Task { @MainActor in
+            await lifecycle.cancelAndWait()
+        }
+        await gate.finish()
+        await cancellationTask.value
+        await saveTask.value
+
+        let imports = await bridge.importRequestsSnapshot()
+        XCTAssertEqual(imports.count, 1)
+        XCTAssertTrue(imports[0].sourceURL.path.hasPrefix(payloadRoot.path + "/immediate-"))
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: payloadRoot.path), [])
+        XCTAssertEqual(model.phase, .ready)
+        XCTAssertNil(model.result)
+        XCTAssertNil(model.error)
+        XCTAssertTrue(model.canSave)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: source.path))
+        XCTAssertEqual(accessProbe.counts.starts, 1)
+        XCTAssertEqual(accessProbe.counts.stops, 1)
+    }
+
+    func testCancelAfterTicketCommitKeepsReferencedPayloadForMainApp() async throws {
+        let root = try makeTemporaryDirectory()
+        let first = try makeSharedFile(name: "First.pdf")
+        let second = try makeSharedFile(name: "Second.pdf")
+        defer {
+            try? FileManager.default.removeItem(at: root)
+            try? FileManager.default.removeItem(at: first)
+            try? FileManager.default.removeItem(at: second)
+        }
+        let gate = ShareImportOperationGate()
+        let queue = GatedSharedContainerImportQueue(rootURL: root, ticketReturnGate: gate)
+        let model = makeModel(itemURLs: [first, second], queue: queue)
+        let lifecycle = ShareImportExtensionLifecycle()
+        lifecycle.attach(model: model)
+
+        await model.prepare()
+        let saveTask = try XCTUnwrap(model.startSave())
+        await gate.waitUntilStarted()
+
+        let committedTickets = try await queue.pendingTickets(forRepoPath: "/tmp/Repo")
+        XCTAssertEqual(committedTickets.count, 1)
+        XCTAssertEqual(committedTickets[0].items.count, 2)
+
+        lifecycle.cancel()
+        let cancellationTask = Task { @MainActor in
+            await lifecycle.cancelAndWait()
+        }
+        await gate.finish()
+        await cancellationTask.value
+        await saveTask.value
+
+        let retainedTickets = try await queue.pendingTickets(forRepoPath: "/tmp/Repo")
+        XCTAssertEqual(retainedTickets, committedTickets)
+        for item in retainedTickets[0].items {
+            let stagedURL = root.appendingPathComponent(item.stagedRelativePath)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: stagedURL.path))
+        }
+        XCTAssertEqual(model.phase, .ready)
+        XCTAssertNil(model.result)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: first.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: second.path))
+    }
+
+    func testSharedContainerQueueRemovesUnreferencedPayloadAfterStagingFailure() async throws {
+        let root = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let missingSource = root.appendingPathComponent("missing.pdf")
+        let item = ShareImportItem(
+            sourceURL: missingSource,
+            sourceApp: "Files",
+            isReadable: true
+        )
+        let queue = SharedContainerImportQueue(rootURL: root)
+
+        do {
+            _ = try await queue.saveTicket(request: ShareImportQueueRequest(
+                repoPath: "/tmp/Repo",
+                category: "inbox",
+                items: [item],
+                needsConflictReview: false
+            ))
+            XCTFail("Expected ticket staging to fail for a missing source")
+        } catch {
+            XCTAssertNotNil(error as? ShareImportError)
+        }
+        try assertQueueDirectoriesContainNoPayloadOrTicket(at: root)
+
+        do {
+            _ = try await queue.stageItemForImmediateImport(item)
+            XCTFail("Expected immediate staging to fail for a missing source")
+        } catch {
+            XCTAssertNotNil(error as? ShareImportError)
+        }
+        try assertQueueDirectoriesContainNoPayloadOrTicket(at: root)
+    }
 
     func testQueueConsumerImportsDeferredTicketAndDeletesCompletedPayload() async throws {
         let stagedFile = try makeSharedFile(name: "Queued.pdf")
@@ -216,7 +373,7 @@ final class ShareImportModelTests: XCTestCase {
         XCTAssertEqual(completedTicketIDs, ["ticket-1"])
     }
 
-    func testQueueConsumerKeepsNeedsReviewTicketForMainAppConfirmation() async throws {
+    func testQueueConsumerKeepsNeedsReviewTicketForMainAppConfirmation() async {
         let ticket = ShareImportQueueTicket.fixture(
             id: "ticket-review",
             repoPath: "/tmp/Repo",
@@ -239,7 +396,7 @@ final class ShareImportModelTests: XCTestCase {
         XCTAssertTrue(completedTicketIDs.isEmpty)
     }
 
-    func testQueueConsumerKeepsMultiItemTicketForMainAppReview() async throws {
+    func testQueueConsumerKeepsMultiItemTicketForMainAppReview() async {
         let ticket = ShareImportQueueTicket(
             id: "ticket-multi",
             repoPath: "/tmp/Repo",
@@ -278,6 +435,28 @@ final class ShareImportModelTests: XCTestCase {
         )
     }
 
+    private func waitForSave(_ model: ShareImportModel) async throws {
+        let task = try XCTUnwrap(model.startSave())
+        await task.value
+    }
+
+    private func assertQueueDirectoriesContainNoPayloadOrTicket(
+        at root: URL,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws {
+        for directoryName in ["payloads", "tickets"] {
+            let directory = root.appendingPathComponent(directoryName, isDirectory: true)
+            guard FileManager.default.fileExists(atPath: directory.path) else { continue }
+            XCTAssertEqual(
+                try FileManager.default.contentsOfDirectory(atPath: directory.path),
+                [],
+                file: file,
+                line: line
+            )
+        }
+    }
+
     private func makeModel(
         items: [ShareImportItem],
         bridge: any ShareImportCoreBridge = FakeShareImportCoreBridge(),
@@ -304,199 +483,5 @@ final class ShareImportModelTests: XCTestCase {
             .appendingPathComponent("AreaMatrixShareImport-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return url
-    }
-}
-
-actor FakeShareImportCoreBridge: ShareImportCoreBridge {
-    typealias PredictionRequest = (repoPath: String, filename: String)
-
-    private let prediction: ShareImportCategoryPrediction
-    private var importErrors: [ShareImportError]
-    private var predictionRequests: [PredictionRequest] = []
-    private var importRequests: [ShareImportCoreRequest] = []
-
-    init(
-        prediction: ShareImportCategoryPrediction = .fixture(category: "inbox"),
-        importErrors: [ShareImportError] = []
-    ) {
-        self.prediction = prediction
-        self.importErrors = importErrors
-    }
-
-    func predictCategory(repoPath: String, filename: String) async throws -> ShareImportCategoryPrediction {
-        predictionRequests.append((repoPath, filename))
-        return prediction
-    }
-
-    func importSharedItem(request: ShareImportCoreRequest) async throws -> MobileLibraryFile {
-        importRequests.append(request)
-        if !importErrors.isEmpty {
-            throw importErrors.removeFirst()
-        }
-        return .fixture(name: request.filename, category: request.category)
-    }
-
-    func predictionRequestsSnapshot() -> [PredictionRequest] {
-        predictionRequests
-    }
-
-    func importRequestsSnapshot() -> [ShareImportCoreRequest] {
-        importRequests
-    }
-}
-
-actor FakeExtensionRepositoryAccess: ExtensionRepositoryAccessing {
-    private let resolution: ExtensionRepositoryResolution
-    private var accessedURLs: [URL] = []
-
-    init(resolution: ExtensionRepositoryResolution = .available(.fixture(), URL(fileURLWithPath: "/tmp/Repo"))) {
-        self.resolution = resolution
-    }
-
-    func defaultRepository() async -> ExtensionRepositoryResolution {
-        resolution
-    }
-
-    func beginAccessing(_ url: URL) async throws -> RepositoryScopedAccess {
-        accessedURLs.append(url)
-        return RepositoryScopedAccess(url: url) {}
-    }
-
-    func accessedURLsSnapshot() -> [URL] {
-        accessedURLs
-    }
-}
-
-actor FakeSharedContainerImportQueue: SharedContainerImportQueuing {
-    private var requests: [ShareImportQueueRequest] = []
-    private var immediateItems: [ShareImportImmediateStagedItem] = []
-    private var removedItems: [ShareImportImmediateStagedItem] = []
-
-    func saveTicket(request: ShareImportQueueRequest) async throws -> ShareImportQueueTicket {
-        requests.append(request)
-        return ShareImportQueueTicket(
-            id: "ticket-\(requests.count)",
-            repoPath: request.repoPath,
-            category: request.category,
-            items: request.items.map {
-                ShareImportQueuedItem(
-                    displayName: $0.displayName,
-                    stagedRelativePath: "payloads/ticket-\(requests.count)/\($0.safeFilename)",
-                    sourceApp: $0.sourceApp,
-                    sizeBytes: $0.sizeBytes
-                )
-            },
-            needsConflictReview: request.needsConflictReview,
-            createdAt: Date(timeIntervalSince1970: 1)
-        )
-    }
-
-    func stageItemForImmediateImport(_ item: ShareImportItem) async throws -> ShareImportImmediateStagedItem {
-        let stagedItem = ShareImportImmediateStagedItem(
-            fileURL: URL(fileURLWithPath: "/tmp/Immediate-\(immediateItems.count + 1)-\(item.safeFilename)")
-        )
-        immediateItems.append(stagedItem)
-        return stagedItem
-    }
-
-    func removeImmediateStagedItem(_ item: ShareImportImmediateStagedItem) async throws {
-        removedItems.append(item)
-    }
-
-    func requestsSnapshot() -> [ShareImportQueueRequest] {
-        requests
-    }
-
-    func immediateStagedItemsSnapshot() -> [ShareImportImmediateStagedItem] {
-        immediateItems
-    }
-
-    func removedImmediateItemsSnapshot() -> [ShareImportImmediateStagedItem] {
-        removedItems
-    }
-}
-
-actor FakeSharedContainerTicketQueue: SharedContainerImportTicketConsuming {
-    private let tickets: [ShareImportQueueTicket]
-    private let stagedFiles: [String: URL]
-    private var completedTicketIDs: [String] = []
-
-    init(tickets: [ShareImportQueueTicket], stagedFiles: [String: URL] = [:]) {
-        self.tickets = tickets
-        self.stagedFiles = stagedFiles
-    }
-
-    func pendingTickets(forRepoPath repoPath: String) async throws -> [ShareImportQueueTicket] {
-        tickets.filter { $0.repoPath == repoPath }
-    }
-
-    func stagedFileURL(for item: ShareImportQueuedItem) async throws -> URL {
-        guard let url = stagedFiles[item.stagedRelativePath] else {
-            throw ShareImportError.permissionDenied(item.stagedRelativePath)
-        }
-        return url
-    }
-
-    func markTicketCompleted(_ ticket: ShareImportQueueTicket) async throws {
-        completedTicketIDs.append(ticket.id)
-    }
-
-    func completedTicketIDsSnapshot() -> [String] {
-        completedTicketIDs
-    }
-}
-
-private extension ShareImportCategoryPrediction {
-    static func fixture(category: String) -> ShareImportCategoryPrediction {
-        ShareImportCategoryPrediction(category: category, suggestedName: "", confidence: 0.9)
-    }
-}
-
-private extension RecentRepository {
-    static func fixture() -> RecentRepository {
-        RecentRepository(
-            displayName: "Recent Repo",
-            pathDisplay: "/tmp/Repo",
-            lastOpenedAt: Date(timeIntervalSince1970: 1),
-            accessStatus: .available
-        )
-    }
-}
-
-private extension MobileLibraryFile {
-    static func fixture(name: String, category: String) -> MobileLibraryFile {
-        MobileLibraryFile(
-            id: 1, path: "\(category)/\(name)", originalName: name, currentName: name,
-            category: category, sizeBytes: 10, hashSha256: "hash-1",
-            storageMode: "Copied", origin: "Imported", sourcePath: nil, availability: .available,
-            importedAt: 1, updatedAt: 1
-        )
-    }
-}
-
-private extension ShareImportQueueTicket {
-    static func fixture(
-        id: String,
-        repoPath: String,
-        category: String,
-        item: ShareImportQueuedItem,
-        needsConflictReview: Bool
-    ) -> ShareImportQueueTicket {
-        ShareImportQueueTicket(
-            id: id,
-            repoPath: repoPath,
-            category: category,
-            items: [item],
-            needsConflictReview: needsConflictReview,
-            createdAt: Date(timeIntervalSince1970: 1)
-        )
-    }
-}
-
-private extension ShareImportQueuedItem {
-    static func fixture(displayName: String, stagedRelativePath: String) -> ShareImportQueuedItem {
-        ShareImportQueuedItem(
-            displayName: displayName, stagedRelativePath: stagedRelativePath, sourceApp: "Files", sizeBytes: 10
-        )
     }
 }

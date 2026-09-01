@@ -200,7 +200,7 @@ AI 能力、同步能力和修复能力；高风险功能仍按根 `AGENTS.md` �
 
 6. **选择验证**
    - Rust Core 行为或测试改动：运行 `cargo fmt --all -- --check`、
-     `cargo clippy --all-targets --all-features -- -D warnings`、`cargo test --workspace`。
+     `cargo clippy --locked --all-targets --all-features -- -D warnings`、`cargo test --locked --workspace`。
    - Core 文档或低风险元数据：至少运行 `cd core && cargo metadata --no-deps`，
      并运行 `git diff --check`。
    - API/UDL 改动：额外检查 `docs/api/core-api.md`、`core/area_matrix.udl`、Rust

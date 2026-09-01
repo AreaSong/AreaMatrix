@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureLibrary
 import XCTest
 
 final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
@@ -29,16 +30,22 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .searchResultsMapping(kind: .db))
         )
 
-        await model.runSearch(query: " 合同 ", scope: .current, sort: .relevance, sidebarRow: row, filters: filters)
-        await model.loadSearchFacets(query: "合同", scope: .current, sidebarRow: row, filters: filters)
+        await model.searchModel.runSearch(
+            query: " 合同 ",
+            scope: .current,
+            sort: .relevance,
+            sidebarRow: row,
+            filters: filters
+        )
+        await model.searchModel.loadSearchFacets(query: "合同", scope: .current, sidebarRow: row, filters: filters)
         await model.selectFiles([resultFile.id])
-        model.clearSearch()
+        model.searchModel.clearSearch()
 
         await searcher.assertRequestFilters([filters])
         await facetLoader.assertRequestFilters([filters])
         await detailer.assertFileDetailRequests([FileDetailRequest(repoPath: "/tmp/repo", fileID: resultFile.id)])
-        XCTAssertEqual(model.searchState, .idle)
-        XCTAssertEqual(model.searchFacetsState, .idle)
+        XCTAssertEqual(model.searchModel.searchState, .idle)
+        XCTAssertEqual(model.searchModel.searchFacetsState, .idle)
         XCTAssertEqual(model.selection, .none)
     }
 
@@ -65,43 +72,55 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .searchResultsMapping(kind: .db))
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "missing",
             scope: .current,
             sort: .newestImported,
             sidebarRow: row,
             filters: .empty
         )
-        XCTAssertEqual(model.searchPageDestination?.pageID, "search-empty")
+        XCTAssertEqual(model.searchModel.searchPageDestination?.pageID, "search-empty")
         XCTAssertEqual(model.files, [])
         await searcher.assertSearchRequestQueries(["missing"])
-        model.openSavedSearchSheet()
-        XCTAssertEqual(model.pendingSearchDestination?.pageID, "saved-search")
-        model.clearPendingSearchDestination()
+        model.searchModel.openSavedSearchSheet()
+        XCTAssertEqual(model.searchModel.pendingSearchDestination?.pageID, "saved-search")
+        model.searchModel.clearPendingSearchDestination()
 
-        await model.runSearch(query: "owner:me", scope: .current, sort: .relevance, sidebarRow: row, filters: .empty)
-        XCTAssertEqual(model.searchPageDestination?.pageID, "query-error")
-        XCTAssertFalse(model.canSaveCurrentSearch)
-        XCTAssertNil(model.searchState.errorMapping)
+        await model.searchModel.runSearch(
+            query: "owner:me",
+            scope: .current,
+            sort: .relevance,
+            sidebarRow: row,
+            filters: .empty
+        )
+        XCTAssertEqual(model.searchModel.searchPageDestination?.pageID, "query-error")
+        XCTAssertFalse(model.searchModel.canSaveCurrentSearch)
+        XCTAssertNil(model.searchModel.searchState.errorMapping)
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "",
             scope: .current,
             sort: .newestModified,
             sidebarRow: row,
             filters: .searchResultsContractFilters()
         )
-        XCTAssertTrue(model.canSaveCurrentSearch)
+        XCTAssertTrue(model.searchModel.canSaveCurrentSearch)
 
-        await model.runSearch(query: "合同", scope: .current, sort: .newestImported, sidebarRow: row, filters: .empty)
-        model.openIndexingStatus()
-        XCTAssertEqual(model.pendingSearchDestination?.pageID, "search-index-status-indexing-status")
+        await model.searchModel.runSearch(
+            query: "合同",
+            scope: .current,
+            sort: .newestImported,
+            sidebarRow: row,
+            filters: .empty
+        )
+        model.searchModel.openIndexingStatus()
+        XCTAssertEqual(model.searchModel.pendingSearchDestination?.pageID, "search-index-status-indexing-status")
 
-        model.enterSearch(context: .commandFind)
-        XCTAssertEqual(model.lastSearchExitContext, .toolbar)
-        model.openCommandPaletteForSearch()
-        XCTAssertEqual(model.pendingSearchDestination?.pageID, "command-palette")
-        XCTAssertEqual(model.lastSearchExitContext, .toolbar)
+        model.searchModel.enterSearch(context: .commandFind)
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, .toolbar)
+        model.searchModel.openCommandPaletteForSearch()
+        XCTAssertEqual(model.searchModel.pendingSearchDestination?.pageID, "command-palette")
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, .toolbar)
     }
 
     @MainActor
@@ -125,18 +144,18 @@ final class SearchResultsPageIntegrationVerifyTests: XCTestCase {
         )
         let smartListContext = MainSearchEntryContext.smartList(id: 42, name: "最近合同")
 
-        model.enterSearch(context: smartListContext)
-        await model.runSearch(
+        model.searchModel.enterSearch(context: smartListContext)
+        await model.searchModel.runSearch(
             query: "合同",
             scope: .current,
             sort: .relevance,
             sidebarRow: tree.sidebarRows[0],
             filters: .searchResultsContractFilters()
         )
-        model.clearSearch()
+        model.searchModel.clearSearch()
 
-        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: 42, name: "最近合同"))
-        XCTAssertEqual(model.searchState, .idle)
-        XCTAssertNil(model.pendingSearchDestination)
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, .smartList(id: 42, name: "最近合同"))
+        XCTAssertEqual(model.searchModel.searchState, .idle)
+        XCTAssertNil(model.searchModel.pendingSearchDestination)
     }
 }

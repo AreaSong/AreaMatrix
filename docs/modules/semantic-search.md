@@ -38,13 +38,13 @@ semantic_search/
 | 路由 | 说明 |
 |---|---|
 | `Local` | 本地 embedding 与 semantic index（当前主要实现路径） |
-| `Remote` | 远程 embedding；须通过 AI 设置、provider 配置、隐私规则与 call-log 门禁，并由 `AREAMATRIX_AI_SEMANTIC_REMOTE_RUNTIME` 外部 runtime 执行 |
+| `Remote` | 远程 embedding 合同；须通过 AI 设置、provider 配置、隐私规则与 call-log 门禁，并依赖获批外部 runtime；当前产品构建没有获批 runtime，因此 fail closed 到 fallback |
 
 `SemanticIndexStatus`：`Ready` / `NotReady` / `Building` / `Paused` / `Canceled` / `Failed` / `Partial`。
 
 `build_embedding_index` 需要 `SemanticIndexScope.confirmed = true`；只读用户文件生成 embedding metadata，不写用户文件内容。
 
-**Remote 接线**：当 provider preference 或 scope 请求 remote 时，implementation 在 privacy / call-log 门禁通过后调用外部 runtime；缺少 runtime、provider 或 runtime 失败时返回对应 fallback（含 `ProviderUnavailable`、`RateLimited`、`Timeout`），不静默发网。
+**Remote 接线**：当 provider preference 或 scope 请求 remote 时，implementation 在 privacy / call-log 门禁通过后解析 `AREAMATRIX_AI_SEMANTIC_REMOTE_RUNTIME`。当前该环境入口只对持有进程内 capability 的已知 Rust 测试二进制开放；普通 debug 和 release build 均拒绝环境提供的可执行程序。缺少获批 runtime、provider 或 runtime 失败时返回对应 fallback（含 `ProviderUnavailable`、`RateLimited`、`Timeout`），不静默发网。
 
 ## 查询与 Fallback
 

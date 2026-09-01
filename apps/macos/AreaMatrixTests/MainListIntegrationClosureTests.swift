@@ -1,5 +1,5 @@
-import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 import XCTest
 
 final class MainListIntegrationClosureTests: XCTestCase {
@@ -209,11 +209,11 @@ final class MainListIntegrationClosureTests: XCTestCase {
             diagnosticsCollector: collector
         )
 
-        model.requestCurrentListDiagnostics()
-        XCTAssertEqual(model.diagnosticsState, .confirmingPrivacy)
-        await model.collectCurrentListDiagnostics()
+        model.currentListDiagnostics.requestCollection()
+        XCTAssertEqual(model.currentListDiagnostics.state, .confirmingPrivacy)
+        await model.currentListDiagnostics.collect()
 
-        XCTAssertEqual(model.diagnosticsState, .collected(snapshot))
+        XCTAssertEqual(model.currentListDiagnostics.state, .collected(snapshot))
         await collector.assertRequestedRepoPaths(["/tmp/repo"])
     }
 

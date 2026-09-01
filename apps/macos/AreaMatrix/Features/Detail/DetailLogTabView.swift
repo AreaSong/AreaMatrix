@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import SwiftUI
 
 struct DetailLogTabView: View {
@@ -79,7 +80,12 @@ struct DetailLogTabView: View {
         } else {
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(entries) { entry in
-                    ChangeTimelineRow(entry: entry)
+                    ChangeTimelineRow(
+                        action: entry.actionDisplayName,
+                        occurredAt: entry.occurredAtDisplay,
+                        summary: entry.detailSummary,
+                        detail: entry.detailJSON
+                    )
                 }
             }
         }
@@ -158,28 +164,5 @@ struct DetailLogTabView: View {
         case .confirmingPrivacy, .collecting, .collected, .failed:
             EmptyView()
         }
-    }
-}
-
-extension MainFileListModel {
-    var loadingStatusText: String? {
-        guard isLoading else { return nil }
-        if searchState.isActive { return L10n.string("Searching...") }
-        return L10n.format("detail.log.loadingCategory", currentCategoryDisplayName)
-    }
-
-    var loadingAccessibilityText: String? {
-        guard let loadingStatusText else { return nil }
-        return L10n.format("detail.log.loadingFilesStatus", loadingStatusText)
-    }
-
-    func canApplyDetailLogDiagnosticsResult(fileID: Int64) -> Bool {
-        guard selection.singleFileID == fileID,
-              case let .failed(failedFileID, _) = detailLogState else { return false }
-        return failedFileID == fileID
-    }
-
-    func canApplyMultiSelectionDetailResult(generation: Int, ids: Set<Int64>) -> Bool {
-        generation == detailGeneration && selection.multipleFileIDs == ids
     }
 }

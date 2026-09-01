@@ -1,4 +1,5 @@
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
 import Foundation
 
 enum ImportProgressDuplicateStrategy: String, Equatable {
@@ -79,6 +80,17 @@ enum ImportProgressRecoveryCheckState: Equatable {
     case retryBlocked(String, RecoveryReportSnapshot?)
 }
 
+extension ImportProgressRecoveryCheckState {
+    var phase: ImportProgressRecoveryPhase {
+        switch self {
+        case .unavailable: .unavailable
+        case .checking: .checking
+        case .retryAllowed: .retryAllowed
+        case let .retryBlocked(reason, _): .retryBlocked(reason)
+        }
+    }
+}
+
 enum ImportProgressDiagnosticsState: Equatable {
     case idle
     case confirmingPrivacy
@@ -87,10 +99,32 @@ enum ImportProgressDiagnosticsState: Equatable {
     case failed(CoreErrorMappingSnapshot)
 }
 
+extension ImportProgressDiagnosticsState {
+    var phase: ImportProgressDiagnosticsPhase {
+        switch self {
+        case .idle: .idle
+        case .confirmingPrivacy: .confirmingPrivacy
+        case .collecting: .collecting
+        case .collected: .collected
+        case .failed: .failed
+        }
+    }
+}
+
 enum ImportProgressStopState: Equatable {
     case idle
     case stopping
     case stopped
+}
+
+extension ImportProgressStopState {
+    var phase: ImportProgressStopPhase {
+        switch self {
+        case .idle: .idle
+        case .stopping: .stopping
+        case .stopped: .stopped
+        }
+    }
 }
 
 typealias ImportBatchProgressHandler = (ImportBatchProgressSnapshot) -> Void

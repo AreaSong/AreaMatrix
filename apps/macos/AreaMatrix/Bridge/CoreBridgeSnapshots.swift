@@ -1,92 +1,51 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureAI
 import Foundation
 
-struct CommandIndexRequestSnapshot: Equatable {
-    var query: String?
-    var selectedFileIDs: [Int64]
-    var currentPath: String?
-    var includeFileCandidates: Bool
-}
-
-struct CoreCommandIndexSnapshot: Equatable {
-    var commands: [CoreCommandTargetSnapshot]
-    var navigationTargets: [CoreCommandTargetSnapshot]
-    var currentSelectionTargets: [CoreCommandTargetSnapshot]
-    var recentTargets: [CoreCommandTargetSnapshot]
-    var smartLists: [CoreCommandTargetSnapshot]
-    var fileCandidates: [CoreCommandTargetSnapshot]
-    var generatedAt: Int64
-}
-
-struct CoreCommandTargetSnapshot: Equatable {
-    var id: String
-    var title: String
-    var subtitle: String?
-    var group: CommandTargetGroupSnapshot
-    var kind: CommandTargetKindSnapshot
-    var action: CommandTargetActionSnapshot
-    var route: String?
-    var shortcut: String?
-    var disabled: Bool
-    var disabledReason: String?
-    var requiresConfirmation: Bool
-    var fileID: Int64?
-    var savedSearchID: Int64?
-}
-
-enum CommandTargetGroupSnapshot: String, Equatable {
-    case commands = "Commands"
-    case navigation = "Navigation"
-    case currentSelection = "Current Selection"
-    case recent = "Recent"
-    case smartLists = "Smart Lists"
-    case fileCandidates = "File Candidates"
-}
-
-enum CommandTargetKindSnapshot: String, Equatable {
-    case command = "Command"
-    case navigation = "Navigation"
-    case smartList = "Smart List"
-    case fileCandidate = "File Candidate"
-    case recentCommand = "Recent Command"
-}
-
-enum CommandTargetActionSnapshot: String, Equatable {
-    case navigate = "Navigate"
-    case openSheet = "Open Sheet"
-    case openConfirmation = "Open Confirmation"
-    case runSmartList = "Run Smart List"
-    case focusFile = "Focus File"
-    case openSearch = "Open Search"
-    case lowRiskAction = "Low Risk Action"
-}
+typealias CoreCommandIndexing = AreaMatrixCoreBridgeContract.CoreCommandIndexing
+typealias CommandIndexRequestSnapshot = AreaMatrixCoreBridgeContract.CommandIndexRequestSnapshot
+typealias CoreCommandIndexSnapshot = AreaMatrixCoreBridgeContract.CoreCommandIndexSnapshot
+typealias CoreCommandTargetSnapshot = AreaMatrixCoreBridgeContract.CoreCommandTargetSnapshot
+typealias CommandTargetGroupSnapshot = AreaMatrixCoreBridgeContract.CommandTargetGroupSnapshot
+typealias CommandTargetKindSnapshot = AreaMatrixCoreBridgeContract.CommandTargetKindSnapshot
+typealias CommandTargetActionSnapshot = AreaMatrixCoreBridgeContract.CommandTargetActionSnapshot
+typealias CoreCategoryPredicting = AreaMatrixCoreBridgeContract.CoreCategoryPredicting
+typealias ClassifyReasonSnapshot = AreaMatrixCoreBridgeContract.ClassifyReasonSnapshot
+typealias ClassifyResultSnapshot = AreaMatrixCoreBridgeContract.ClassifyResultSnapshot
 
 extension CoreCommandIndexSnapshot {
     init(coreIndex: CommandIndex) {
-        commands = coreIndex.commands.map(CoreCommandTargetSnapshot.init(coreTarget:))
-        navigationTargets = coreIndex.navigationTargets.map(CoreCommandTargetSnapshot.init(coreTarget:))
-        currentSelectionTargets = coreIndex.currentSelectionTargets.map(CoreCommandTargetSnapshot.init(coreTarget:))
-        recentTargets = coreIndex.recentTargets.map(CoreCommandTargetSnapshot.init(coreTarget:))
-        smartLists = coreIndex.smartLists.map(CoreCommandTargetSnapshot.init(coreTarget:))
-        fileCandidates = coreIndex.fileCandidates.map(CoreCommandTargetSnapshot.init(coreTarget:))
-        generatedAt = coreIndex.generatedAt
+        self.init(
+            commands: coreIndex.commands.map(CoreCommandTargetSnapshot.init(coreTarget:)),
+            navigationTargets: coreIndex.navigationTargets.map(CoreCommandTargetSnapshot.init(coreTarget:)),
+            currentSelectionTargets: coreIndex.currentSelectionTargets.map(
+                CoreCommandTargetSnapshot.init(coreTarget:)
+            ),
+            recentTargets: coreIndex.recentTargets.map(CoreCommandTargetSnapshot.init(coreTarget:)),
+            smartLists: coreIndex.smartLists.map(CoreCommandTargetSnapshot.init(coreTarget:)),
+            fileCandidates: coreIndex.fileCandidates.map(CoreCommandTargetSnapshot.init(coreTarget:)),
+            generatedAt: coreIndex.generatedAt
+        )
     }
 }
 
 private extension CoreCommandTargetSnapshot {
     init(coreTarget: CommandTarget) {
-        id = coreTarget.id
-        title = coreTarget.title
-        subtitle = coreTarget.subtitle
-        group = CommandTargetGroupSnapshot(coreGroup: coreTarget.group)
-        kind = CommandTargetKindSnapshot(coreKind: coreTarget.kind)
-        action = CommandTargetActionSnapshot(coreAction: coreTarget.action)
-        route = coreTarget.route
-        shortcut = coreTarget.shortcut
-        disabled = coreTarget.disabled
-        disabledReason = coreTarget.disabledReason
-        requiresConfirmation = coreTarget.requiresConfirmation
-        fileID = coreTarget.fileId
-        savedSearchID = coreTarget.savedSearchId
+        self.init(
+            id: coreTarget.id,
+            title: coreTarget.title,
+            subtitle: coreTarget.subtitle,
+            group: CommandTargetGroupSnapshot(coreGroup: coreTarget.group),
+            kind: CommandTargetKindSnapshot(coreKind: coreTarget.kind),
+            action: CommandTargetActionSnapshot(coreAction: coreTarget.action),
+            route: coreTarget.route,
+            shortcut: coreTarget.shortcut,
+            disabled: coreTarget.disabled,
+            disabledReason: coreTarget.disabledReason,
+            requiresConfirmation: coreTarget.requiresConfirmation,
+            fileID: coreTarget.fileId,
+            savedSearchID: coreTarget.savedSearchId
+        )
     }
 }
 
@@ -140,12 +99,7 @@ extension CommandIndexContext {
     }
 }
 
-enum ClassifyReasonSnapshot: String, Equatable {
-    case keyword = "Keyword"
-    case `extension` = "Extension"
-    case aiPredicted = "AiPredicted"
-    case `default` = "Default"
-
+extension ClassifyReasonSnapshot {
     var displayLabel: String {
         switch self {
         case .keyword:
@@ -160,12 +114,7 @@ enum ClassifyReasonSnapshot: String, Equatable {
     }
 }
 
-struct ClassifyResultSnapshot: Equatable {
-    var category: String
-    var suggestedName: String
-    var reason: ClassifyReasonSnapshot
-    var confidence: Float
-
+extension ClassifyResultSnapshot {
     var confidencePercent: Int {
         Int((confidence * 100).rounded())
     }
@@ -173,10 +122,12 @@ struct ClassifyResultSnapshot: Equatable {
 
 extension ClassifyResultSnapshot {
     init(coreResult: ClassifyResult) {
-        category = coreResult.category
-        suggestedName = coreResult.suggestedName
-        reason = ClassifyReasonSnapshot(coreReason: coreResult.reason)
-        confidence = coreResult.confidence
+        self.init(
+            category: coreResult.category,
+            suggestedName: coreResult.suggestedName,
+            reason: ClassifyReasonSnapshot(coreReason: coreResult.reason),
+            confidence: coreResult.confidence
+        )
     }
 }
 
@@ -195,37 +146,33 @@ private extension ClassifyReasonSnapshot {
     }
 }
 
-struct ReindexReportSnapshot: Equatable {
-    var scanSessionId: Int64?
-    var inserted: Int64
-    var updated: Int64
-    var skipped: Int64
-    var errors: [String]
-}
-
 extension ReindexReportSnapshot {
     init(coreReport: ReindexReport) {
-        scanSessionId = coreReport.scanSessionId
-        inserted = coreReport.inserted
-        updated = coreReport.updated
-        skipped = coreReport.skipped
-        errors = coreReport.errors
+        self.init(
+            scanSessionId: coreReport.scanSessionId,
+            inserted: coreReport.inserted,
+            updated: coreReport.updated,
+            skipped: coreReport.skipped,
+            errors: coreReport.errors
+        )
     }
 }
 
 extension ScanSessionSnapshot {
     init(coreSession: ScanSession) {
-        id = coreSession.id
-        kind = ScanSessionKindSnapshot(coreKind: coreSession.kind)
-        status = ScanSessionStatusSnapshot(coreStatus: coreSession.status)
-        lastPath = coreSession.lastPath
-        inserted = coreSession.inserted
-        updated = coreSession.updated
-        skipped = coreSession.skipped
-        startedAt = coreSession.startedAt
-        updatedAt = coreSession.updatedAt
-        finishedAt = coreSession.finishedAt
-        errors = coreSession.errors
+        self.init(
+            id: coreSession.id,
+            kind: ScanSessionKindSnapshot(coreKind: coreSession.kind),
+            status: ScanSessionStatusSnapshot(coreStatus: coreSession.status),
+            lastPath: coreSession.lastPath,
+            inserted: coreSession.inserted,
+            updated: coreSession.updated,
+            skipped: coreSession.skipped,
+            startedAt: coreSession.startedAt,
+            updatedAt: coreSession.updatedAt,
+            finishedAt: coreSession.finishedAt,
+            errors: coreSession.errors
+        )
     }
 }
 
@@ -261,20 +208,22 @@ extension RepoPathValidationSnapshot {
     init(coreValidation: RepoPathValidation) {
         let environment = RepositoryPathEnvironmentSnapshot.inspect(repoPath: coreValidation.repoPath)
 
-        repoPath = coreValidation.repoPath
-        exists = coreValidation.exists
-        isDirectory = coreValidation.isDirectory
-        isReadable = coreValidation.isReadable
-        isWritable = coreValidation.isWritable
-        isEmpty = coreValidation.isEmpty
-        isInitialized = coreValidation.isInitialized
-        isInsideAreaMatrix = coreValidation.isInsideAreaMatrix
-        isICloudPath = coreValidation.isIcloudPath
-        hasUnfinishedScanSession = coreValidation.hasUnfinishedScanSession
-        availableCapacityBytes = environment.availableCapacityBytes
-        isExternalVolume = environment.isExternalVolume
-        recommendedMode = coreValidation.recommendedMode.map(RepoInitModeSnapshot.init(coreMode:))
-        issues = coreValidation.issues.map(RepoPathIssueSnapshot.init(coreIssue:))
+        self.init(
+            repoPath: coreValidation.repoPath,
+            exists: coreValidation.exists,
+            isDirectory: coreValidation.isDirectory,
+            isReadable: coreValidation.isReadable,
+            isWritable: coreValidation.isWritable,
+            isEmpty: coreValidation.isEmpty,
+            isInitialized: coreValidation.isInitialized,
+            isInsideAreaMatrix: coreValidation.isInsideAreaMatrix,
+            isICloudPath: coreValidation.isIcloudPath,
+            hasUnfinishedScanSession: coreValidation.hasUnfinishedScanSession,
+            availableCapacityBytes: environment.availableCapacityBytes,
+            isExternalVolume: environment.isExternalVolume,
+            recommendedMode: coreValidation.recommendedMode.map(RepoInitModeSnapshot.init(coreMode:)),
+            issues: coreValidation.issues.map(RepoPathIssueSnapshot.init(coreIssue:))
+        )
     }
 }
 
@@ -340,51 +289,4 @@ private extension RepoPathIssueSnapshot {
             self = .unfinishedScanSession
         }
     }
-}
-
-protocol CoreLocalModelStatusReading: Sendable {
-    func getLocalModelStatus(
-        repoPath: String,
-        request: LocalModelStatusRequestState
-    ) async throws -> LocalModelStatusState
-    func locateLocalModelFolder(
-        repoPath: String,
-        request: LocalModelFolderRequestState
-    ) async throws -> LocalModelFolderLocationState
-}
-
-enum LocalModelAvailabilityState: String, Equatable {
-    case unknown, ready, notInstalled, pathUnreadable, versionIncompatible
-    case checking, verifying, loading, corrupted, runtimeFailed, error
-
-    var isBusy: Bool {
-        self == .checking || self == .verifying || self == .loading
-    }
-}
-
-enum LocalModelRecommendedActionState: String, Equatable {
-    case none, checkStatus, retryStatusCheck, openInstallHelp, openModelLocation
-    case runHealthCheck, repairMetadata, openDiagnostics, useNonAiFallback
-}
-
-struct LocalModelFeatureStatusState: Equatable, Identifiable {
-    var feature: AISettingsFeatureKind
-    var available: Bool
-    var unavailableReason: String?
-
-    var id: String {
-        feature.rawValue
-    }
-}
-
-struct LocalModelCachedStatusState: Equatable {
-    var modelID: String
-    var storageLocation: String
-    var availability: LocalModelAvailabilityState
-    var version: String?
-    var sizeBytes: Int64?
-    var lastError: String?
-    var recommendedAction: LocalModelRecommendedActionState
-    var lastCheckedAt: Int64?
-    var diagnosticsSummary: String
 }

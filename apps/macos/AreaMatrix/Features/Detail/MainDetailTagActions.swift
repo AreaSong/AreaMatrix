@@ -1,13 +1,13 @@
 import Foundation
 
-extension MainFileListModel {
+extension DetailTagModel {
     func loadSelectedFileTags() async {
-        guard let fileID = selection.singleFileID else { return }
+        guard let fileID = currentSelectedFileID else { return }
         await loadTags(fileID: fileID)
     }
 
     func retrySelectedFileTags() async {
-        guard let fileID = selection.singleFileID else { return }
+        guard let fileID = currentSelectedFileID else { return }
         await loadTags(fileID: fileID)
     }
 
@@ -26,14 +26,14 @@ extension MainFileListModel {
     }
 
     func undoLastDetailTagChange() async {
-        guard let toast = detailTagUndoToast else { return }
-        guard selection.singleFileID == toast.fileID else {
-            detailTagUndoToast = nil
+        guard let toast = undoToast else { return }
+        guard currentSelectedFileID == toast.fileID else {
+            undoToast = nil
             return
         }
-        guard canPerformWriteAction(fileID: toast.fileID) else { return }
+        guard writableActionFileID(toast.fileID) != nil else { return }
 
-        detailTagUndoToast = nil
+        undoToast = nil
         await mutateTags(fileID: toast.fileID, operation: toast.undoOperation, shouldOfferUndo: false) {
             switch toast.action {
             case .removeAddedTag:
@@ -45,25 +45,25 @@ extension MainFileListModel {
     }
 
     func dismissDetailTagUndoToast() {
-        detailTagUndoToast = nil
+        undoToast = nil
     }
 
     func clearStaleDetailTagUndoToast() {
-        guard detailTagUndoToast?.fileID != selection.singleFileID else { return }
-        detailTagUndoToast = nil
+        guard undoToast?.fileID != currentSelectedFileID else { return }
+        undoToast = nil
     }
 
     private func loadTags(fileID: Int64) async {
-        let previous = detailTagEditorState.tagSet
-        detailTagEditorState = .loading(fileID: fileID, previous: previous)
+        let previous = editorState.tagSet
+        editorState = .loading(fileID: fileID, previous: previous)
         do {
             let tagSet = try await tagStore.listTags(repoPath: repoPath, fileID: fileID)
-            guard selection.singleFileID == fileID else { return }
-            detailTagEditorState = .loaded(fileID: fileID, tagSet)
+            guard currentSelectedFileID == fileID else { return }
+            editorState = .loaded(fileID: fileID, tagSet)
         } catch {
             let mapping = await mapCoreError(error)
-            guard selection.singleFileID == fileID else { return }
-            detailTagEditorState = .failed(fileID: fileID, operation: .load, mapping, previous: previous)
+            guard currentSelectedFileID == fileID else { return }
+            editorState = .failed(fileID: fileID, operation: .load, mapping, previous: previous)
         }
     }
 
@@ -73,23 +73,23 @@ extension MainFileListModel {
         shouldOfferUndo: Bool = true,
         action: () async throws -> TagSetSnapshot
     ) async {
-        let previous = detailTagEditorState.tagSet
-        detailTagEditorState = .loading(fileID: fileID, previous: previous)
+        let previous = editorState.tagSet
+        editorState = .loading(fileID: fileID, previous: previous)
         do {
             let tagSet = try await action()
-            guard selection.singleFileID == fileID else { return }
-            detailTagEditorState = .loaded(fileID: fileID, tagSet)
-            detailTagUndoToast = shouldOfferUndo ? DetailTagUndoToast.make(
+            guard currentSelectedFileID == fileID else { return }
+            editorState = .loaded(fileID: fileID, tagSet)
+            undoToast = shouldOfferUndo ? DetailTagUndoToast.make(
                 operation: operation,
                 fileID: fileID,
                 previous: previous,
                 current: tagSet
             ) : nil
-            await loadChangeLog(fileID: fileID)
+            await refreshChangeLog(fileID: fileID)
         } catch {
             let mapping = await mapCoreError(error)
-            guard selection.singleFileID == fileID else { return }
-            detailTagEditorState = .failed(fileID: fileID, operation: operation, mapping, previous: previous)
+            guard currentSelectedFileID == fileID else { return }
+            editorState = .failed(fileID: fileID, operation: operation, mapping, previous: previous)
         }
     }
 

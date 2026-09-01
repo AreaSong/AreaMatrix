@@ -172,8 +172,8 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        await LoadCapabilitiesAsync(cancellationToken).ConfigureAwait(false);
-        await InspectContractAsync(cancellationToken).ConfigureAwait(false);
+        await LoadCapabilitiesAsync(cancellationToken);
+        await InspectContractAsync(cancellationToken);
     }
 
     public async Task LoadCapabilitiesAsync(CancellationToken cancellationToken = default)
@@ -182,8 +182,11 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
         try
         {
             Capabilities = await coreBridge
-                .GetPlatformCapabilitiesAsync(HostPlatform, AppVersion, cancellationToken)
-                .ConfigureAwait(false);
+                .GetPlatformCapabilitiesAsync(HostPlatform, AppVersion, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception error)
         {
@@ -208,9 +211,13 @@ public sealed class PlatformDifferencesViewModel : INotifyPropertyChanged
         try
         {
             Report = await coreBridge
-                .InspectBindingContractAsync(SelectedTargetPlatform, BindingVersion, cancellationToken)
-                .ConfigureAwait(false);
+                .InspectBindingContractAsync(SelectedTargetPlatform, BindingVersion, cancellationToken);
             Status = PlatformDifferencesContractStatus.Loaded;
+        }
+        catch (OperationCanceledException)
+        {
+            Status = PlatformDifferencesContractStatus.Idle;
+            throw;
         }
         catch (Exception error)
         {

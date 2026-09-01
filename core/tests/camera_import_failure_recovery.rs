@@ -234,7 +234,7 @@ fn camera_import_failure_recovery_permission_denied_maps_and_leaves_no_half_prod
 }
 
 #[test]
-fn camera_import_failure_recovery_io_error_from_staging_root_keeps_temp_file() {
+fn camera_import_failure_recovery_staging_path_conflict_keeps_temp_file() {
     let repo = initialized_repo();
     let (_camera_temp, source) = captured_photo("capture.jpg", b"io failure bytes");
     let staging_root = repo.path().join(".areamatrix/staging");
@@ -247,7 +247,7 @@ fn camera_import_failure_recovery_io_error_from_staging_root_keeps_temp_file() {
         camera_options(),
     );
 
-    assert!(matches!(result, Err(CoreError::Io { .. })));
+    assert!(matches!(result, Err(CoreError::Conflict { .. })));
     assert_eq!(
         fs::read(&source).expect("camera temp source survives staging IO failure"),
         b"io failure bytes"

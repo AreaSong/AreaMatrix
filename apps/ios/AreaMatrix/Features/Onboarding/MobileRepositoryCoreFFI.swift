@@ -269,7 +269,8 @@ struct MobileRepositoryCoreFFIClient {
 
     private static func mapError(_ error: Error) -> MobileRepositoryConnectionError {
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return (error as? MobileRepositoryConnectionError) ?? .unavailable(error.localizedDescription)
+            return (error as? MobileRepositoryConnectionError)
+                ?? .unavailable("Repository connection is unavailable. Try again or choose another folder.")
         }
         switch coreError {
         case let .InvalidPath(path):
@@ -283,7 +284,9 @@ struct MobileRepositoryCoreFFIClient {
         case let .Validation(reason), let .Config(reason):
             return MobileRepositoryConnectionError.invalidRepository(reason)
         default:
-            return MobileRepositoryConnectionError.unavailable(String(describing: coreError))
+            return MobileRepositoryConnectionError.unavailable(
+                "Repository connection is unavailable. Try again or choose another folder."
+            )
         }
     }
 }

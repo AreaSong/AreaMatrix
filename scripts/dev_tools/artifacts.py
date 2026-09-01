@@ -12,6 +12,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator, TextIO
 
+from .metrics import CARGO_LOCK_METRICS_FILE, record_metric
+
 
 CARGO_ARTIFACT_LANES = ("xcode", "validation", "sdk", "release")
 DEFAULT_CARGO_LANE = "sdk"
@@ -101,10 +103,28 @@ def cargo_lane_lock(
         try:
             yield lease
         finally:
+            hold_seconds = time.monotonic() - started_at - wait_seconds
             metadata["state"] = "released"
             metadata["released_at"] = _utc_now()
-            _write_lock_metadata(handle, metadata)
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            try:
+                try:
+                    _write_lock_metadata(handle, metadata)
+                finally:
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            finally:
+                record_metric(
+                    root,
+                    CARGO_LOCK_METRICS_FILE,
+                    {
+                        "kind": "cargo_lock",
+                        "lane": lane,
+                        "operation": operation,
+                        "status": "success",
+                        "wait_seconds": round(wait_seconds, 6),
+                        "hold_seconds": round(hold_seconds, 6),
+                        "duration_seconds": round(wait_seconds + hold_seconds, 6),
+                    },
+                )
     finally:
         handle.close()
 

@@ -131,7 +131,7 @@ UI 必须明确显示 degraded 状态，禁止把 embedded/default 规则伪装�
 
 ```bash
 cd core
-cargo test --workspace classify
+cargo test --locked --workspace classify
 ```
 
 完整 Core 改动仍需 fmt、clippy 和 workspace tests。

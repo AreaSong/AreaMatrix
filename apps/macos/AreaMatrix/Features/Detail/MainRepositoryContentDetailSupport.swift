@@ -1,3 +1,4 @@
+import AreaMatrixFeatureOperation
 import SwiftUI
 
 extension MainRepositoryContentView {
@@ -6,7 +7,7 @@ extension MainRepositoryContentView {
             selection: fileListModel.selection,
             multiSelectionSummary: MultiSelectionDetailSummary(
                 selection: fileListModel.selection,
-                files: visibleFiles,
+                files: mainListPresentation.visibleFiles,
                 isUpdating: fileListModel.isLoading || fileListModel.isDetailLoading
             ),
             detailErrorMapping: fileListModel.detailErrorMapping,
@@ -17,11 +18,11 @@ extension MainRepositoryContentView {
             detailLogState: fileListModel.detailLogState,
             detailLogDiagnosticsState: fileListModel.detailLogDiagnosticsState,
             detailExternalCreateSyncState: fileListModel.detailExternalCreateSyncState,
-            detailTagEditorState: fileListModel.detailTagEditorState,
-            detailTagSuggestionState: fileListModel.detailTagSuggestionState,
+            detailTagEditorState: detailTagModel.editorState,
+            detailTagSuggestionState: detailTagModel.suggestionState,
             missingFileRelinkState: fileListModel.missingFileRelinkState,
-            tagSuggestionPresentationRequest: fileListModel.tagSuggestionPresentationRequest,
-            detailTagUndoToast: fileListModel.detailTagUndoToast,
+            tagSuggestionPresentationRequest: detailTagModel.presentationRequest,
+            detailTagUndoToast: detailTagModel.undoToast,
             detailTabRequest: fileListModel.detailTabRequest,
             selectedImportProgressRow: selectedImportProgressRow,
             semanticDetail: semanticDetailPresentationForSelectedFile,
@@ -77,21 +78,21 @@ extension MainRepositoryContentView {
 
     func beginSyncConflictReview(file: FileEntrySnapshot) {
         if let conflict = syncConflictEntryModel.detailConflict(for: file) {
-            syncConflictReviewRoutingState.route = syncConflictEntryModel.reviewRoute(for: conflict)
+            syncConflictCoordinator.reviewRoutingState.route = syncConflictEntryModel.reviewRoute(for: conflict)
             return
         }
-        syncConflictReviewRoutingState.route = .fileDetail(repoPath: opening.config.repoPath, file: file)
+        syncConflictCoordinator.reviewRoutingState.route = .fileDetail(repoPath: opening.config.repoPath, file: file)
     }
 
     func handleSyncConflictResolved(_: SyncConflictResolveReportSnapshot) async {
-        syncConflictReviewRoutingState.route = nil
+        syncConflictCoordinator.reviewRoutingState.route = nil
         await syncConflictEntryModel.refresh()
         await fileListModel.retryCurrentCategory()
     }
 
     // swiftlint:disable:next identifier_name
     private var semanticDetailPresentationForSelectedFile: SemanticSearchDetailPresentation? {
-        guard let fileID = selectedFileIDs.first, selectedFileIDs.count == 1 else { return nil }
-        return fileListModel.searchState.page?.semanticPage?.detailPresentation(for: fileID)
+        guard let fileID = selectionModel.fileIDs.first, selectionModel.fileIDs.count == 1 else { return nil }
+        return searchModel.searchState.page?.semanticPage?.detailPresentation(for: fileID)
     }
 }

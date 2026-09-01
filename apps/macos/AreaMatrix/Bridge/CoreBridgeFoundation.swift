@@ -1,16 +1,22 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
-protocol CoreConfigurationLoading: Sendable {
-    func loadConfig(repoPath: String) async throws -> AppRepoConfigSnapshot
-}
-
-protocol CoreConfigurationUpdating: Sendable {
-    func updateConfig(
-        repoPath: String,
-        from currentConfig: AppRepoConfigSnapshot,
-        to updatedConfig: AppRepoConfigSnapshot
-    ) async throws -> AppRepoConfigSnapshot
-}
+typealias CoreConfigurationLoading = AreaMatrixCoreBridgeContract.CoreConfigurationLoading
+typealias CoreConfigurationUpdating = AreaMatrixCoreBridgeContract.CoreConfigurationUpdating
+typealias CoreRepositoryPathValidating = AreaMatrixCoreBridgeContract.CoreRepositoryPathValidating
+typealias CoreInitializedRepositoryPathValidating =
+    AreaMatrixCoreBridgeContract.CoreInitializedRepositoryPathValidating
+typealias CoreRepositoryInitializing = AreaMatrixCoreBridgeContract.CoreRepositoryInitializing
+typealias CoreScanSessionReading = AreaMatrixCoreBridgeContract.CoreScanSessionReading
+typealias RepoInitModeSnapshot = AreaMatrixCoreBridgeContract.RepoInitModeSnapshot
+typealias ScanSessionKindSnapshot = AreaMatrixCoreBridgeContract.ScanSessionKindSnapshot
+typealias ScanSessionStatusSnapshot = AreaMatrixCoreBridgeContract.ScanSessionStatusSnapshot
+typealias RepoPathIssueSnapshot = AreaMatrixCoreBridgeContract.RepoPathIssueSnapshot
+typealias RepoPathValidationSnapshot = AreaMatrixCoreBridgeContract.RepoPathValidationSnapshot
+typealias RepositoryInitializationDraft = AreaMatrixCoreBridgeContract.RepositoryInitializationDraft
+typealias ScanSessionSnapshot = AreaMatrixCoreBridgeContract.ScanSessionSnapshot
+typealias ReindexReportSnapshot = AreaMatrixCoreBridgeContract.ReindexReportSnapshot
+typealias AppRepoConfigSnapshot = AreaMatrixCoreBridgeContract.AppRepoConfigSnapshot
 
 struct CoreRevisionConflictSnapshot: Equatable {
     var resource: String
@@ -38,35 +44,6 @@ struct CoreConflictSnapshot: Equatable {
     }
 }
 
-protocol CoreRepositoryPathValidating: Sendable {
-    func validateRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
-}
-
-protocol CoreInitializedRepositoryPathValidating: Sendable {
-    func validateInitializedRepoPath(repoPath: String) async throws -> RepoPathValidationSnapshot
-}
-
-protocol CoreRepositoryInitializing: Sendable {
-    func initializeEmptyRepository(repoPath: String) async throws
-    func adoptExistingRepository(repoPath: String) async throws
-}
-
-protocol CoreScanSessionReading: Sendable {
-    func latestScanSession(repoPath: String) async throws -> ScanSessionSnapshot?
-    func resumeScanSession(repoPath: String, scanSessionId: Int64) async throws -> ReindexReportSnapshot
-}
-
-protocol CoreCategoryPredicting: Sendable {
-    func predictCategory(repoPath: String, filename: String) async throws -> ClassifyResultSnapshot
-}
-
-protocol CoreCommandIndexing: Sendable {
-    func listCommandTargets(
-        repoPath: String,
-        context: CommandIndexRequestSnapshot
-    ) async throws -> CoreCommandIndexSnapshot
-}
-
 extension ContentLocale {
     init(snapshotValue: String) throws {
         switch snapshotValue {
@@ -90,23 +67,7 @@ extension CoreScanSessionReading {
     }
 }
 
-enum RepoInitModeSnapshot: String, Equatable {
-    case createEmpty = "CreateEmpty"
-    case adoptExisting = "AdoptExisting"
-}
-
-enum ScanSessionKindSnapshot: String, Equatable {
-    case adopt = "Adopt"
-    case reindex = "Reindex"
-}
-
-enum ScanSessionStatusSnapshot: String, Equatable {
-    case running = "Running"
-    case completed = "Completed"
-    case paused = "Paused"
-    case failed = "Failed"
-    case interrupted = "Interrupted"
-
+extension ScanSessionStatusSnapshot {
     var displayName: String {
         switch self {
         case .running: L10n.string("Running")
@@ -118,97 +79,21 @@ enum ScanSessionStatusSnapshot: String, Equatable {
     }
 }
 
-enum RepoPathIssueSnapshot: String, Equatable {
-    case missingPath = "MissingPath"
-    case notDirectory = "NotDirectory"
-    case notReadable = "NotReadable"
-    case notWritable = "NotWritable"
-    case nonEmptyDirectory = "NonEmptyDirectory"
-    case alreadyInitialized = "AlreadyInitialized"
-    case insideAreaMatrix = "InsideAreaMatrix"
-    case iCloudPath = "ICloudPath"
-    case oneDrivePath = "OneDrivePath"
-    case windowsReservedName = "WindowsReservedName"
-    case windowsCaseInsensitive = "WindowsCaseInsensitive"
-    case unfinishedScanSession = "UnfinishedScanSession"
-}
-
-struct RepoPathValidationSnapshot: Equatable {
-    var repoPath: String
-    var exists: Bool
-    var isDirectory: Bool
-    var isReadable: Bool
-    var isWritable: Bool
-    var isEmpty: Bool
-    var isInitialized: Bool
-    var isInsideAreaMatrix: Bool
-    var isICloudPath: Bool
-    var hasUnfinishedScanSession: Bool
-    var availableCapacityBytes: Int64?
-    var isExternalVolume: Bool?
-    var recommendedMode: RepoInitModeSnapshot?
-    var issues: [RepoPathIssueSnapshot]
-}
-
-extension RepoPathValidationSnapshot {
-    static let minimumUsableCapacityBytes: Int64 = 512 * 1024 * 1024
-
-    var hasInsufficientAvailableCapacity: Bool {
-        availableCapacityBytes.map { $0 < Self.minimumUsableCapacityBytes } ?? false
-    }
-
-    var hasMissingEnvironmentChecks: Bool {
-        availableCapacityBytes == nil || isExternalVolume == nil
-    }
-}
-
-struct RepositoryInitializationDraft: Equatable {
-    var validation: RepoPathValidationSnapshot
-    var mode: RepoInitModeSnapshot
-    var scanSession: ScanSessionSnapshot?
-}
-
-struct ScanSessionSnapshot: Equatable {
-    var id: Int64
-    var kind: ScanSessionKindSnapshot
-    var status: ScanSessionStatusSnapshot
-    var lastPath: String?
-    var inserted: Int64
-    var updated: Int64
-    var skipped: Int64
-    var startedAt: Int64
-    var updatedAt: Int64
-    var finishedAt: Int64?
-    var errors: [String]
-}
-
-struct AppRepoConfigSnapshot: Equatable {
-    var repoPath: String
-    var revision: Int64
-    var defaultMode: String
-    var overviewOutput: String
-    var aiEnabled: Bool
-    var locale: String
-    var iCloudWarn: Bool
-    var enableExtensionRules: Bool
-    var enableKeywordRules: Bool
-    var fallbackToInbox: Bool
-    var allowReplaceDuringImport: Bool
-}
-
 extension AppRepoConfigSnapshot {
     init(coreConfig: RepoConfigSnapshot) {
-        repoPath = coreConfig.repoPath
-        revision = coreConfig.revision
-        defaultMode = coreConfig.defaultMode.displayName
-        overviewOutput = coreConfig.overviewOutput.displayName
-        aiEnabled = coreConfig.aiEnabled
-        locale = coreConfig.localePolicy.rawValue
-        iCloudWarn = coreConfig.icloudWarn
-        enableExtensionRules = coreConfig.enableExtensionRules
-        enableKeywordRules = coreConfig.enableKeywordRules
-        fallbackToInbox = coreConfig.fallbackToInbox
-        allowReplaceDuringImport = coreConfig.allowReplaceDuringImport
+        self.init(
+            repoPath: coreConfig.repoPath,
+            revision: coreConfig.revision,
+            defaultMode: coreConfig.defaultMode.displayName,
+            overviewOutput: coreConfig.overviewOutput.displayName,
+            aiEnabled: coreConfig.aiEnabled,
+            locale: coreConfig.localePolicy.rawValue,
+            iCloudWarn: coreConfig.icloudWarn,
+            enableExtensionRules: coreConfig.enableExtensionRules,
+            enableKeywordRules: coreConfig.enableKeywordRules,
+            fallbackToInbox: coreConfig.fallbackToInbox,
+            allowReplaceDuringImport: coreConfig.allowReplaceDuringImport
+        )
     }
 }
 

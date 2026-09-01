@@ -1,4 +1,21 @@
+import AreaMatrixFeatureIngestion
+import AreaMatrixFeatureOperation
 import SwiftUI
+
+extension ImportBatchNamingStrategy {
+    var title: String {
+        switch self {
+        case .suggestedName:
+            L10n.string("使用建议命名")
+        case .originalName:
+            L10n.string("保留原名")
+        case .normalizedCharacters:
+            L10n.string("仅标准化字符")
+        case .uniformPrefix:
+            L10n.string("统一前缀")
+        }
+    }
+}
 
 struct ImportBatchNamingOptionsSection: View {
     @Binding var selectedStrategy: ImportBatchNamingStrategy

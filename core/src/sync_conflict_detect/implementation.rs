@@ -247,7 +247,7 @@ fn same_name_conflict_for_path(
     }
 
     Ok(Some(ConflictDraft {
-        conflict_id: format!("sync-conflict:same-name:{}", primary_path),
+        conflict_id: format!("sync-conflict:same-name:{primary_path}"),
         conflict_type: SyncConflictType::SameNameDifferentContent,
         severity: SyncConflictSeverity::High,
         primary_path,

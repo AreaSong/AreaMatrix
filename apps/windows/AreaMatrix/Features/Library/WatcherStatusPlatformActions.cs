@@ -26,8 +26,7 @@ public sealed partial class WatcherStatusViewModel
         try
         {
             LastDiagnosticsExportPath = await diagnostics
-                .ExportDiagnosticsAsync(RepoPath, Snapshot, cancellationToken)
-                .ConfigureAwait(false);
+                .ExportDiagnosticsAsync(RepoPath, Snapshot, cancellationToken);
             OnPropertyChanged(nameof(LastDiagnosticsExportPath));
             return true;
         }
@@ -49,8 +48,7 @@ public sealed partial class WatcherStatusViewModel
         try
         {
             await diagnostics
-                .OpenRepositoryFolderAsync(RepoPath, cancellationToken)
-                .ConfigureAwait(false);
+                .OpenRepositoryFolderAsync(RepoPath, cancellationToken);
             return true;
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

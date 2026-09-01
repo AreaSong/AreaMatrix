@@ -12,6 +12,9 @@ pub(super) struct ConflictCandidate {
 
 pub(super) struct ConflictBinding {
     pub(super) conflict_id: String,
+    pub(super) repository_path: PathBuf,
+    /// Stable identity of the initialized repository root and its ancestor chain.
+    pub(super) repository_identity: String,
     pub(super) original_relative_path: Option<String>,
     pub(super) conflicted_relative_path: String,
     pub(super) original_path: Option<PathBuf>,
@@ -23,8 +26,13 @@ pub(super) struct VersionState {
     pub(super) relative_path: String,
     pub(super) absolute_path: PathBuf,
     pub(super) modified_at: i64,
+    pub(super) modified_at_nanos: u128,
     pub(super) size_bytes: i64,
     pub(super) hash_sha256: String,
+    /// Device/inode (or the platform-neutral fallback) for the opened file.
+    pub(super) file_identity: String,
+    /// Identity chain for every directory between the repository root and file.
+    pub(super) ancestor_identity: String,
 }
 
 impl ConflictCandidate {

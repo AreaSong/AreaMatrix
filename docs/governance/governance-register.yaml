@@ -976,6 +976,9 @@ repo_domains:
       - CONTRIBUTING.md
       - CODE_REVIEW.md
       - SECURITY.md
+      - THIRD_PARTY_NOTICES.md
+      - rust-toolchain.toml
+      - licenses/
       - .gitignore
       - .gitleaks.toml
   - domain: tooling-cli
@@ -1128,6 +1131,7 @@ repo_domains:
       - target-membership-or-build-settings-changed
     paths:
       - apps/macos/AreaMatrix.xcodeproj/
+      - apps/macos/XcodeGen/
       - apps/macos/AreaMatrix-Functional.xctestplan
       - apps/macos/AreaMatrix-Unit.xctestplan
       - apps/macos/AreaMatrix-Feature.xctestplan
@@ -1306,6 +1310,12 @@ core_modules:
       - docs/api/core-api.md
     test_families:
       - batch_delete_trash
+  - module: batch_journal
+    owner: "@AreaSong"
+    authority_docs:
+      - docs/architecture/transactional-import.md
+    test_families:
+      - batch_journal_recovery
   - module: batch_rename
     owner: "@AreaSong"
     authority_docs:

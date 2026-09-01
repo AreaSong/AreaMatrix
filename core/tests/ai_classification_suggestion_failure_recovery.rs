@@ -1,5 +1,7 @@
 #[path = "support/ai_classification_suggestion_common.rs"]
 mod ai_common;
+#[path = "support/ai_persisted_privacy.rs"]
+mod persisted_privacy;
 
 use std::{fs, path::Path};
 
@@ -11,6 +13,7 @@ use area_matrix_core::{
     ErrorMappingInput, ErrorRecoverability, ErrorSeverity, FileFilter, ImportDestination,
     ImportOptions, OverviewOutput, RepoInitMode, RepoInitOptions, StorageMode,
 };
+use persisted_privacy::install_blocking_rule;
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection, OptionalExtension};
 
@@ -374,9 +377,13 @@ fn ai_classification_suggestion_failure_privacy_secret_is_rejected_before_log_wr
     assert_sanitized(&error, ErrorKind::Config);
     assert_eq!(ai_call_log_count(repo.path()), 0);
 
-    let mut blocked_request = request(file_id);
-    blocked_request.privacy_policy_ref = Some("private-folder".to_owned());
-    let skipped = suggest_category_with_ai(path_string(repo.path()), blocked_request)
+    install_blocking_rule(
+        repo.path(),
+        "rule:private-folder",
+        area_matrix_core::AiPrivacyRuleKind::Category,
+        "inbox",
+    );
+    let skipped = suggest_category_with_ai(path_string(repo.path()), request(file_id))
         .expect("privacy skip is structured");
     assert!(skipped.call_log_id.is_some());
     assert_eq!(ai_call_log_secret_rows(repo.path()), 0);

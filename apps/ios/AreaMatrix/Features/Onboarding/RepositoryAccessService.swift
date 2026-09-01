@@ -28,9 +28,11 @@ struct RecentRepository: Identifiable, Equatable, Sendable {
     var accessStatus: AccessStatus
 }
 
-struct RepositoryScopedAccess: Sendable {
+final class RepositoryScopedAccess: @unchecked Sendable {
     let url: URL
+    private let lock = NSLock()
     private let stopHandler: @Sendable () -> Void
+    private var isStopped = false
 
     init(url: URL, stopHandler: @escaping @Sendable () -> Void) {
         self.url = url
@@ -38,7 +40,18 @@ struct RepositoryScopedAccess: Sendable {
     }
 
     func stop() {
-        stopHandler()
+        let shouldStop = lock.withLock {
+            guard !isStopped else { return false }
+            isStopped = true
+            return true
+        }
+        if shouldStop {
+            stopHandler()
+        }
+    }
+
+    deinit {
+        stop()
     }
 }
 

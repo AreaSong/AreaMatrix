@@ -1,3 +1,4 @@
+import AreaMatrixFeatureAI
 import SwiftUI
 
 struct LocalModelStatusBanner: View {

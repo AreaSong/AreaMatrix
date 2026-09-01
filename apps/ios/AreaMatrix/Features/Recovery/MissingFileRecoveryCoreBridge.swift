@@ -176,7 +176,7 @@ enum MissingFileRecoveryError: Error, Equatable, Sendable {
                 return .unavailable(message)
             }
         }
-        return .unavailable(error.localizedDescription)
+        return .unavailable("Missing file recovery is unavailable.")
     }
 }
 

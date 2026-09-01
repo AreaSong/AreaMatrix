@@ -2,7 +2,6 @@ import XCTest
 
 final class GeneratedCoreBoundaryGovernanceTests: MacOSGovernanceTestCase {
     private let functionCollisionInventory = [
-        "Features/CommandPalette/CommandPaletteState.swift:mapCoreError:1",
         "Features/CommandPalette/CommandPaletteState.swift:runSmartList:1",
         "Features/Detail/MainDetailAITagSuggestionActions.swift:mapCoreError:2",
         "Features/Detail/MainDetailTagActions.swift:mapCoreError:2",
@@ -15,7 +14,6 @@ final class GeneratedCoreBoundaryGovernanceTests: MacOSGovernanceTestCase {
         "Features/Import/ImportSingleFilePreviewModel.swift:importFile:1",
         "Features/MainList/MainFileListBatchAITagActions.swift:mapCoreError:2",
         "Features/MainList/MainFileListDetailActions.swift:mapCoreError:2",
-        "Features/MainList/MainFileListDiagnosticsActions.swift:mapCoreError:1",
         "Features/MainList/MainFileListExternalSyncActions.swift:mapCoreError:5",
         "Features/MainList/MainFileListExternalSyncActions.swift:syncExternalChanges:1",
         "Features/MainList/MainFileListLoadingActions.swift:mapCoreError:2",
@@ -27,8 +25,8 @@ final class GeneratedCoreBoundaryGovernanceTests: MacOSGovernanceTestCase {
     ]
 
     private let nonPresentationStringRouteInventory = [
-        "Features/AI/AIClassificationSuggestionApplyState.swift:378: var route: String",
-        "Features/CommandPalette/CommandPaletteState.swift:64: var route: String"
+        "Features/AI/AIClassificationSuggestionApplyState.swift:368: var route: String",
+        "Features/CommandPalette/CommandPaletteState.swift:120: var route: String"
     ]
 
     func testGeneratedCoreCallsStayInsideBridge() throws {

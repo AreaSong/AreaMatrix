@@ -23,6 +23,7 @@ from scripts.dev_tools.promotion import (
 )
 from scripts.dev_tools.workflow_projection import validate_closeout, validate_projection
 from scripts.dev_tools.workflow_states import ARTIFACT_STATUSES
+from scripts.task_loop.runner import RuntimeConfig, TaskFile, TaskLoopError, TaskLoopRunner
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -155,6 +156,77 @@ class WorkflowHardeningTest(unittest.TestCase):
         self.assertIn("workflow/versions/v2/execution/_shared/progress.json", by_path)
         self.assertIn('"tasks": {}', by_path["workflow/versions/v2/execution/_shared/progress.json"])
         self.assertNotIn("4-3/task-165", by_path["workflow/versions/v2/execution/_shared/progress.json"])
+
+    def test_promotion_keeps_copy_and_verify_prompts_distinct_and_risk_parseable(self) -> None:
+        config = PromotionConfig("workflow/versions/v2/execution", "phase-0", "0-1", "v2-planning", 1)
+        change = self.root / "workflow/versions/v-template/changes/template-contracts.yaml"
+        data = parse_yaml_subset(change.read_text(encoding="utf-8"), change)
+        record = FeatureRecord(change, data["id"], data["features"][0])
+        task = build_promotion_tasks(self.root, "v2", config, [record], "None")[0]
+
+        self.assertNotEqual(task.task_content, task.verify_content)
+        self.assertIn("### Risk Level\n- Low", task.task_content)
+        self.assertIn("### Risk Level\n- Low", task.verify_content)
+        self.assertIn("禁止修改文件", task.verify_content)
+        self.assertIn("VERIFY_RESULT:", task.verify_content)
+        self.assertNotIn("完成 `", task.verify_content)
+
+        runner = TaskLoopRunner(RuntimeConfig(root_dir=self.root))
+        with tempfile.TemporaryDirectory() as tmp:
+            copy_file = Path(tmp) / "copy.md"
+            verify_file = Path(tmp) / "verify.md"
+            copy_file.write_text(task.task_content, encoding="utf-8")
+            verify_file.write_text(task.verify_content, encoding="utf-8")
+            self.assertEqual(runner.task_risk(copy_file), "Low")
+            self.assertEqual(runner.task_risk(verify_file), "Low")
+
+    def test_runner_accepts_matching_inline_and_manifest_risk_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = Path(tmp) / "copy.md"
+            prompt.write_text(
+                "- 风险等级：`Medium`\n\n## Manifest\n\n### Risk Level\n- Medium\n",
+                encoding="utf-8",
+            )
+
+            runner = TaskLoopRunner(RuntimeConfig(root_dir=Path(tmp)))
+            self.assertEqual(runner.task_risk(prompt), "Medium")
+
+    def test_runner_rejects_conflicting_risk_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            prompt = Path(tmp) / "copy.md"
+            prompt.write_text(
+                "- 风险等级：`Low`\n\n## Manifest\n\n### Risk Level\n- High\n",
+                encoding="utf-8",
+            )
+
+            runner = TaskLoopRunner(RuntimeConfig(root_dir=Path(tmp)))
+            with self.assertRaisesRegex(TaskLoopError, "must agree"):
+                runner.task_risk(prompt)
+
+    def test_runner_rejects_verify_prompt_that_is_an_implementation_prompt(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            copy_file = root / "copy.md"
+            verify_file = root / "verify.md"
+            copy_file.write_text("- 风险等级：`High`\n- 是否允许修改文件：是\n", encoding="utf-8")
+            verify_file.write_text(copy_file.read_text(encoding="utf-8"), encoding="utf-8")
+            task = TaskFile("phase-0", "0-1-task-01", "0-1/task-01", copy_file, verify_file, "High")
+
+            with self.assertRaises(TaskLoopError):
+                TaskLoopRunner(RuntimeConfig(root_dir=root)).validate_prompt_pair(task)
+
+    def test_runner_rejects_identical_read_only_prompt_pair(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            copy_file = root / "copy.md"
+            verify_file = root / "verify.md"
+            prompt = "禁止修改文件\nVERIFY_RESULT: PASS\n"
+            copy_file.write_text(prompt, encoding="utf-8")
+            verify_file.write_text(prompt, encoding="utf-8")
+            task = TaskFile("phase-0", "0-1-task-01", "0-1/task-01", copy_file, verify_file, "Low")
+
+            with self.assertRaisesRegex(TaskLoopError, "content is identical"):
+                TaskLoopRunner(RuntimeConfig(root_dir=root)).validate_prompt_pair(task)
 
 
 if __name__ == "__main__":

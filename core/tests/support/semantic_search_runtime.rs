@@ -2,9 +2,14 @@
 
 use std::{
     fs,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::{Mutex, MutexGuard},
 };
+
+#[path = "external_runtime_harness.rs"]
+mod external_runtime_harness;
+
+use external_runtime_harness::{install_runtime_script, InstalledRuntime};
 
 static REMOTE_RUNTIME_LOCK: Mutex<()> = Mutex::new(());
 
@@ -12,6 +17,7 @@ pub const REMOTE_RUNTIME_ENV: &str = "AREAMATRIX_AI_SEMANTIC_REMOTE_RUNTIME";
 
 pub struct SemanticAiRuntime {
     _lock: MutexGuard<'static, ()>,
+    _runtime: InstalledRuntime,
     output: tempfile::TempDir,
     payload_path: PathBuf,
 }
@@ -53,14 +59,15 @@ impl SemanticAiRuntime {
             payload_path.display(),
             response.replace('\'', "'\\''")
         );
-        fs::write(&script_path, &script).expect("write semantic runtime script");
-        make_executable(&script_path);
-        std::env::set_var(
+        let runtime = install_runtime_script(
             REMOTE_RUNTIME_ENV,
-            script_path.to_string_lossy().into_owned(),
+            "ai-semantic-remote",
+            &script_path,
+            &script,
         );
         Self {
             _lock: guard,
+            _runtime: runtime,
             output,
             payload_path,
         }
@@ -78,14 +85,15 @@ impl SemanticAiRuntime {
             payload_path.display(),
             response.replace('\'', "'\\''")
         );
-        fs::write(&script_path, &script).expect("write failing semantic runtime script");
-        make_executable(&script_path);
-        std::env::set_var(
+        let runtime = install_runtime_script(
             REMOTE_RUNTIME_ENV,
-            script_path.to_string_lossy().into_owned(),
+            "ai-semantic-remote",
+            &script_path,
+            &script,
         );
         Self {
             _lock: guard,
+            _runtime: runtime,
             output,
             payload_path,
         }
@@ -102,14 +110,15 @@ impl SemanticAiRuntime {
             "#!/bin/sh\ncat > \"{}\"\nsleep 35\n",
             payload_path.display()
         );
-        fs::write(&script_path, &script).expect("write timeout semantic runtime script");
-        make_executable(&script_path);
-        std::env::set_var(
+        let runtime = install_runtime_script(
             REMOTE_RUNTIME_ENV,
-            script_path.to_string_lossy().into_owned(),
+            "ai-semantic-remote",
+            &script_path,
+            &script,
         );
         Self {
             _lock: guard,
+            _runtime: runtime,
             output,
             payload_path,
         }
@@ -129,6 +138,7 @@ impl Drop for SemanticAiRuntime {
 
 pub struct RemoteRuntimeProbe {
     _guard: MutexGuard<'static, ()>,
+    _runtime: InstalledRuntime,
     output: tempfile::TempDir,
     marker_path: PathBuf,
 }
@@ -145,14 +155,15 @@ impl RemoteRuntimeProbe {
             "#!/bin/sh\nprintf invoked > \"{}\"\nexit 33\n",
             marker_path.display()
         );
-        fs::write(&script_path, &script).expect("write semantic remote runtime probe script");
-        make_executable(&script_path);
-        std::env::set_var(
+        let runtime = install_runtime_script(
             REMOTE_RUNTIME_ENV,
-            script_path.to_string_lossy().into_owned(),
+            "ai-semantic-remote",
+            &script_path,
+            &script,
         );
         Self {
             _guard: guard,
+            _runtime: runtime,
             output,
             marker_path,
         }
@@ -167,17 +178,5 @@ impl Drop for RemoteRuntimeProbe {
     fn drop(&mut self) {
         std::env::remove_var(REMOTE_RUNTIME_ENV);
         let _ = self.output.path();
-    }
-}
-
-fn make_executable(path: &Path) {
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let mut permissions = fs::metadata(path)
-            .expect("read semantic runtime metadata")
-            .permissions();
-        permissions.set_mode(0o700);
-        fs::set_permissions(path, permissions).expect("mark semantic runtime executable");
     }
 }

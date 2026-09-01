@@ -146,7 +146,7 @@ public sealed class MissingFileRecoveryViewModel : INotifyPropertyChanged
         repoPath = repositoryPath;
         fileId = missingFileId;
         RemoveRecordConfirmed = false;
-        await RefreshAsync(cancellationToken).ConfigureAwait(false);
+        await RefreshAsync(cancellationToken);
     }
 
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
@@ -156,8 +156,7 @@ public sealed class MissingFileRecoveryViewModel : INotifyPropertyChanged
         try
         {
             State = await coreBridge
-                .GetMissingFileStateAsync(repoPath, fileId, cancellationToken)
-                .ConfigureAwait(false);
+                .GetMissingFileStateAsync(repoPath, fileId, cancellationToken);
         }
         catch (System.Exception exception) when (exception is not OperationCanceledException)
         {
@@ -180,8 +179,7 @@ public sealed class MissingFileRecoveryViewModel : INotifyPropertyChanged
             () => coreBridge.RelinkMissingFileAsync(
                 repoPath,
                 new MissingFileRelinkRequest(fileId, SelectedRelinkPath.Trim(), true),
-                cancellationToken))
-            .ConfigureAwait(false);
+                cancellationToken));
     }
 
     public async Task RemoveRecordAsync(CancellationToken cancellationToken = default)
@@ -195,8 +193,7 @@ public sealed class MissingFileRecoveryViewModel : INotifyPropertyChanged
             () => coreBridge.RemoveMissingFileRecordAsync(
                 repoPath,
                 new MissingFileRemoveRecordRequest(fileId, true),
-                cancellationToken))
-            .ConfigureAwait(false);
+                cancellationToken));
     }
 
     private async Task RunActionAsync(System.Func<Task<MissingFileRecoveryReport>> action)
@@ -205,7 +202,7 @@ public sealed class MissingFileRecoveryViewModel : INotifyPropertyChanged
         Error = null;
         try
         {
-            Report = await action().ConfigureAwait(false);
+            Report = await action();
             if (Report.Status == MissingFileRecoveryStatus.HashMismatch)
             {
                 Error = new MissingFileRecoveryError(

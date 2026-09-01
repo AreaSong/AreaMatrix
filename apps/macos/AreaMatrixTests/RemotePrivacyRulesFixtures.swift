@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureAI
 
 extension AIPrivacyEvaluationReportSnapshot {
     static func remoteProviderConfigAllowedPrivacyEvaluation() -> AIPrivacyEvaluationReportSnapshot {

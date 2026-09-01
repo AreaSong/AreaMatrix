@@ -37,7 +37,7 @@ internal delegate void InitRepoDelegate(RustBuffer repoPath, RustBuffer options,
 internal delegate RustBuffer LoadConfigDelegate(RustBuffer repoPath, ref RustCallStatus status);
 
 [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-internal delegate void UpdateConfigDelegate(
+internal delegate RustBuffer UpdateConfigDelegate(
     RustBuffer repoPath,
     RustBuffer newConfig,
     ref RustCallStatus status);

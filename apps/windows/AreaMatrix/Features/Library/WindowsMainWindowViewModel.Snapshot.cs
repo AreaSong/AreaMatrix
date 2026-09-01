@@ -11,9 +11,14 @@ public sealed partial class WindowsMainWindowViewModel
     private async Task LoadSnapshotAsync(
         bool isInitialLoad,
         CancellationToken cancellationToken,
-        long? selectedFileId = null)
+        long? selectedFileId = null,
+        long? generation = null,
+        string? repositoryPath = null,
+        string? category = null)
     {
-        if (string.IsNullOrWhiteSpace(RepoPath))
+        string loadPath = repositoryPath ?? RepoPath;
+        string? loadCategory = category ?? SelectedCategory;
+        if (string.IsNullOrWhiteSpace(loadPath))
         {
             return;
         }
@@ -23,15 +28,25 @@ public sealed partial class WindowsMainWindowViewModel
         try
         {
             IReadOnlyList<DesktopCategoryNode> categories = await coreBridge
-                .ListCategoriesAsync(RepoPath, locale, cancellationToken);
+                .ListCategoriesAsync(loadPath, locale, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             IReadOnlyList<DesktopFileEntry> files = await coreBridge.ListFilesAsync(
-                RepoPath,
-                DesktopFileFilter.FirstPage(SelectedCategory),
+                loadPath,
+                DesktopFileFilter.FirstPage(loadCategory),
                 cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             (bool hasSelectionOverride, DesktopFileEntry? selected) = await SelectedFileForSnapshotAsync(
                 files,
                 selectedFileId,
+                loadPath,
                 cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (generation is { } loadGeneration
+                && !IsCurrentRepositoryLoad(loadGeneration))
+            {
+                return;
+            }
+
             ApplySnapshot(
                 files,
                 categories,
@@ -43,11 +58,19 @@ public sealed partial class WindowsMainWindowViewModel
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            Error = ErrorFromException(exception);
+            if (generation is not { } loadGeneration
+                || IsCurrentRepositoryLoad(loadGeneration))
+            {
+                Error = ErrorFromException(exception);
+            }
         }
         finally
         {
-            SetBusy(isInitialLoad, false);
+            if (generation is not { } loadGeneration
+                || IsCurrentRepositoryLoad(loadGeneration))
+            {
+                SetBusy(isInitialLoad, false);
+            }
         }
     }
 
@@ -79,6 +102,7 @@ public sealed partial class WindowsMainWindowViewModel
     private async Task<(bool HasSelectionOverride, DesktopFileEntry? SelectedFile)> SelectedFileForSnapshotAsync(
         IReadOnlyList<DesktopFileEntry> files,
         long? selectedFileId,
+        string repositoryPath,
         CancellationToken cancellationToken)
     {
         if (selectedFileId is not > 0)
@@ -89,9 +113,9 @@ public sealed partial class WindowsMainWindowViewModel
         DesktopFileEntry? listedFile = files.FirstOrDefault(file => file.Id == selectedFileId.Value);
         if (listedFile is not null)
         {
-            return (true, await coreBridge.GetFileAsync(RepoPath, listedFile.Id, cancellationToken));
+            return (true, await coreBridge.GetFileAsync(repositoryPath, listedFile.Id, cancellationToken));
         }
 
-        return (true, await coreBridge.GetFileAsync(RepoPath, selectedFileId.Value, cancellationToken));
+        return (true, await coreBridge.GetFileAsync(repositoryPath, selectedFileId.Value, cancellationToken));
     }
 }

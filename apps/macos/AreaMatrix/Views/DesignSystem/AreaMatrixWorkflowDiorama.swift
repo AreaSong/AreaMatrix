@@ -9,10 +9,14 @@ struct AreaMatrixWorkflowDiorama: View {
     @State private var dashPhase: CGFloat = 0
     @State private var eventRows: [AreaMatrixWorkflowEventRow] = []
     @State private var eventTask: Task<Void, Never>?
+    @State private var animationStartTask: Task<Void, Never>?
+    @State private var animationGeneration = 0
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.areaMatrixSceneParallax) private var parallax
     @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     private let eventActions = [
         "CREATE /docs/draft.md",
@@ -30,7 +34,7 @@ struct AreaMatrixWorkflowDiorama: View {
             databaseTarget.offset(x: 180)
         }
         .frame(width: 600, height: 220)
-        .offset(x: parallax.horizontal * -20, y: parallax.vertical * -20)
+        .offset(x: effectiveParallax.horizontal * -20, y: effectiveParallax.vertical * -20)
         .onChange(of: sceneVisibility, initial: true) { _, newPhase in
             if newPhase.isVisible {
                 restartAnimations()
@@ -38,16 +42,29 @@ struct AreaMatrixWorkflowDiorama: View {
                 stopAnimations()
             }
         }
+        .onChange(of: reduceMotion) { _, _ in
+            if sceneVisibility.isVisible {
+                restartAnimations()
+            } else {
+                stopAnimations()
+            }
+        }
+        .onDisappear(perform: stopAnimations)
     }
 
     private func restartAnimations() {
+        stopAnimations()
         isAnimating = false
         pulseIn = false
         pulseOut = false
         dashPhase = 0
-        eventRows = []
-        startEventStream()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        eventRows = initialEventRows
+        guard !reduceMotion, sceneVisibility.isVisible else { return }
+        let generation = animationGeneration
+        startEventStream(generation: generation)
+        animationStartTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            guard !Task.isCancelled, isCurrent(generation) else { return }
             isAnimating = true
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false)) { pulseIn = true }
             withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.4)) {
@@ -58,23 +75,29 @@ struct AreaMatrixWorkflowDiorama: View {
     }
 
     private func stopAnimations() {
+        animationGeneration += 1
+        animationStartTask?.cancel()
         eventTask?.cancel()
-        isAnimating = false
-        pulseIn = false
-        pulseOut = false
+        animationStartTask = nil
+        eventTask = nil
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            isAnimating = false
+            pulseIn = false
+            pulseOut = false
+            dashPhase = 0
+        }
     }
 
-    private func startEventStream() {
+    private func startEventStream(generation: Int) {
         eventTask?.cancel()
-        eventRows = eventActions.prefix(2).map {
-            AreaMatrixWorkflowEventRow(time: currentEventTime(), action: $0)
-        }
-
+        eventRows = initialEventRows
         eventTask = Task { @MainActor in
             var nextIndex = 2
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(850))
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, isCurrent(generation) else { return }
                 appendEvent(action: eventActions[nextIndex % eventActions.count])
                 nextIndex += 1
             }
@@ -89,6 +112,20 @@ struct AreaMatrixWorkflowDiorama: View {
                 eventRows.removeFirst()
             }
         }
+    }
+
+    private var initialEventRows: [AreaMatrixWorkflowEventRow] {
+        eventActions.prefix(2).map {
+            AreaMatrixWorkflowEventRow(time: currentEventTime(), action: $0)
+        }
+    }
+
+    private func isCurrent(_ generation: Int) -> Bool {
+        accessibilityPolicy.allowsDelayedAnimationCommit(
+            generation: generation,
+            currentGeneration: animationGeneration,
+            isVisible: sceneVisibility.isVisible
+        )
     }
 
     private var eventsColumn: some View {
@@ -174,7 +211,12 @@ struct AreaMatrixWorkflowDiorama: View {
                 offsetY: pulseIn ? 0 : 15,
                 visible: !pulseIn
             )
-            .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.75), value: pulseIn)
+            .animation(
+                reduceMotion || !pulseIn
+                    ? nil
+                    : .easeInOut(duration: 1.5).repeatForever(autoreverses: false).delay(0.75),
+                value: pulseIn
+            )
             pulse(
                 color: AreaMatrixTheme.Colors.emeraldLight,
                 offsetX: pulseOut ? 135 : 50,
@@ -200,14 +242,24 @@ struct AreaMatrixWorkflowDiorama: View {
                 .foregroundColor(AreaMatrixTheme.Colors.purple.opacity(0.25))
                 .frame(width: 105, height: 105)
                 .rotationEffect(.degrees(isAnimating ? -360 : 0))
-                .animation(.linear(duration: 18).repeatForever(autoreverses: false), value: isAnimating)
+                .animation(
+                    reduceMotion || !isAnimating
+                        ? nil
+                        : .linear(duration: 18).repeatForever(autoreverses: false),
+                    value: isAnimating
+                )
 
             AreaMatrixHexagonShape()
                 .fill(AreaMatrixTheme.Colors.purple.opacity(0.1))
                 .overlay(AreaMatrixHexagonShape().stroke(AreaMatrixTheme.Colors.purple.opacity(0.5), lineWidth: 2))
                 .frame(width: 80, height: 80)
                 .rotationEffect(.degrees(isAnimating ? 360 : 0))
-                .animation(.linear(duration: 12).repeatForever(autoreverses: false), value: isAnimating)
+                .animation(
+                    reduceMotion || !isAnimating
+                        ? nil
+                        : .linear(duration: 12).repeatForever(autoreverses: false),
+                    value: isAnimating
+                )
 
             Image(systemName: "cpu")
                 .font(.system(size: 34))
@@ -216,7 +268,12 @@ struct AreaMatrixWorkflowDiorama: View {
         .frame(width: 110, height: 110)
         .shadow(color: AreaMatrixTheme.Colors.purple.opacity(isAnimating ? 0.6 : 0.3), radius: isAnimating ? 30 : 15)
         .scaleEffect(isAnimating ? 1.05 : 1.0)
-        .animation(.easeInOut(duration: 0.75).repeatForever(autoreverses: true), value: isAnimating)
+        .animation(
+            reduceMotion || !isAnimating
+                ? nil
+                : .easeInOut(duration: 0.75).repeatForever(autoreverses: true),
+            value: isAnimating
+        )
     }
 
     private var databaseTarget: some View {
@@ -233,7 +290,12 @@ struct AreaMatrixWorkflowDiorama: View {
         .cornerRadius(8)
         .overlay(databaseBorder)
         .shadow(color: databaseAccent.opacity(isAnimating ? 0.4 : 0), radius: isAnimating ? 20 : 0)
-        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.4), value: isAnimating)
+        .animation(
+            reduceMotion || !isAnimating
+                ? nil
+                : .easeInOut(duration: 1.5).repeatForever(autoreverses: true).delay(0.4),
+            value: isAnimating
+        )
     }
 
     private var databaseBorder: some View {
@@ -244,6 +306,17 @@ struct AreaMatrixWorkflowDiorama: View {
 
     private var databaseAccent: Color {
         colorScheme == .dark ? AreaMatrixTheme.Colors.emeraldLight : AreaMatrixTheme.Colors.emeraldDeep
+    }
+
+    private var effectiveParallax: AreaMatrixParallax {
+        accessibilityPolicy.allowsParallax ? parallax : .zero
+    }
+
+    private var accessibilityPolicy: AreaMatrixAccessibilityMotionPolicy {
+        AreaMatrixAccessibilityMotionPolicy(
+            reduceMotion: reduceMotion,
+            reduceTransparency: reduceTransparency
+        )
     }
 
     private func currentEventTime() -> String {

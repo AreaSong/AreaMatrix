@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureSettings
 import XCTest
 
 final class RepositorySettingsPageFeatureTests: XCTestCase {

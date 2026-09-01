@@ -1,4 +1,17 @@
+import AreaMatrixFeatureOperation
 import Foundation
+
+struct BatchRenameReportSnapshot: Equatable {
+    var requestedFileCount: Int64
+    var renamedCount: Int64
+    var displayNameUpdatedCount: Int64
+    var unchangedCount: Int64
+    var skippedCount: Int64
+    var failedCount: Int64
+    var itemResults: [BatchRenameItemResultSnapshot]
+    var updatedFiles: [FileEntrySnapshot]
+    var undoToken: String?
+}
 
 protocol CoreFileRenaming: Sendable {
     func renameFile(repoPath: String, fileID: Int64, newName: String) async throws -> FileEntrySnapshot
@@ -82,17 +95,111 @@ private func renameCoreFile(
 
 extension BatchRenamePreviewReportSnapshot {
     init(coreReport: BatchRenamePreviewReport) {
-        requestedFileCount = coreReport.requestedFileCount
-        rule = BatchRenameRuleSnapshot(coreRule: coreReport.rule)
-        previewToken = coreReport.previewToken
-        willRenameCount = coreReport.willRenameCount
-        displayOnlyCount = coreReport.displayOnlyCount
-        unchangedCount = coreReport.unchangedCount
-        blockedCount = coreReport.blockedCount
-        conflictCount = coreReport.conflictCount
-        items = coreReport.items.map(BatchRenamePreviewItemSnapshot.init)
-        canApply = coreReport.canApply
-        applyBlockedReason = coreReport.applyBlockedReason
+        self.init(
+            requestedFileCount: coreReport.requestedFileCount,
+            rule: BatchRenameRuleSnapshot(coreRule: coreReport.rule),
+            previewToken: coreReport.previewToken,
+            willRenameCount: coreReport.willRenameCount,
+            displayOnlyCount: coreReport.displayOnlyCount,
+            unchangedCount: coreReport.unchangedCount,
+            blockedCount: coreReport.blockedCount,
+            conflictCount: coreReport.conflictCount,
+            items: coreReport.items.map(BatchRenamePreviewItemSnapshot.init),
+            canApply: coreReport.canApply,
+            applyBlockedReason: coreReport.applyBlockedReason
+        )
+    }
+}
+
+private extension BatchRenameRuleSnapshot {
+    init(coreRule: BatchRenameRule) {
+        self.init(
+            mode: BatchRenameModeSnapshot(coreRule.mode),
+            prefix: coreRule.prefix,
+            dateSource: coreRule.dateSource.map(BatchRenameDateSourceSnapshot.init),
+            dateFormat: coreRule.dateFormat,
+            separator: coreRule.separator,
+            startNumber: coreRule.startNumber,
+            padding: coreRule.padding,
+            find: coreRule.find,
+            replacement: coreRule.replacement,
+            caseSensitive: coreRule.caseSensitive
+        )
+    }
+}
+
+private extension BatchRenamePreviewItemSnapshot {
+    init(_ coreItem: BatchRenamePreviewItem) {
+        self.init(
+            fileID: coreItem.fileId,
+            currentPath: coreItem.currentPath,
+            originalName: coreItem.originalName,
+            newName: coreItem.newName,
+            targetPath: coreItem.targetPath,
+            status: BatchRenamePreviewStatusSnapshot(coreItem.status),
+            reason: coreItem.reason
+        )
+    }
+}
+
+private extension BatchRenameItemResultSnapshot {
+    init(_ coreResult: BatchRenameItemResult) {
+        self.init(
+            fileID: coreResult.fileId,
+            originalName: coreResult.originalName,
+            finalName: coreResult.finalName,
+            finalPath: coreResult.finalPath,
+            status: BatchRenameResultStatusSnapshot(coreResult.status),
+            error: coreResult.error
+        )
+    }
+}
+
+private extension BatchRenameModeSnapshot {
+    init(_ core: BatchRenameMode) {
+        switch core {
+        case .prefix: self = .prefix
+        case .datePrefix: self = .datePrefix
+        case .keepBaseSequence: self = .keepBaseSequence
+        case .replaceText: self = .replaceText
+        }
+    }
+}
+
+private extension BatchRenameDateSourceSnapshot {
+    init(_ core: BatchRenameDateSource) {
+        switch core {
+        case .imported: self = .imported
+        case .modified: self = .modified
+        case .today: self = .today
+        }
+    }
+}
+
+private extension BatchRenamePreviewStatusSnapshot {
+    init(_ coreStatus: BatchRenamePreviewStatus) {
+        switch coreStatus {
+        case .ok: self = .ok
+        case .error: self = .error
+        case .nameConflict: self = .nameConflict
+        case .missing: self = .missing
+        case .readOnly: self = .readOnly
+        case .displayOnly: self = .displayOnly
+        case .unchanged: self = .unchanged
+        case .externalChange: self = .externalChange
+        }
+    }
+}
+
+private extension BatchRenameResultStatusSnapshot {
+    init(_ coreStatus: BatchRenameResultStatus) {
+        switch coreStatus {
+        case .renamed: self = .renamed
+        case .displayNameUpdated: self = .displayNameUpdated
+        case .unchanged: self = .unchanged
+        case .skipped: self = .skipped
+        case .failed: self = .failed
+        }
     }
 }
 

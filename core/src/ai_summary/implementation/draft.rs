@@ -112,7 +112,7 @@ pub(super) fn unavailable_provider(
             route: None,
             status: "unavailable",
             sent_fields: &[],
-            privacy_rules_checked: true,
+            privacy_rules_checked: false,
             privacy_rule_id: None,
             result_summary: "AI summary provider is unavailable",
             error_code: Some("ProviderUnavailable"),

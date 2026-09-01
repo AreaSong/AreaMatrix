@@ -9,7 +9,6 @@ permissions:
   actions: read
   contents: read
   pull-requests: read
-  administration: read
 
 concurrency:
   group: areamatrix-remote-governance
@@ -20,34 +19,44 @@ jobs:
     name: remote governance audit
     runs-on: ubuntu-24.04
     env:
-      GH_TOKEN: ${{ github.token }}
+      EXPECTED_REPOSITORY: AreaSong/AreaMatrix
+      EXPECTED_REF: refs/heads/main
+      AUDIT_BRANCH: main
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Select protected branch
-        id: branch
+      - name: Verify trusted main invocation
         shell: bash
         run: |
-          if [ -n "${{ github.event.inputs.branch }}" ]; then
-            echo "name=${{ github.event.inputs.branch }}" >> "$GITHUB_OUTPUT"
-          elif [ -n "${{ github.event.repository.default_branch }}" ]; then
-            echo "name=${{ github.event.repository.default_branch }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "name=main" >> "$GITHUB_OUTPUT"
-          fi
+          set -euo pipefail
+          test "$GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY"
+          test "$GITHUB_REF" = "$EXPECTED_REF"
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: refs/heads/main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checked out revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse --is-inside-work-tree)" = true
+          test -n "$(git rev-parse HEAD)"
 
       - name: Run read-only remote governance audit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           ./dev governance remote-audit \
-            --branch "${{ steps.branch.outputs.name }}" \
+            --branch "$AUDIT_BRANCH" \
             --recent-runs 30 \
             --json | tee remote-governance.json
 
       - name: Upload remote governance evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: remote-governance-evidence
           path: remote-governance.json

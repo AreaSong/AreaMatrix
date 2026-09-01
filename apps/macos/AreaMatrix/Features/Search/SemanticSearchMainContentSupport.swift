@@ -7,7 +7,7 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     var semanticIndexBuildText: some View {
-        switch fileListModel.semanticIndexBuildState {
+        switch searchModel.semanticIndexBuildState {
         case .idle:
             EmptyView()
         case let .building(request):
@@ -22,7 +22,7 @@ extension MainRepositoryContentView {
     }
 
     private func semanticBuildProgressText(for request: SearchQueryRequestSnapshot) -> String {
-        guard let page = fileListModel.searchState.page?.semanticPage else { return "" }
+        guard let page = searchModel.searchState.page?.semanticPage else { return "" }
         let processed = max(0, page.semanticTotalCount - page.dedupedNormalCount)
         let total = max(page.semanticTotalCount + page.normalTotalCount, Int64(1))
         let percent = min(100, Int((Double(processed) / Double(total)) * 100))
@@ -57,7 +57,7 @@ extension MainRepositoryContentView {
     }
 
     var semanticPrivacyGateText: String {
-        switch fileListModel.semanticPrivacyGateState {
+        switch searchModel.semanticPrivacyGateState {
         case .idle:
             L10n.string("Privacy rules: not checked yet")
         case .checking:
@@ -102,7 +102,7 @@ extension MainRepositoryContentView {
             bridge: aiDependencies.aiPrivacyRulesManager,
             errorMapper: errorMapper
         ) {
-            searchRoutingState.semanticPrivacyRuleRoute = nil
+            searchModel.routingState.semanticPrivacyRuleRoute = nil
         }
     }
 
@@ -114,25 +114,25 @@ extension MainRepositoryContentView {
             lister: aiDependencies.aiCallLogLister,
             errorMapper: errorMapper
         ) {
-            searchRoutingState.semanticCallLogRoute = nil
+            searchModel.routingState.semanticCallLogRoute = nil
         }
     }
 
     @ViewBuilder
     var semanticIndexRecoveryActions: some View {
-        if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
+        if let ruleID = searchModel.semanticPrivacyGateState.matchedRuleID {
             Button(L10n.string("View privacy rule")) {
-                searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                searchModel.routingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
             }
             .accessibilityIdentifier("semantic-search-ai-privacy-rules-core-view-privacy-rule")
         }
-        switch fileListModel.semanticPrivacyGateState {
+        switch searchModel.semanticPrivacyGateState {
         case .blocked, .failed:
             Button(L10n.string("Retry privacy check")) {
-                Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
+                Task { await searchModel.refreshSemanticPrivacyGateForCurrentSearch() }
             }
             Button(L10n.string("Use normal search")) {
-                searchRoutingState.isSemanticIndexConfirmationPresented = false
+                searchModel.routingState.isSemanticIndexConfirmationPresented = false
                 searchMode = .normal
                 Task { await rerunCurrentSearch(mode: .normal) }
             }
@@ -144,9 +144,9 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     private var semanticCallLogRecoveryButton: some View {
-        if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
+        if let callLogID = searchModel.searchState.page?.semanticPage?.callLogID {
             Button(L10n.string("View call log")) {
-                searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                searchModel.routingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
             }
         }
     }
@@ -208,13 +208,13 @@ extension MainRepositoryContentView {
             semanticPrivacyGateDetail
             SemanticSearchFallbackStatusRegion(
                 page: page,
-                state: fileListModel.semanticFallbackState,
+                state: searchModel.semanticFallbackState,
                 repoPath: opening.config.repoPath,
                 aiDependencies: aiDependencies,
                 errorMapper: errorMapper,
-                isIndexBuildBusy: fileListModel.semanticIndexBuildState.isBuilding ||
-                    fileListModel.semanticIndexControlState.isCanceling,
-                isPrivacyGateChecking: fileListModel.semanticPrivacyGateState.isChecking,
+                isIndexBuildBusy: searchModel.semanticIndexBuildState.isBuilding ||
+                    searchModel.semanticIndexControlState.isCanceling,
+                isPrivacyGateChecking: searchModel.semanticPrivacyGateState.isChecking,
                 onAction: performSemanticFallbackAction(_:)
             )
         }
@@ -226,27 +226,27 @@ extension MainRepositoryContentView {
     private func performSemanticFallbackAction(_ action: AIFallbackActionSnapshot) {
         switch action {
         case .retry:
-            Task { await fileListModel.retrySearch() }
+            Task { await searchModel.retrySearch() }
         case .openAISettings:
             onOpenAISettings()
         case .openLocalModelStatus, .configureRemoteAI:
             break
         case .viewPrivacyRule:
-            let ruleID = fileListModel.semanticFallbackState.status?.privacyRuleID ??
-                fileListModel.searchState.page?.semanticPage?.privacyRuleID
+            let ruleID = searchModel.semanticFallbackState.status?.privacyRuleID ??
+                searchModel.searchState.page?.semanticPage?.privacyRuleID
             if let ruleID = ruleID?.trimmingCharacters(in: .whitespacesAndNewlines), !ruleID.isEmpty {
-                searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                searchModel.routingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
             }
         case .viewCallLog:
-            let callLogID = fileListModel.semanticFallbackState.status?.callLogID ??
-                fileListModel.searchState.page?.semanticPage?.callLogID
+            let callLogID = searchModel.semanticFallbackState.status?.callLogID ??
+                searchModel.searchState.page?.semanticPage?.callLogID
             if let callLogID {
-                searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                searchModel.routingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
             }
         case .buildSemanticIndex:
             Task {
-                await fileListModel.refreshSemanticPrivacyGateForCurrentSearch()
-                searchRoutingState.isSemanticIndexConfirmationPresented = true
+                await searchModel.refreshSemanticPrivacyGateForCurrentSearch()
+                searchModel.routingState.isSemanticIndexConfirmationPresented = true
             }
         case .useNormalSearch:
             searchMode = .normal
@@ -258,7 +258,7 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     private var semanticPrivacyGateDetail: some View {
-        switch fileListModel.semanticPrivacyGateState {
+        switch searchModel.semanticPrivacyGateState {
         case .idle:
             EmptyView()
         case .checking:
@@ -271,20 +271,21 @@ extension MainRepositoryContentView {
         case let .blocked(_, report):
             HStack(spacing: 10) {
                 Text(L10n.format("search.semanticIndex.privacyGateBlocked", report.message))
-                if let ruleID = fileListModel.semanticPrivacyGateState.matchedRuleID {
+                if let ruleID = searchModel.semanticPrivacyGateState.matchedRuleID {
                     Button(L10n.string("View privacy rule")) {
-                        searchRoutingState.semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
+                        searchModel.routingState
+                            .semanticPrivacyRuleRoute = AIClassificationPrivacyRuleRoute(ruleID: ruleID)
                     }
                 }
                 Button(L10n.string("Retry privacy check")) {
-                    Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
+                    Task { await searchModel.refreshSemanticPrivacyGateForCurrentSearch() }
                 }
             }
         case let .failed(_, error):
             HStack(spacing: 10) {
                 Text(L10n.format("search.semanticIndex.privacyGateCheckFailed", error.userMessage))
                 Button(L10n.string("Retry privacy check")) {
-                    Task { await fileListModel.refreshSemanticPrivacyGateForCurrentSearch() }
+                    Task { await searchModel.refreshSemanticPrivacyGateForCurrentSearch() }
                 }
             }
         }
@@ -292,49 +293,49 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     private var semanticBuildLifecycleControls: some View {
-        if fileListModel.semanticIndexBuildState.canPause {
+        if searchModel.semanticIndexBuildState.canPause {
             Button(L10n.string("Pause index build")) {
-                Task { await fileListModel.pauseSemanticIndexBuildForCurrentSearch() }
+                Task { await searchModel.pauseSemanticIndexBuildForCurrentSearch() }
             }
-            .disabled(fileListModel.semanticIndexControlState.isCanceling)
+            .disabled(searchModel.semanticIndexControlState.isCanceling)
             .accessibilityIdentifier("semantic-search-pause-index-build")
         }
-        if fileListModel.semanticIndexBuildState.canCancel {
+        if searchModel.semanticIndexBuildState.canCancel {
             Button(L10n.string("Cancel index build")) {
-                fileListModel.requestCancelSemanticIndexBuildForCurrentSearch()
+                searchModel.requestCancelSemanticIndexBuildForCurrentSearch()
             }
-            .disabled(fileListModel.semanticIndexControlState.isCanceling)
+            .disabled(searchModel.semanticIndexControlState.isCanceling)
             .accessibilityIdentifier("semantic-search-cancel-index-build")
         }
-        if fileListModel.semanticIndexBuildState.canResume {
+        if searchModel.semanticIndexBuildState.canResume {
             Button(L10n.string("Resume index build")) {
-                Task { await fileListModel.resumeSemanticIndexBuildForCurrentSearch() }
+                Task { await searchModel.resumeSemanticIndexBuildForCurrentSearch() }
             }
             .accessibilityIdentifier("semantic-search-resume-index-build")
         }
-        if fileListModel.semanticIndexBuildState.canRetryFailedItems {
+        if searchModel.semanticIndexBuildState.canRetryFailedItems {
             Button(L10n.string("Retry failed items")) {
-                Task { await fileListModel.retryFailedSemanticIndexItemsForCurrentSearch() }
+                Task { await searchModel.retryFailedSemanticIndexItemsForCurrentSearch() }
             }
-            .disabled(fileListModel.semanticIndexControlState.isCanceling)
+            .disabled(searchModel.semanticIndexControlState.isCanceling)
             .accessibilityIdentifier("semantic-search-retry-failed-items")
         }
     }
 
     @ViewBuilder
     private var semanticCancelStatusText: some View {
-        switch fileListModel.semanticIndexControlState {
+        switch searchModel.semanticIndexControlState {
         case .canceling:
             Text(L10n.string("Canceling semantic index build..."))
         case .canceled:
             Text(L10n.string("Semantic index build canceled."))
             HStack(spacing: 10) {
                 Button(L10n.string("Retry index build")) {
-                    Task { await fileListModel.retryFailedSemanticIndexItemsForCurrentSearch() }
+                    Task { await searchModel.retryFailedSemanticIndexItemsForCurrentSearch() }
                 }
                 Button(L10n.string("View call log")) {
-                    if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
-                        searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                    if let callLogID = searchModel.searchState.page?.semanticPage?.callLogID {
+                        searchModel.routingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
                     }
                 }
             }
@@ -342,11 +343,11 @@ extension MainRepositoryContentView {
             HStack(spacing: 10) {
                 Text(L10n.format("search.semanticIndex.cancelFailed", error.userMessage))
                 Button(L10n.string("Retry cancel")) {
-                    Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
+                    Task { await searchModel.cancelSemanticIndexBuildForCurrentSearch() }
                 }
                 Button(L10n.string("View call log")) {
-                    if let callLogID = fileListModel.searchState.page?.semanticPage?.callLogID {
-                        searchRoutingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
+                    if let callLogID = searchModel.searchState.page?.semanticPage?.callLogID {
+                        searchModel.routingState.semanticCallLogRoute = SemanticSearchCallLogRoute(callLogID: callLogID)
                     }
                 }
             }
@@ -368,21 +369,21 @@ extension MainRepositoryContentView {
         if page.canBuildIndex {
             Button(L10n.string("Build semantic index")) {
                 Task {
-                    await fileListModel.refreshSemanticPrivacyGateForCurrentSearch()
-                    searchRoutingState.isSemanticIndexConfirmationPresented = true
+                    await searchModel.refreshSemanticPrivacyGateForCurrentSearch()
+                    searchModel.routingState.isSemanticIndexConfirmationPresented = true
                 }
             }
             .disabled(
-                fileListModel.semanticIndexBuildState.isBuilding ||
-                    fileListModel.semanticIndexControlState.isCanceling ||
-                    fileListModel.semanticPrivacyGateState.isChecking
+                searchModel.semanticIndexBuildState.isBuilding ||
+                    searchModel.semanticIndexControlState.isCanceling ||
+                    searchModel.semanticPrivacyGateState.isChecking
             )
             .accessibilityIdentifier("semantic-search-ai-privacy-rules-core-build-semantic-index-privacy-check")
         }
     }
 
     func rerunCurrentSearch(mode: SearchModeSnapshot) async {
-        await fileListModel.runSearch(
+        await searchModel.runSearch(
             query: filterText,
             scope: searchScope,
             sort: searchSort,

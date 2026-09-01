@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import SwiftUI
 
 struct AboutSettingsPane: View {

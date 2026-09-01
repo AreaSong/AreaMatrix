@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct BatchChangeCategoryTrigger: View {
@@ -116,7 +117,7 @@ struct BatchChangeCategorySheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(
+        AreaMatrixActionSheetContainer(
             title: L10n.plural("file-actions.change-category.sheet-title", count: selectedCount),
             pageID: "batch-change-category"
         ) {

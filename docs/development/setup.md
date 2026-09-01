@@ -47,15 +47,23 @@ xcode-select --install
 
 ### 安装 Rust
 
+从 [rustup 官方安装说明](https://rustup.rs/)下载适合当前平台与架构的 `rustup-init`，并按同一发布的
+官方校验信息核对下载文件后再执行。不要把网络响应直接通过管道交给 shell。安装 `rustup` 后，固定安装
+仓库声明的工具链和组件：
+
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
-source "$HOME/.cargo/env"
+rustup toolchain install 1.88.0 \
+  --profile minimal \
+  --component rustfmt \
+  --component clippy \
+  --component llvm-tools-preview
+rustup default 1.88.0
 ```
 
 验证：
 
 ```bash
-rustc --version  # rustc 1.75.0 或更高
+rustc --version  # rustc 1.88.0
 cargo --version
 ```
 
@@ -81,8 +89,9 @@ rustup component add rustfmt clippy llvm-tools-preview
 `scripts/dev_tools/build.py` 会按 `core/Cargo.lock` 锁定的 UniFFI 版本构建并缓存一个
 bindgen wrapper，保证生成器与 scaffolding 版本一致，因此这一步没有额外操作。
 
-如需改用自备的 bindgen，可设置环境变量 `UNIFFI_BINDGEN` 或 `AREAMATRIX_UNIFFI_BINDGEN`
-指向其可执行文件覆盖默认机制；版本必须与 `core/Cargo.lock` 中的 UniFFI 一致。
+构建脚本不接受 `UNIFFI_BINDGEN` 或 `AREAMATRIX_UNIFFI_BINDGEN` 外部可执行文件覆盖。这样可以避免
+未经登记的生成器污染 Swift/C bindings；需要升级生成器时必须先更新 `core/Cargo.lock`，再由受审的
+locked wrapper 生成。
 
 ---
 
@@ -92,10 +101,8 @@ bindgen wrapper，保证生成器与 scaffolding 版本一致，因此这一步�
 # Swift 格式化和检查
 brew install swiftformat swiftlint xcbeautify
 
-# Rust 实用工具
-cargo install cargo-watch       # 文件改动自动重建
-cargo install cargo-llvm-cov    # 覆盖率
-cargo install cargo-edit        # cargo add/rm/upgrade
+# Rust 实用工具：项目构建不依赖这些全局安装。CI 使用 workflow 中固定的版本；本机若需要额外工具，
+# 请通过组织批准的包管理流程安装并记录版本、来源与校验值，不要把浮动的 cargo install 作为发布前提。
 ```
 
 ---
@@ -152,7 +159,7 @@ xcodebuild -project apps/macos/AreaMatrix.xcodeproj \
 
 ```bash
 cd core
-cargo test --workspace --all-features
+cargo test --locked --workspace --all-features
 ```
 
 ### macOS 侧
@@ -180,8 +187,8 @@ xcodebuild test \
 # Rust
 cd core
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --workspace
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --workspace
 cd ..
 
 # Swift（与 ./dev check 使用的命令一致，避免把生成绑定卷进检查）

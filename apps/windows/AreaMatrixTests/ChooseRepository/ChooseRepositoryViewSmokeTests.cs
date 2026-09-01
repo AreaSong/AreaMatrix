@@ -62,6 +62,7 @@ public static class ChooseRepositoryViewSmokeTests
         AssertNamedElement(page, "ProgressRing", "CheckingProgressRing");
         AssertNamedElement(page, "StackPanel", "RecentRepositoriesSection");
         AssertNamedElement(page, "ListView", "RecentRepositoriesListView");
+        AssertVisualTabOrder(page);
 
         string codeBehind = File.ReadAllText(RepositoryPath(
             "apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryView.xaml.cs"));
@@ -132,6 +133,29 @@ public static class ChooseRepositoryViewSmokeTests
             ?? throw new InvalidOperationException($"Button `{content}` was not found.");
 
         TestAssert.Equal(clickHandler, AttributeValue(button, "Click"), $"{content} click handler");
+    }
+
+    private static void AssertVisualTabOrder(XElement root)
+    {
+        XElement repositoryFolder = Descendants(root, "TextBox")
+            .First(element => AttributeValue(element, Xaml + "Name") == "RepositoryFolderTextBox");
+        XElement pastePath = Descendants(root, "HyperlinkButton")
+            .First(element => AttributeValue(element, Xaml + "Name") == "PastePathButton");
+        XElement recentRepositories = Descendants(root, "ListView")
+            .First(element => AttributeValue(element, Xaml + "Name") == "RecentRepositoriesListView");
+        XElement cancel = Descendants(root, "Button")
+            .First(element => AttributeValue(element, "Content") == "Cancel");
+        XElement browse = Descendants(root, "Button")
+            .First(element => AttributeValue(element, "Content") == "Browse...");
+        XElement continueButton = Descendants(root, "Button")
+            .First(element => AttributeValue(element, Xaml + "Name") == "ContinueButton");
+
+        TestAssert.Equal("0", AttributeValue(repositoryFolder, "TabIndex"), "repository field tab index");
+        TestAssert.Equal("1", AttributeValue(pastePath, "TabIndex"), "paste path tab index");
+        TestAssert.Equal("2", AttributeValue(recentRepositories, "TabIndex"), "recent repositories tab index");
+        TestAssert.Equal("3", AttributeValue(cancel, "TabIndex"), "cancel tab index");
+        TestAssert.Equal("4", AttributeValue(browse, "TabIndex"), "browse tab index");
+        TestAssert.Equal("5", AttributeValue(continueButton, "TabIndex"), "continue tab index");
     }
 
     private static void AssertNamedElement(XElement root, string localName, string name)

@@ -5,10 +5,10 @@ extension MainRepositoryContentView {
         content
             .task(id: searchTaskKey) {
                 guard state == .list else { return }
-                guard savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
+                guard searchModel.savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
                 try? await Task.sleep(nanoseconds: 250_000_000)
                 guard !Task.isCancelled else { return }
-                await fileListModel.runSearch(
+                await searchModel.runSearch(
                     query: filterText,
                     scope: searchScope,
                     sort: searchSort,
@@ -19,8 +19,8 @@ extension MainRepositoryContentView {
             }
             .task(id: searchFacetsTaskKey) {
                 guard state == .list else { return }
-                guard savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
-                await fileListModel.loadSearchFacets(
+                guard searchModel.savedSearchesBySidebarID[selectedSidebarID] == nil else { return }
+                await searchModel.loadSearchFacets(
                     query: filterText,
                     scope: searchScope,
                     sidebarRow: selectedSidebarRow,
@@ -32,12 +32,12 @@ extension MainRepositoryContentView {
     func applyMainRepositorySearchSheets(to content: some View) -> some View {
         content
             .sheet(item: searchDestinationBinding, content: searchRoutingSheet)
-            .sheet(item: $searchRoutingState.semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
-            .sheet(item: $searchRoutingState.semanticCallLogRoute, content: semanticCallLogSheet)
+            .sheet(item: $searchModel.routingState.semanticPrivacyRuleRoute, content: semanticPrivacyRuleSheet)
+            .sheet(item: $searchModel.routingState.semanticCallLogRoute, content: semanticCallLogSheet)
     }
 
     func applyMainRepositorySearchFilterDismissRelay(to content: some View) -> some View {
-        content.onChange(of: searchRoutingState.isToolbarFiltersPresented) { _, presented in
+        content.onChange(of: searchModel.routingState.isToolbarFiltersPresented) { _, presented in
             guard !presented else { return }
             reopenSmartListEditorFromDraftIfNeeded()
         }
@@ -46,12 +46,12 @@ extension MainRepositoryContentView {
     var searchDestinationBinding: Binding<MainSearchDestination?> {
         Binding(
             get: {
-                guard fileListModel.pendingSearchDestination?.isSheetRoute == true else { return nil }
-                return fileListModel.pendingSearchDestination
+                guard searchModel.pendingSearchDestination?.isSheetRoute == true else { return nil }
+                return searchModel.pendingSearchDestination
             },
             set: { value in
                 if value == nil {
-                    fileListModel.clearPendingSearchDestination()
+                    searchModel.clearPendingSearchDestination()
                 }
             }
         )
@@ -67,19 +67,19 @@ extension MainRepositoryContentView {
                 resultCountState: savedSearchResultCountState,
                 savedSearchStore: savedSearchStore,
                 errorMapper: errorMapper,
-                onCancel: fileListModel.clearPendingSearchDestination,
+                onCancel: searchModel.clearPendingSearchDestination,
                 onSaved: saveAndCloseSearchSheet,
                 onEditFilters: {
-                    fileListModel.clearPendingSearchDestination()
-                    searchRoutingState.isToolbarFiltersPresented = true
+                    searchModel.clearPendingSearchDestination()
+                    searchModel.routingState.isToolbarFiltersPresented = true
                 }
             )
         case let .indexingStatus(request):
             SearchIndexingStatusRouteView(
                 request: request,
-                indexStatus: fileListModel.searchState.indexStatus,
-                onRetry: { Task { await fileListModel.retrySearch() } },
-                onClose: fileListModel.clearPendingSearchDestination
+                indexStatus: searchModel.searchState.indexStatus,
+                onRetry: { Task { await searchModel.retrySearch() } },
+                onClose: searchModel.clearPendingSearchDestination
             )
         case .commandPalette:
             commandPaletteRouteView()
@@ -99,14 +99,14 @@ extension MainRepositoryContentView {
 
     private func saveAndCloseSearchSheet(_ saved: SavedSearchSnapshot) {
         selectSavedSearch(saved)
-        fileListModel.clearPendingSearchDestination()
+        searchModel.clearPendingSearchDestination()
     }
 
     private func reopenSmartListEditorFromDraftIfNeeded() {
-        guard let draft = fileListModel.smartListFilterDraft else { return }
+        guard let draft = searchModel.smartListFilterDraft else { return }
         let sidebarID = RepositoryTreeNodeSnapshot.savedSearchSidebarID(draft.id)
-        guard let saved = savedSearchesBySidebarID[sidebarID] else { return }
-        searchRoutingState.smartListManagementRoute = SmartListManagementRoute(
+        guard let saved = searchModel.savedSearchesBySidebarID[sidebarID] else { return }
+        searchModel.routingState.smartListManagementRoute = SmartListManagementRoute(
             mode: .editQuery,
             savedSearch: saved,
             draftFilters: draft.filters
@@ -128,13 +128,13 @@ extension MainRepositoryContentView {
         content
             .confirmationDialog(
                 "Build semantic index?",
-                isPresented: $searchRoutingState.isSemanticIndexConfirmationPresented,
+                isPresented: $searchModel.routingState.isSemanticIndexConfirmationPresented,
                 titleVisibility: .visible
             ) {
                 Button(L10n.string("Start index build")) {
-                    Task { await fileListModel.buildSemanticIndexForCurrentSearch() }
+                    Task { await searchModel.buildSemanticIndexForCurrentSearch() }
                 }
-                .disabled(!fileListModel.semanticPrivacyGateState.allowsIndexBuild)
+                .disabled(!searchModel.semanticPrivacyGateState.allowsIndexBuild)
                 semanticIndexRecoveryActions
                 Button(L10n.string("Back")) {}
                 Button(L10n.string("Cancel"), role: .cancel) {}
@@ -145,18 +145,18 @@ extension MainRepositoryContentView {
                 "Cancel semantic index build?",
                 isPresented: Binding(
                     get: {
-                        if case .cancelConfirm = fileListModel.semanticIndexControlState { return true }
+                        if case .cancelConfirm = searchModel.semanticIndexControlState { return true }
                         return false
                     },
-                    set: { if !$0 { fileListModel.keepBuildingSemanticIndexForCurrentSearch() } }
+                    set: { if !$0 { searchModel.keepBuildingSemanticIndexForCurrentSearch() } }
                 ),
                 titleVisibility: .visible
             ) {
                 Button(L10n.string("Cancel index build"), role: .destructive) {
-                    Task { await fileListModel.cancelSemanticIndexBuildForCurrentSearch() }
+                    Task { await searchModel.cancelSemanticIndexBuildForCurrentSearch() }
                 }
                 Button(L10n.string("Keep building"), role: .cancel) {
-                    fileListModel.keepBuildingSemanticIndexForCurrentSearch()
+                    searchModel.keepBuildingSemanticIndexForCurrentSearch()
                 }
             } message: {
                 Text(semanticIndexCancelConfirmationMessage)
@@ -171,13 +171,13 @@ extension MainRepositoryContentView {
             return
         }
         filterText = ""
-        selectedFileIDs = []
-        fileListModel.enterSearch(context: .toolbar)
+        selectionModel.fileIDs = []
+        searchModel.enterSearch(context: .toolbar)
     }
 
     func clearSearchFiltersFromEmptyState() {
-        SearchFilterStateRouting.assign(.empty, searchFilters: &searchFilters, fileListModel: fileListModel)
-        selectedFileIDs = []
+        SearchFilterStateRouting.assign(.empty, searchFilters: &searchFilters, searchModel: searchModel)
+        selectionModel.fileIDs = []
         if filterText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             clearSearch()
         }
@@ -185,7 +185,7 @@ extension MainRepositoryContentView {
 
     func removeSearchFilterFromEmptyState(_ kind: SearchFilterChipKind) {
         let updated = SearchFilterEditing.removing(kind, from: effectiveSearchFilters)
-        SearchFilterStateRouting.assign(updated, searchFilters: &searchFilters, fileListModel: fileListModel)
+        SearchFilterStateRouting.assign(updated, searchFilters: &searchFilters, searchModel: searchModel)
     }
 
     func searchAllFileTypesFromEmptyState() {
@@ -194,8 +194,8 @@ extension MainRepositoryContentView {
 
     func applyQuerySuggestion(_ query: String) {
         filterText = query
-        selectedFileIDs = []
-        fileListModel.enterSearch(context: .toolbar)
+        selectionModel.fileIDs = []
+        searchModel.enterSearch(context: .toolbar)
         isSearchFieldFocused = true
     }
 }

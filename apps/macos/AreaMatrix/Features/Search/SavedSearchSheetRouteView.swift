@@ -1,3 +1,4 @@
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct SavedSearchPreview: View {
@@ -56,7 +57,7 @@ struct SavedSearchSheetRouteView: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: L10n.string("Save Search"), pageID: "saved-search") {
+        AreaMatrixActionSheetContainer(title: L10n.string("Save Search"), pageID: "saved-search") {
             Text(L10n.string("Save the current query as a Smart List. Files are not moved or duplicated."))
                 .font(.callout)
                 .foregroundStyle(.secondary)

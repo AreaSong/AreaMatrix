@@ -1,8 +1,64 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureIngestion
 import Foundation
 import XCTest
 
 final class CoreBridgeRepositoryTests: XCTestCase {
+    @MainActor
+    func testRepositorySessionNormalizesIdentityAndRefreshesFutureOperationContexts() throws {
+        let opening = RepositoryOpeningResult(
+            config: .testFixture(repoPath: "/tmp/library/../library") { $0.revision = 7 },
+            tree: .testRoot(displayName: "Repository"),
+            currentCategoryFiles: [],
+            isReadOnly: false,
+            writeLockedFileIDs: [11]
+        )
+        let session = opening.makeRepositorySession()
+        let operation = session.makeOperationContext()
+
+        var refreshed = opening
+        refreshed.config.repoPath = "/tmp/library"
+        refreshed.config.revision = 8
+        refreshed.isReadOnly = true
+        refreshed.writeLockedFileIDs = [22]
+        try refreshed.refresh(session)
+        let refreshedOperation = session.makeOperationContext()
+
+        XCTAssertEqual(session.identity.standardizedPath, "/tmp/library")
+        XCTAssertEqual(session.revision, 8)
+        XCTAssertEqual(session.access, RepositoryAccessSnapshot(isReadOnly: true, writeLockedFileIDs: [22]))
+        XCTAssertEqual(operation.repoPath, "/tmp/library/../library")
+        XCTAssertEqual(operation.expectedRevision, 7)
+        XCTAssertEqual(operation.access, RepositoryAccessSnapshot(isReadOnly: false, writeLockedFileIDs: [11]))
+        XCTAssertEqual(refreshedOperation.repoPath, "/tmp/library")
+        XCTAssertEqual(refreshedOperation.expectedRevision, 8)
+        XCTAssertEqual(refreshedOperation.access, RepositoryAccessSnapshot(isReadOnly: true, writeLockedFileIDs: [22]))
+    }
+
+    @MainActor
+    func testRepositorySessionRejectsRefreshFromAnotherRepository() {
+        let session = RepositoryOpeningResult(
+            config: .testFixture(repoPath: "/tmp/library-a"),
+            tree: .testRoot(displayName: "Repository"),
+            currentCategoryFiles: []
+        ).makeRepositorySession()
+        let otherOpening = RepositoryOpeningResult(
+            config: .testFixture(repoPath: "/tmp/library-b"),
+            tree: .testRoot(displayName: "Repository"),
+            currentCategoryFiles: []
+        )
+
+        XCTAssertThrowsError(try otherOpening.refresh(session)) { error in
+            XCTAssertEqual(
+                error as? RepositorySessionRefreshError,
+                .repositoryIdentityMismatch(
+                    expected: RepositoryIdentity(repoPath: "/tmp/library-a"),
+                    actual: RepositoryIdentity(repoPath: "/tmp/library-b")
+                )
+            )
+        }
+    }
+
     @MainActor
     func testOnboardingLoadsConfiguredRepoThroughDefaultCoreBridge() async throws {
         let repoURL = try makeTemporaryRepoURL()
@@ -136,14 +192,14 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .searchFiltersDbFixture())
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: " 合同 ",
             scope: .current,
             sort: .relevance,
             sidebarRow: row,
             filters: filters
         )
-        await model.loadSearchFacets(query: " 合同 ", scope: .current, sidebarRow: row, filters: filters)
+        await model.searchModel.loadSearchFacets(query: " 合同 ", scope: .current, sidebarRow: row, filters: filters)
 
         await searcher.assertSearchRequests([
             .testFixture(
@@ -164,7 +220,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
                 filters: filters
             )
         ])
-        XCTAssertEqual(model.searchFacetsState.facets?.activeFilterCount, 4)
+        XCTAssertEqual(model.searchModel.searchFacetsState.facets?.activeFilterCount, 4)
     }
 
     @MainActor
@@ -191,7 +247,7 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .searchFiltersDbFixture())
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "合同",
             scope: .current,
             sort: .newestImported,
@@ -230,17 +286,17 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             errorMapper: mapper
         )
 
-        await model.loadSearchFacets(
+        await model.searchModel.loadSearchFacets(
             query: "合同",
             scope: .all,
             sidebarRow: RepositoryTreeNodeSnapshot.searchFiltersFixtureTree().sidebarRows[0],
             filters: .empty
         )
-        XCTAssertEqual(model.searchFacetsState.errorMapping, mapping)
+        XCTAssertEqual(model.searchModel.searchFacetsState.errorMapping, mapping)
         await mapper.assertMappedCoreErrors([CoreError.Db(message: "facet db locked")])
 
-        await model.retrySearchFacets()
-        XCTAssertEqual(model.searchFacetsState.facets?.activeFilterCount, 1)
+        await model.searchModel.retrySearchFacets()
+        XCTAssertEqual(model.searchModel.searchFacetsState.facets?.activeFilterCount, 1)
     }
 
     @MainActor
@@ -254,15 +310,15 @@ final class MainSearchFiltersPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .searchFiltersDbFixture())
         )
 
-        await model.loadSearchFacets(
+        await model.searchModel.loadSearchFacets(
             query: "合同",
             scope: .all,
             sidebarRow: RepositoryTreeNodeSnapshot.searchFiltersFixtureTree().sidebarRows[0],
             filters: .empty
         )
-        model.clearSearch()
+        model.searchModel.clearSearch()
 
-        XCTAssertEqual(model.searchFacetsState, .idle)
-        XCTAssertEqual(model.searchState, .idle)
+        XCTAssertEqual(model.searchModel.searchFacetsState, .idle)
+        XCTAssertEqual(model.searchModel.searchState, .idle)
     }
 }

@@ -1,3 +1,5 @@
+import AreaMatrixFeatureLibrary
+import AreaMatrixFeatureOperation
 import SwiftUI
 
 struct MainRepositoryMultiSelectionActions: View {

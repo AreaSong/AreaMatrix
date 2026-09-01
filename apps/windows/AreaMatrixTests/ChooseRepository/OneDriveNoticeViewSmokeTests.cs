@@ -56,7 +56,8 @@ public static class OneDriveNoticeViewSmokeTests
         AssertNamedElement(window, "OneDriveNoticeDialog", "OneDriveNoticePage");
         AssertNamedElement(window, "WatcherStatusView", "WatcherStatusPage");
 
-        string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"));
+        string codeBehind = File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.xaml.cs"))
+            + File.ReadAllText(RepositoryPath("apps/windows/AreaMatrix/MainWindow.RouteTransitions.cs"));
         TestAssert.Contains("WindowsRepositoryRouteKind.OneDriveNotice", codeBehind, "OneDrive route handling");
         TestAssert.Contains("WindowsRepositoryRouteKind.WatcherStatus", codeBehind, "watcher status route handoff");
         TestAssert.Contains("new OneDriveNoticeViewModel(repositoryBridge)", codeBehind, "real bridge injection");

@@ -1,5 +1,6 @@
-import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureAI
 import XCTest
 
 final class InitFailedErrorMappingTests: XCTestCase {

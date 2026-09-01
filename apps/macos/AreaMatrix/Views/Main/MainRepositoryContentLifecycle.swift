@@ -41,21 +41,22 @@ extension MainRepositoryContentView {
             .task(id: selectedSidebarID) {
                 guard state == .list else { return }
                 if await restoreSelectedSavedSearchIfNeeded() {
-                    selectedFileIDs = []
+                    selectionModel.fileIDs = []
                     return
                 }
-                if fileListModel.searchState.isActive {
-                    selectedFileIDs = []
+                if searchModel.searchState.isActive {
+                    selectionModel.fileIDs = []
                     return
                 }
                 searchScope = selectedSidebarRow.categoryForFileList == nil ? .all : .current
-                let focusedFileID = pendingMovedFileFocusID
-                selectedFileIDs = focusedFileID.map { [$0] } ?? []
+                let focusedFileID = selectionModel.pendingMovedFileFocusID
+                selectionModel.fileIDs = focusedFileID.map { [$0] } ?? []
                 await fileListModel.loadCurrentCategory(
                     selectedSidebarRow.categoryForFileList,
                     focusingOn: focusedFileID
                 )
-                if pendingMovedFileFocusID == focusedFileID { pendingMovedFileFocusID = nil }
+                if selectionModel
+                    .pendingMovedFileFocusID == focusedFileID { selectionModel.pendingMovedFileFocusID = nil }
             }
             .task(id: opening.config.repoPath) {
                 guard state == .list else { return }
@@ -82,7 +83,7 @@ extension MainRepositoryContentView {
             .task(id: pendingTagSuggestionFocus?.id) {
                 await applyPendingTagSuggestionFocus()
             }
-            .onChange(of: selectedFileIDs) { previousIDs, ids in
+            .onChange(of: selectionModel.fileIDs) { previousIDs, ids in
                 handleSelectedFileIDsChange(previousIDs: previousIDs, ids: ids)
             }
     }
@@ -104,7 +105,7 @@ extension MainRepositoryContentView {
             else { return }
             let plan = InterfaceLocaleTreeRefreshPlan.make(
                 refreshedTree: refreshedTree,
-                savedSearches: Array(savedSearchesBySidebarID.values),
+                savedSearches: Array(searchModel.savedSearchesBySidebarID.values),
                 selectedSidebarID: selectedSidebarID
             )
             repositoryTree = plan.tree
@@ -124,7 +125,7 @@ extension MainRepositoryContentView {
         case let .moved(file):
             await refreshTreeAndFocusMovedFile(file)
         case .cleared:
-            selectedFileIDs = []
+            selectionModel.fileIDs = []
         }
         fileListModel.consumeExternalSelectionUpdate(update)
     }
@@ -141,14 +142,14 @@ extension MainRepositoryContentView {
         content.confirmationDialog(
             "Collect repository diagnostics?",
             isPresented: Binding(
-                get: { fileListModel.diagnosticsState == .confirmingPrivacy },
-                set: { if !$0 { fileListModel.cancelCurrentListDiagnostics() } }
+                get: { fileListModel.currentListDiagnostics.state == .confirmingPrivacy },
+                set: { if !$0 { fileListModel.currentListDiagnostics.cancelCollection() } }
             ),
             titleVisibility: .visible
         ) {
-            Button(L10n.string("Cancel"), role: .cancel, action: fileListModel.cancelCurrentListDiagnostics)
+            Button(L10n.string("Cancel"), role: .cancel, action: fileListModel.currentListDiagnostics.cancelCollection)
             Button(L10n.string("Collect diagnostics")) {
-                Task { await fileListModel.collectCurrentListDiagnostics() }
+                Task { await fileListModel.currentListDiagnostics.collect() }
             }
         } message: {
             Text(L10n.string("diagnostics.repositoryPrivacyDetail"))
@@ -160,7 +161,7 @@ extension MainRepositoryContentView {
             .confirmationDialog(
                 "Save AI summary changes?",
                 isPresented: Binding(
-                    get: { summarySelectionExitState.pendingRequest != nil },
+                    get: { summaryExitController.selectionExitState.pendingRequest != nil },
                     set: { if !$0 { cancelPendingSummarySelectionExit() } }
                 ),
                 titleVisibility: .visible
@@ -183,8 +184,16 @@ extension MainRepositoryContentView {
         let searchHost = applyMainRepositorySearchSheets(to: primaryActionHost)
         let batchActionHost = applyMainRepositoryBatchFileActionSheets(to: searchHost)
         let smartListHost = applyMainRepositorySmartListSheet(to: batchActionHost)
-        let syncConflictHost = applyMainRepositorySyncConflictSheet(to: smartListHost)
-        let importRelay = applyMainRepositoryImportConflictBatchRelay(to: syncConflictHost)
+        let syncConflictHost = smartListHost.modifier(SyncConflictReviewHostModifier(
+            coordinator: syncConflictCoordinator,
+            dependencies: syncConflictsDependencies,
+            errorMapper: errorMapper,
+            onResolved: handleSyncConflictResolved
+        ))
+        let importRelay = syncConflictHost.mainRepositoryImportConflictBatchRelay(
+            relayState: $commandPaletteModel.importConflictBatchRelayState,
+            onOpen: onOpenImportConflictBatch
+        )
         return applyMainRepositorySearchFilterDismissRelay(to: importRelay)
     }
 
@@ -196,9 +205,9 @@ extension MainRepositoryContentView {
 
     private func applyPendingTagSuggestionFocus() async {
         guard state == .list, let focus = pendingTagSuggestionFocus else { return }
-        selectedFileIDs = [focus.fileID]
+        selectionModel.fileIDs = [focus.fileID]
         await fileListModel.selectFiles([focus.fileID])
-        fileListModel.presentSelectedFileTagSuggestions(source: focus.source)
+        detailTagModel.presentSelectedFileTagSuggestions(source: focus.source)
         onPendingTagSuggestionFocusConsumed(focus)
     }
 }

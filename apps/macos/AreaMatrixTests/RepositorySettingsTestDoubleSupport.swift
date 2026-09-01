@@ -1,4 +1,6 @@
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureSettings
 import XCTest
 
 actor RepoSettingsMetadataReader: ExistingRepositoryMetadataReading {

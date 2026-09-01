@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "status": "fixture-only",
+  "sourceCommit": "repository-source",
+  "buildCommand": "cargo build --locked --manifest-path core/Cargo.toml",
+  "license": "../../../LICENSE",
+  "sbom": "unavailable",
+  "artifacts": []
+}

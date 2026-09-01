@@ -1,4 +1,15 @@
+import AreaMatrixCoreBridgeContract
 import SwiftUI
+
+extension RecoveryReportSnapshot {
+    var startupRecoverySummaryText: String {
+        L10n.format(
+            "onboarding.recovery.cleanupSummary",
+            cleanedStagingFiles,
+            revertedStagingDbRows
+        )
+    }
+}
 
 struct StartupRecoveryErrorRecoveryView: View {
     let state: MainLoadingRecoveryState

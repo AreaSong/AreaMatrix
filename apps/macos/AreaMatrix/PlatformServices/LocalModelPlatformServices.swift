@@ -1,4 +1,5 @@
 import AppKit
+import AreaMatrixFeatureAI
 import Foundation
 
 enum LocalModelStatusPlatformServices {

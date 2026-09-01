@@ -73,6 +73,8 @@ struct AreaMatrixScanOverlay: View {
     var scanColors = AreaMatrixTheme.Colors.sceneSpectrum
 
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @EnvironmentObject private var localizer: AppLocalizer
     @State private var cursorVisible = true
     @State private var logoPulsing = false
@@ -88,19 +90,19 @@ struct AreaMatrixScanOverlay: View {
         }
         .scaleEffect(isScanning ? 1 : 0.9)
         .opacity(isScanning ? 1 : 0)
-        .animation(.areaMatrixSpring.delay(0.2), value: isScanning)
-        .onAppear {
-            logoPulsing = true
-            withAnimation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true)) {
-                cursorVisible = false
-            }
-        }
+        .animation(reduceMotion ? nil : .areaMatrixSpring.delay(0.2), value: isScanning)
+        .onAppear(perform: updateMotionState)
+        .onChange(of: reduceMotion) { _, _ in updateMotionState() }
     }
 
     private var overlayBackdrop: some View {
         Rectangle()
-            .fill(Color.black.opacity(colorScheme == .dark ? 0.3 : 0.15))
-            .background(.ultraThinMaterial)
+            .fill(
+                reduceTransparency
+                    ? (colorScheme == .dark ? Color.black : Color.white)
+                    : Color.black.opacity(colorScheme == .dark ? 0.3 : 0.15)
+            )
+            .background(reduceTransparency ? AnyShapeStyle(Color.clear) : AnyShapeStyle(.ultraThinMaterial))
             .ignoresSafeArea()
     }
 
@@ -133,9 +135,14 @@ struct AreaMatrixScanOverlay: View {
             .onChange(of: accent) { _, _ in
                 rippleScale = 0.1
                 rippleOpacity = 0.8
-                withAnimation(.easeOut(duration: 1.2)) {
+                if reduceMotion {
                     rippleScale = 4.0
                     rippleOpacity = 0.0
+                } else {
+                    withAnimation(.easeOut(duration: 1.2)) {
+                        rippleScale = 4.0
+                        rippleOpacity = 0.0
+                    }
                 }
             }
             .allowsHitTesting(false)
@@ -160,7 +167,12 @@ struct AreaMatrixScanOverlay: View {
                 .stroke(scanRingGradient, style: StrokeStyle(lineWidth: 2, lineCap: .round))
                 .frame(width: 160, height: 160)
                 .rotationEffect(.degrees(isScanning ? 360 : 0))
-                .animation(.linear(duration: 1).repeatForever(autoreverses: false), value: isScanning)
+                .animation(
+                    reduceMotion || !isScanning
+                        ? nil
+                        : .linear(duration: 1).repeatForever(autoreverses: false),
+                    value: isScanning
+                )
 
             AreaMatrixCrossfadeAssetImage(
                 darkName: darkLogoName,
@@ -169,7 +181,12 @@ struct AreaMatrixScanOverlay: View {
                 height: 80
             )
             .scaleEffect(logoPulsing ? 1.06 : 1.0)
-            .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: logoPulsing)
+            .animation(
+                reduceMotion || !logoPulsing
+                    ? nil
+                    : .easeInOut(duration: 0.8).repeatForever(autoreverses: true),
+                value: logoPulsing
+            )
             .shadow(color: accent.opacity(0.5), radius: 12)
         }
     }
@@ -243,15 +260,32 @@ struct AreaMatrixScanOverlay: View {
     private var progressStartColor: Color {
         effectiveScanColors.first ?? accent
     }
+
+    private func updateMotionState() {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            logoPulsing = !reduceMotion
+            cursorVisible = reduceMotion
+        }
+        if !reduceMotion {
+            withAnimation(.easeInOut(duration: 0.45).repeatForever(autoreverses: true)) {
+                cursorVisible = false
+            }
+        }
+    }
 }
 
 struct AreaMatrixDropOverlay: View {
     @EnvironmentObject private var localizer: AppLocalizer
+    @Environment(\.colorScheme) private var colorScheme
     var message = L10n.message("import.drop.releaseToImport")
     var iconName = "tray.and.arrow.down"
     var accent = AreaMatrixTheme.Colors.tealBright
 
     @State private var isBouncing = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         VStack(spacing: 14) {
@@ -260,7 +294,10 @@ struct AreaMatrixDropOverlay: View {
                 .foregroundColor(accent)
                 .offset(y: isBouncing ? -6 : 0)
                 .animation(
-                    .interpolatingSpring(stiffness: 170, damping: 10).repeatForever(autoreverses: false),
+                    reduceMotion || !isBouncing
+                        ? nil
+                        : .interpolatingSpring(stiffness: 170, damping: 10)
+                        .repeatForever(autoreverses: false),
                     value: isBouncing
                 )
             Text(localizer.resolve(message))
@@ -268,9 +305,16 @@ struct AreaMatrixDropOverlay: View {
                 .foregroundStyle(.primary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.black.opacity(0.18))
+        .background(
+            reduceTransparency
+                ? AnyShapeStyle(colorScheme == .dark ? Color.black : Color.white)
+                : AnyShapeStyle(Color.black.opacity(0.18))
+        )
         .transition(.opacity.combined(with: .scale(scale: 0.96)))
-        .onAppear { isBouncing = true }
+        .onAppear { isBouncing = !reduceMotion }
+        .onChange(of: reduceMotion) { _, reduced in
+            isBouncing = !reduced
+        }
     }
 }
 

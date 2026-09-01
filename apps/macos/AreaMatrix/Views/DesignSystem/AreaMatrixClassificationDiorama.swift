@@ -4,22 +4,26 @@ import SwiftUI
 struct AreaMatrixClassificationDiorama: View {
     @State private var phase = 0
     @State private var timerTask: Task<Void, Never>?
+    @State private var highlightTask: Task<Void, Never>?
+    @State private var lifecycleGeneration = 0
     @State private var scanProgress: CGFloat = 0
     @State private var highlightFlash = false
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.areaMatrixSceneParallax) private var parallax
     @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         ZStack {
             miniAppWindow
-                .offset(x: 70 + parallax.horizontal * -15, y: parallax.vertical * -10)
+                .offset(x: 70 + effectiveParallax.horizontal * -15, y: effectiveParallax.vertical * -10)
             floatingFileView
                 .offset(x: phase >= 1 ? 80 : -150, y: phase >= 1 ? -20 : 0)
-                .scaleEffect(phase >= 1 && phase <= 2 ? 0.6 : 1.0)
+                .scaleEffect(reduceMotion ? 1 : (phase >= 1 && phase <= 2 ? 0.6 : 1.0))
                 .rotation3DEffect(
-                    .degrees(phase == 1 ? 25 : 0),
+                    .degrees(reduceMotion ? 0 : (phase == 1 ? 25 : 0)),
                     axis: (x: 0.5, y: 1.0, z: -0.2),
                     perspective: 0.8
                 )
@@ -33,37 +37,95 @@ struct AreaMatrixClassificationDiorama: View {
                 phase = 0
                 startCycle()
             } else {
-                timerTask?.cancel()
+                stopAnimations()
             }
         }
         .onChange(of: phase) { _, newPhase in
             updateScanProgress(for: newPhase)
             updateHighlightFlash(for: newPhase)
         }
+        .onChange(of: reduceMotion) { _, _ in
+            if sceneVisibility.isVisible {
+                phase = 0
+                startCycle()
+            } else {
+                stopAnimations()
+            }
+        }
+        .onDisappear(perform: stopAnimations)
     }
 
     private func startCycle() {
-        timerTask?.cancel()
-        timerTask = Task {
+        stopAnimations()
+        guard sceneVisibility.isVisible else { return }
+        guard accessibilityPolicy.allowsContinuousMotion else {
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                phase = 3
+                scanProgress = 1
+                highlightFlash = true
+            }
+            return
+        }
+        lifecycleGeneration += 1
+        let generation = lifecycleGeneration
+        timerTask = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(1250))
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, isCurrent(generation) else { return }
+                if reduceMotion {
+                    return
+                }
                 withAnimation(.easeInOut(duration: 0.6)) { phase = (phase + 1) % 4 }
             }
         }
     }
 
+    private func stopAnimations() {
+        lifecycleGeneration += 1
+        timerTask?.cancel()
+        highlightTask?.cancel()
+        timerTask = nil
+        highlightTask = nil
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            scanProgress = 0
+            highlightFlash = false
+        }
+    }
+
+    private func isCurrent(_ generation: Int) -> Bool {
+        accessibilityPolicy.allowsDelayedAnimationCommit(
+            generation: generation,
+            currentGeneration: lifecycleGeneration,
+            isVisible: sceneVisibility.isVisible
+        )
+    }
+
     private func updateScanProgress(for newPhase: Int) {
         guard newPhase == 2 else { return }
         scanProgress = 0
-        withAnimation(.linear(duration: 1.0)) { scanProgress = 1 }
+        if reduceMotion {
+            scanProgress = 1
+        } else {
+            withAnimation(.linear(duration: 1.0)) { scanProgress = 1 }
+        }
     }
 
     private func updateHighlightFlash(for newPhase: Int) {
         guard newPhase == 3 else { return }
+        highlightTask?.cancel()
+        let generation = lifecycleGeneration
+        if reduceMotion {
+            highlightFlash = true
+            return
+        }
         withAnimation(.easeOut(duration: 0.15)) { highlightFlash = true }
-        Task {
+        highlightTask = Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled, isCurrent(generation) else { return }
             withAnimation(.easeOut(duration: 0.5)) { highlightFlash = false }
         }
     }
@@ -77,7 +139,7 @@ struct AreaMatrixClassificationDiorama: View {
             ))
             .frame(width: phase == 1 ? 80 : 0, height: 3)
             .offset(x: phase == 1 ? 30 : -150, y: phase == 1 ? -20 : 0)
-            .animation(.easeInOut(duration: 0.6), value: phase)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.6), value: phase)
     }
 
     private var floatingFileView: some View {
@@ -177,15 +239,30 @@ struct AreaMatrixClassificationDiorama: View {
             .foregroundColor(resolvedTeal)
             .padding(.leading, 8)
             .frame(height: 16)
-            .background(resolvedTeal.opacity(highlightFlash ? 0.45 : 0.15))
+            .background(
+                resolvedTeal.opacity(
+                    reduceTransparency ? (highlightFlash ? 0.9 : 0.6) : (highlightFlash ? 0.45 : 0.15)
+                )
+            )
             .cornerRadius(2)
             .overlay(Rectangle().frame(width: 2).foregroundColor(AreaMatrixTheme.Colors.teal), alignment: .leading)
             .padding(.leading, 24)
             .opacity(phase == 3 ? 1 : 0)
-            .offset(x: phase == 3 ? 0 : -10)
+            .offset(x: reduceMotion || phase == 3 ? 0 : -10)
     }
 
     private var resolvedTeal: Color {
         colorScheme == .dark ? AreaMatrixTheme.Colors.tealBright : AreaMatrixTheme.Colors.tealDeep
+    }
+
+    private var effectiveParallax: AreaMatrixParallax {
+        accessibilityPolicy.allowsParallax ? parallax : .zero
+    }
+
+    private var accessibilityPolicy: AreaMatrixAccessibilityMotionPolicy {
+        AreaMatrixAccessibilityMotionPolicy(
+            reduceMotion: reduceMotion,
+            reduceTransparency: reduceTransparency
+        )
     }
 }

@@ -1,3 +1,4 @@
+import AreaMatrixFeatureIngestion
 import AreaMatrixUIFoundation
 import SwiftUI
 

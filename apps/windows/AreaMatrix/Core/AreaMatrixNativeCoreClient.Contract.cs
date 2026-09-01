@@ -17,7 +17,7 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort ImportFileWithResultChecksum = 52959;
     private const ushort ListFilesChecksum = 56809;
     private const ushort ListTreeJsonChecksum = 45468;
-    private const ushort LoadConfigChecksum = 64573;
+    private const ushort LoadConfigChecksum = 33004;
     private const ushort GetLatestScanSessionChecksum = 31155;
     private const ushort PredictCategoryChecksum = 65047;
     private const ushort PreviewImportConflictBatchChecksum = 52321;
@@ -30,7 +30,7 @@ public sealed partial class AreaMatrixNativeCoreClient
     private const ushort ResolveSyncConflictChecksum = 50056;
     private const ushort ResumeScanSessionChecksum = 31216;
     private const ushort SearchFilesChecksum = 65;
-    private const ushort UpdateConfigChecksum = 60628;
+    private const ushort UpdateConfigChecksum = 26832;
     private const ushort ValidateRepoPathChecksum = 43498;
 
     private void VerifyContract()

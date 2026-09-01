@@ -397,7 +397,7 @@ fn assert_existing_test_layers_are_present() {
         "camera_import_failure_recovery_capture_cancel_empty_state_has_no_core_side_effects",
         "camera_import_failure_recovery_invalid_inputs_are_explicit_and_non_mutating",
         "camera_import_failure_recovery_permission_denied_maps_and_leaves_no_half_products",
-        "camera_import_failure_recovery_io_error_from_staging_root_keeps_temp_file",
+        "camera_import_failure_recovery_staging_path_conflict_keeps_temp_file",
         "camera_import_failure_recovery_db_error_rolls_back_final_file_and_can_retry",
     ] {
         assert_contains(FAILURE_TEST, fragment);

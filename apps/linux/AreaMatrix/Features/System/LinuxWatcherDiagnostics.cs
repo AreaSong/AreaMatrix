@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using AreaMatrix.Linux.Features.Onboarding;
+using AreaMatrix.Linux.Features.Settings;
 
 namespace AreaMatrix.Linux.Features.System;
 
@@ -71,23 +72,25 @@ public sealed class LinuxWatcherDiagnostics : ILinuxWatcherDiagnostics
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (string.IsNullOrWhiteSpace(repoPath) || !Directory.Exists(repoPath))
+        try
+        {
+            return await LinuxRepositoryMetadataFileSafety.WriteDiagnosticsAsync(
+                repoPath,
+                "watcher-status",
+                DiagnosticLines(snapshot),
+                cancellationToken).ConfigureAwait(false);
+        }
+        catch (LinuxRepositoryCoreException error)
+        {
+            throw new LinuxWatcherStatusCoreException(error.Kind, error.Message, repoPath);
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             throw new LinuxWatcherStatusCoreException(
-                LinuxRepositoryErrorKind.FileNotFound,
-                "Repository folder was not found.",
+                LinuxRepositoryErrorKind.PermissionDenied,
+                "Repository metadata path is unavailable or unsafe.",
                 repoPath);
         }
-
-        string diagnosticsDirectory = Path.Combine(repoPath, ".areamatrix", "generated", "diagnostics");
-        Directory.CreateDirectory(diagnosticsDirectory);
-        string outputPath = DiagnosticOutputPath(diagnosticsDirectory);
-
-        await File.WriteAllLinesAsync(
-            outputPath,
-            DiagnosticLines(snapshot),
-            cancellationToken).ConfigureAwait(false);
-        return outputPath;
     }
 
     public Task OpenRepositoryFolderAsync(
@@ -282,7 +285,7 @@ public sealed class LinuxWatcherDiagnostics : ILinuxWatcherDiagnostics
             "AreaMatrix Linux watcher diagnostics",
             $"Status: {snapshot.Status}",
             $"Backend: {snapshot.Backend}",
-            $"Watched path: {snapshot.WatchedPath}",
+            "Watched path: [redacted]",
             $"Pending events: {snapshot.PendingEventCount}",
             $"Last event id: {snapshot.LastEventId?.ToString() ?? "Unknown"}",
             $"Last event at: {snapshot.LastEventAt?.ToString() ?? "Unknown"}",
@@ -290,14 +293,28 @@ public sealed class LinuxWatcherDiagnostics : ILinuxWatcherDiagnostics
             $"Last sync at: {snapshot.LastSyncAt?.ToString() ?? "Unknown"}",
             $"Last rescan at: {snapshot.LastRescanAt?.ToString() ?? "Unknown"}",
             $"Watch count: {snapshot.WatchCount?.ToString() ?? "Unknown"}",
-            $"Error summary: {snapshot.ErrorSummary ?? "None"}",
+            $"Error summary: {(snapshot.ErrorSummary is null ? "None" : "[redacted]")}",
             $"Health reasons: {string.Join(", ", snapshot.HealthReasons)}",
             "Recent events are relative paths only; file contents are not exported."
         ];
 
         lines.AddRange(snapshot.RecentEvents.Select(eventSample =>
-            $"- {eventSample.Kind}: {eventSample.Path} ({eventSample.EventId})"));
+            $"- {eventSample.Kind}: {RedactedRelativePath(eventSample.Path)} ({eventSample.EventId})"));
         return lines;
+    }
+
+    private static string RedactedRelativePath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || Path.IsPathRooted(path))
+        {
+            return "[redacted]";
+        }
+
+        string normalized = path.Replace('\\', '/');
+        return normalized.StartsWith("../", StringComparison.Ordinal)
+            || string.Equals(normalized, "..", StringComparison.Ordinal)
+            ? "[redacted]"
+            : normalized;
     }
 }
 

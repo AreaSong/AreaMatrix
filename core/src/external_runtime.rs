@@ -1,13 +1,20 @@
 use std::{
-    env,
+    env, fs,
     io::{self, Read, Write},
+    path::{Path, PathBuf},
     process::{Child, Command, ExitStatus, Stdio},
     thread,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime},
 };
 
+use serde::Deserialize;
+use sha2::{Digest, Sha256};
+
+#[cfg(debug_assertions)]
+use std::sync::atomic::{AtomicUsize, Ordering};
+
 #[cfg(unix)]
-use std::os::unix::process::CommandExt;
+use std::os::unix::{fs::MetadataExt, process::CommandExt};
 
 #[cfg(unix)]
 extern "C" {
@@ -16,8 +23,85 @@ extern "C" {
 
 const SAFE_PATH: &str = "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin";
 const POLL_INTERVAL: Duration = Duration::from_millis(10);
+const RUNTIME_MANIFEST_SCHEMA_VERSION: u32 = 1;
+const RUNTIME_PROTOCOL_VERSION: &str = "1";
+const MAX_MANIFEST_BYTES: u64 = 64 * 1024;
+const TEST_RUNTIME_PROVIDER: &str = "areamatrix-test-fixture";
+const TEST_RUNTIME_ENDPOINT: &str = "https://example.invalid/areamatrix-test-endpoint";
+const TEST_RUNTIME_PRIVACY_CLASSIFICATION: &str = "synthetic-test-data-only";
+const TEST_RUNTIME_SOURCE: &str = "https://example.invalid/areamatrix-test-runtime";
+const ALLOWED_LICENSES: &[&str] = &[
+    "MIT",
+    "Apache-2.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC",
+    "Unicode-DFS-2016",
+];
 #[cfg(unix)]
 const SIGKILL: i32 = 9;
+
+#[cfg(debug_assertions)]
+static TEST_HARNESS_USERS: AtomicUsize = AtomicUsize::new(0);
+
+#[cfg(debug_assertions)]
+const TEST_HARNESS_TARGETS: &[&str] = &[
+    "ai_call_log_implementation",
+    "ai_call_log_schema_compatibility",
+    "ai_classification_suggestion_failure_recovery",
+    "ai_classification_suggestion_implementation",
+    "ai_classification_suggestion_validation",
+    "ai_summary_failure_recovery",
+    "ai_summary_implementation",
+    "ai_summary_validation",
+    "ai_tags_suggestion_failure_recovery",
+    "ai_tags_suggestion_implementation",
+    "area_matrix_core",
+    "semantic_search_failure_recovery",
+    "semantic_search_implementation",
+];
+
+/// Process-local capability that enables external runtime fixtures in debug test binaries.
+///
+/// Production callers cannot enable an environment-provided executable without explicitly
+/// linking test support and holding this capability.
+#[cfg(debug_assertions)]
+#[doc(hidden)]
+pub struct ExternalRuntimeTestHarnessGuard {
+    _private: (),
+}
+
+/// Enables the process-local external runtime harness until the returned guard is dropped.
+#[cfg(debug_assertions)]
+#[doc(hidden)]
+pub fn enable_external_runtime_test_harness() -> ExternalRuntimeTestHarnessGuard {
+    TEST_HARNESS_USERS.fetch_add(1, Ordering::AcqRel);
+    ExternalRuntimeTestHarnessGuard { _private: () }
+}
+
+#[cfg(debug_assertions)]
+impl Drop for ExternalRuntimeTestHarnessGuard {
+    fn drop(&mut self) {
+        TEST_HARNESS_USERS.fetch_sub(1, Ordering::AcqRel);
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct VerifiedExternalRuntime {
+    executable: PathBuf,
+    identity: RuntimeFileIdentity,
+    expected_sha256: String,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct RuntimeFileIdentity {
+    #[cfg(unix)]
+    device: u64,
+    #[cfg(unix)]
+    inode: u64,
+    length: u64,
+    modified: Option<SystemTime>,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct ExternalRuntimeLimits {
@@ -34,6 +118,7 @@ pub(crate) struct ExternalRuntimeOutput {
 
 #[derive(Debug)]
 pub(crate) enum ExternalRuntimeError {
+    Untrusted,
     Spawn,
     WriteStdin,
     Wait,
@@ -43,11 +128,237 @@ pub(crate) enum ExternalRuntimeError {
     WorkerPanicked,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RuntimeManifest {
+    schema_version: u32,
+    capability: String,
+    version: String,
+    executable: String,
+    platforms: Vec<String>,
+    sha256: String,
+    provider: String,
+    endpoint: String,
+    privacy_classification: String,
+    license: String,
+    source: String,
+}
+
+pub(crate) fn resolve(
+    runtime_env: &str,
+    capability: &str,
+) -> Result<Option<VerifiedExternalRuntime>, ExternalRuntimeError> {
+    let Some(configured) = env::var_os(runtime_env).filter(|value| !value.is_empty()) else {
+        return Ok(None);
+    };
+    if !test_harness_enabled() {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    let (executable, identity) = canonical_regular_file(Path::new(&configured), true)?;
+    let manifest_path = companion_manifest_path(&executable);
+    let (manifest_path, _) = canonical_regular_file(&manifest_path, false)?;
+    let manifest = read_manifest(&manifest_path)?;
+    validate_manifest(&manifest, capability, &executable)?;
+    validate_runtime_hash(&executable, &identity, &manifest.sha256)?;
+    Ok(Some(VerifiedExternalRuntime {
+        executable,
+        identity,
+        expected_sha256: manifest.sha256,
+    }))
+}
+
+#[cfg(debug_assertions)]
+fn test_harness_enabled() -> bool {
+    TEST_HARNESS_USERS.load(Ordering::Acquire) > 0 && is_known_test_target()
+}
+
+#[cfg(debug_assertions)]
+fn is_known_test_target() -> bool {
+    let Ok(executable) = env::current_exe() else {
+        return false;
+    };
+    let Some(name) = executable.file_stem().and_then(|value| value.to_str()) else {
+        return false;
+    };
+    TEST_HARNESS_TARGETS.iter().any(|target| {
+        name == *target
+            || name
+                .strip_prefix(target)
+                .is_some_and(|suffix| suffix.starts_with('-'))
+    })
+}
+
+#[cfg(not(debug_assertions))]
+fn test_harness_enabled() -> bool {
+    false
+}
+
+fn companion_manifest_path(executable: &Path) -> PathBuf {
+    let mut path = executable.as_os_str().to_os_string();
+    path.push(".manifest.json");
+    PathBuf::from(path)
+}
+
+fn read_manifest(path: &Path) -> Result<RuntimeManifest, ExternalRuntimeError> {
+    let mut file = fs::File::open(path).map_err(|_| ExternalRuntimeError::Untrusted)?;
+    let before = file
+        .metadata()
+        .map_err(|_| ExternalRuntimeError::Untrusted)?;
+    if before.len() > MAX_MANIFEST_BYTES {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    let mut bytes = Vec::with_capacity(before.len() as usize);
+    file.read_to_end(&mut bytes)
+        .map_err(|_| ExternalRuntimeError::Untrusted)?;
+    let after = path
+        .metadata()
+        .map_err(|_| ExternalRuntimeError::Untrusted)?;
+    if runtime_file_identity(&before) != runtime_file_identity(&after) {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    serde_json::from_slice(&bytes).map_err(|_| ExternalRuntimeError::Untrusted)
+}
+
+fn validate_manifest(
+    manifest: &RuntimeManifest,
+    capability: &str,
+    executable: &Path,
+) -> Result<(), ExternalRuntimeError> {
+    let executable_text = executable.to_str().ok_or(ExternalRuntimeError::Untrusted)?;
+    if manifest.schema_version != RUNTIME_MANIFEST_SCHEMA_VERSION
+        || manifest.capability != capability
+        || manifest.version != RUNTIME_PROTOCOL_VERSION
+        || manifest.executable != executable_text
+        || !manifest
+            .platforms
+            .iter()
+            .any(|value| value == &current_platform())
+        || manifest.provider != TEST_RUNTIME_PROVIDER
+        || manifest.endpoint != TEST_RUNTIME_ENDPOINT
+        || manifest.privacy_classification != TEST_RUNTIME_PRIVACY_CLASSIFICATION
+        || !ALLOWED_LICENSES.contains(&manifest.license.as_str())
+        || manifest.source != TEST_RUNTIME_SOURCE
+        || !is_sha256(&manifest.sha256)
+    {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    Ok(())
+}
+
+fn current_platform() -> String {
+    format!("{}-{}", env::consts::OS, env::consts::ARCH)
+}
+
+fn is_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn canonical_regular_file(
+    path: &Path,
+    executable: bool,
+) -> Result<(PathBuf, RuntimeFileIdentity), ExternalRuntimeError> {
+    if !path.is_absolute() {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    let lexical_metadata =
+        fs::symlink_metadata(path).map_err(|_| ExternalRuntimeError::Untrusted)?;
+    if lexical_metadata.file_type().is_symlink() || !lexical_metadata.is_file() {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    let canonical = fs::canonicalize(path).map_err(|_| ExternalRuntimeError::Untrusted)?;
+    if canonical != path {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    let metadata = canonical
+        .metadata()
+        .map_err(|_| ExternalRuntimeError::Untrusted)?;
+    if !metadata.is_file() || !safe_permissions(&metadata, executable) {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    Ok((canonical, runtime_file_identity(&metadata)))
+}
+
+fn runtime_file_identity(metadata: &fs::Metadata) -> RuntimeFileIdentity {
+    RuntimeFileIdentity {
+        #[cfg(unix)]
+        device: metadata.dev(),
+        #[cfg(unix)]
+        inode: metadata.ino(),
+        length: metadata.len(),
+        modified: metadata.modified().ok(),
+    }
+}
+
+fn same_runtime_file(left: &RuntimeFileIdentity, right: &RuntimeFileIdentity) -> bool {
+    left == right
+}
+
+#[cfg(unix)]
+fn safe_permissions(metadata: &fs::Metadata, executable: bool) -> bool {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mode = metadata.permissions().mode();
+    mode & 0o022 == 0 && (!executable || mode & 0o111 != 0)
+}
+
+#[cfg(not(unix))]
+fn safe_permissions(_metadata: &fs::Metadata, _executable: bool) -> bool {
+    true
+}
+
+fn hash_runtime(path: &Path) -> Result<String, ExternalRuntimeError> {
+    let mut file = fs::File::open(path).map_err(|_| ExternalRuntimeError::Untrusted)?;
+    let mut hasher = Sha256::new();
+    let mut buffer = [0_u8; 64 * 1024];
+    loop {
+        let read = file
+            .read(&mut buffer)
+            .map_err(|_| ExternalRuntimeError::Untrusted)?;
+        if read == 0 {
+            break;
+        }
+        hasher.update(&buffer[..read]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+fn validate_runtime_hash(
+    path: &Path,
+    expected_identity: &RuntimeFileIdentity,
+    expected_hash: &str,
+) -> Result<(), ExternalRuntimeError> {
+    let actual_hash = hash_runtime(path)?;
+    let metadata = path
+        .metadata()
+        .map_err(|_| ExternalRuntimeError::Untrusted)?;
+    if &runtime_file_identity(&metadata) != expected_identity || actual_hash != expected_hash {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    Ok(())
+}
+
 /// Runs a configured child process with bounded IO and deterministic cleanup.
 ///
 /// The child receives a minimal, fixed environment. stderr is deliberately discarded because
 /// runtime output can contain credentials or provider response details.
 pub(crate) fn run(
+    runtime: &VerifiedExternalRuntime,
+    payload: &[u8],
+    limits: ExternalRuntimeLimits,
+) -> Result<ExternalRuntimeOutput, ExternalRuntimeError> {
+    let (executable, identity) = canonical_regular_file(&runtime.executable, true)?;
+    if !same_runtime_file(&runtime.identity, &identity) {
+        return Err(ExternalRuntimeError::Untrusted);
+    }
+    validate_runtime_hash(&executable, &identity, &runtime.expected_sha256)?;
+    let mut command = Command::new(executable);
+    run_command(&mut command, payload, limits)
+}
+
+fn run_command(
     command: &mut Command,
     payload: &[u8],
     limits: ExternalRuntimeLimits,
@@ -170,137 +481,5 @@ fn terminate_process_group(child: &Child) {
 fn terminate_process_group(_child: &Child) {}
 
 #[cfg(test)]
-mod tests {
-    use std::{
-        fs,
-        path::Path,
-        process::Command,
-        thread,
-        time::{Duration, Instant},
-    };
-
-    #[cfg(unix)]
-    use super::kill;
-    use super::{run, ExternalRuntimeError, ExternalRuntimeLimits};
-
-    fn limits(timeout: Duration, max_stdout_bytes: usize) -> ExternalRuntimeLimits {
-        ExternalRuntimeLimits {
-            timeout,
-            max_stdout_bytes,
-            preserved_environment: &[],
-        }
-    }
-
-    #[test]
-    fn captures_bounded_stdout_and_writes_payload() {
-        let mut command = shell("cat >/dev/null; printf 'ok'");
-        let output = run(&mut command, b"payload", limits(Duration::from_secs(1), 16))
-            .expect("runtime should complete");
-
-        assert!(output.status.success());
-        assert_eq!(output.stdout, b"ok");
-    }
-
-    #[test]
-    fn clears_inherited_environment_but_keeps_safe_path() {
-        let mut command = shell("printf '%s|%s' \"${AREAMATRIX_TEST_SECRET-unset}\" \"$PATH\"");
-        command.env("AREAMATRIX_TEST_SECRET", "must-not-leak");
-        let output = run(&mut command, b"", limits(Duration::from_secs(1), 256))
-            .expect("runtime should complete");
-        let rendered = String::from_utf8(output.stdout).expect("output is utf8");
-
-        assert!(rendered.starts_with("unset|/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"));
-    }
-
-    #[test]
-    fn rejects_output_over_limit_after_draining_pipe() {
-        let mut command = shell("printf '0123456789'");
-        let error = run(&mut command, b"", limits(Duration::from_secs(1), 4))
-            .expect_err("oversized output should be rejected");
-
-        assert!(matches!(error, ExternalRuntimeError::StdoutLimitExceeded));
-    }
-
-    #[test]
-    fn kills_and_reaps_hanging_process() {
-        let started = Instant::now();
-        let mut command = shell("cat >/dev/null; sleep 30");
-        let error = run(&mut command, b"", limits(Duration::from_millis(100), 16))
-            .expect_err("hanging runtime should time out");
-
-        assert!(matches!(error, ExternalRuntimeError::TimedOut));
-        assert!(started.elapsed() < Duration::from_secs(3));
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn kills_descendant_process_group_on_timeout() {
-        let directory = tempfile::tempdir().expect("create descendant pid directory");
-        let pid_path = directory.path().join("descendant.pid");
-        let script = format!(
-            "sleep 30 & descendant=$!; printf '%s' \"$descendant\" > {}; wait",
-            shell_quote(&pid_path)
-        );
-        let command = shell(&script);
-        let run_handle = thread::spawn(move || {
-            let mut command = command;
-            run(&mut command, b"", limits(Duration::from_secs(3), 16))
-        });
-        let descendant_pid = wait_until_pid_file(&pid_path);
-        let error = run_handle
-            .join()
-            .expect("runtime worker should not panic")
-            .expect_err("runtime process group should time out");
-
-        assert!(matches!(error, ExternalRuntimeError::TimedOut));
-        let descendant_pid = descendant_pid.expect("read descendant pid before timeout");
-        assert!(wait_until_process_exits(descendant_pid));
-    }
-
-    #[test]
-    fn preserves_non_zero_exit_status_for_callers() {
-        let mut command = shell("exit 42");
-        let output = run(&mut command, b"", limits(Duration::from_secs(1), 16))
-            .expect("process execution should complete");
-
-        assert_eq!(output.status.code(), Some(42));
-    }
-
-    fn shell(script: &str) -> Command {
-        let mut command = Command::new("sh");
-        command.arg("-c").arg(script);
-        command
-    }
-
-    #[cfg(unix)]
-    fn wait_until_process_exits(pid: i32) -> bool {
-        let deadline = Instant::now() + Duration::from_secs(2);
-        while Instant::now() < deadline {
-            // SAFETY: signal 0 performs an existence check without sending a signal.
-            if unsafe { kill(pid, 0) } != 0 {
-                return true;
-            }
-            thread::sleep(Duration::from_millis(10));
-        }
-        false
-    }
-
-    #[cfg(unix)]
-    fn wait_until_pid_file(path: &Path) -> Option<i32> {
-        let deadline = Instant::now() + Duration::from_secs(2);
-        while Instant::now() < deadline {
-            if let Ok(contents) = fs::read_to_string(path) {
-                if let Ok(pid) = contents.trim().parse::<i32>() {
-                    return Some(pid);
-                }
-            }
-            thread::sleep(Duration::from_millis(10));
-        }
-        None
-    }
-
-    #[cfg(unix)]
-    fn shell_quote(path: &Path) -> String {
-        format!("'{}'", path.to_string_lossy().replace('\'', "'\\''"))
-    }
-}
+#[path = "external_runtime_tests.rs"]
+mod tests;

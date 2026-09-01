@@ -12,6 +12,8 @@ public static class PlatformDifferencesTests
         WindowsCapabilityRowsCoverPlatformDifferencesPageSpecMatrix();
         await CapabilityFailureShowsUnknownRowsWithoutStaticAvailability();
         await ContractFailureShowsRecoveryWithoutStaticSuccess();
+        await CancellationDoesNotBecomeCapabilityFailure();
+        await CancellationDoesNotBecomeContractFailure();
         WindowsRepositorySettingsActionIsAvailable();
         PlatformDifferencesPageIsReachableFromWindowsMainWindow();
         NativeClientExportsPlatformDifferenceCoreCalls();
@@ -93,6 +95,35 @@ public static class PlatformDifferencesTests
         TestAssert.Equal("Binding contract unavailable", model.ErrorMessage, nameof(model.ErrorMessage));
         TestAssert.Contains("Core bridge", model.RecoveryText ?? string.Empty, nameof(model.RecoveryText));
         TestAssert.Null(model.Report, nameof(model.Report));
+    }
+
+    private static async Task CancellationDoesNotBecomeCapabilityFailure()
+    {
+        using CancellationTokenSource cancellation = new();
+        cancellation.Cancel();
+        FakePlatformDifferencesCoreBridge bridge = new(ContractReport(PlatformDifferencesBindingTarget.Kotlin));
+        PlatformDifferencesViewModel model = new(bridge);
+
+        await TestAssert.ThrowsAsync<OperationCanceledException>(
+            () => model.LoadCapabilitiesAsync(cancellation.Token),
+            "pre-cancelled capability check");
+
+        TestAssert.Null(model.CapabilityErrorMessage, "capability cancellation error");
+        TestAssert.False(model.IsCheckingCapabilities, "capability cancellation busy state");
+    }
+
+    private static async Task CancellationDoesNotBecomeContractFailure()
+    {
+        FakePlatformDifferencesCoreBridge bridge = new(new OperationCanceledException("cancelled"));
+        PlatformDifferencesViewModel model = new(bridge);
+
+        await TestAssert.ThrowsAsync<OperationCanceledException>(
+            () => model.InspectContractAsync(),
+            "mid-flight contract cancellation");
+
+        TestAssert.Equal(PlatformDifferencesContractStatus.Idle, model.Status, "contract cancellation status");
+        TestAssert.Null(model.ErrorMessage, "contract cancellation error");
+        TestAssert.False(model.IsChecking, "contract cancellation busy state");
     }
 
     private static void WindowsRepositorySettingsActionIsAvailable()

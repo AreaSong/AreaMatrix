@@ -5,9 +5,10 @@ use std::{
 };
 
 use area_matrix_core::{
-    init_repo, load_config, map_core_error, preview_conflict_versions, resolve_icloud_conflict,
-    CoreError, ErrorKind, ErrorMappingInput, ErrorRecoverability, ICloudConflictResolution,
-    OverviewOutput, RepoInitMode, RepoInitOptions,
+    init_repo, load_config, map_core_error, preview_conflict_versions,
+    resolve_icloud_conflict as core_resolve_icloud_conflict, CoreError, ErrorKind,
+    ErrorMappingInput, ErrorRecoverability, ICloudConflictResolution, OverviewOutput, RepoInitMode,
+    RepoInitOptions,
 };
 use pretty_assertions::assert_eq;
 use rusqlite::Connection;
@@ -15,6 +16,16 @@ use rusqlite::Connection;
 mod support;
 
 use support::system_trash_home::{with_test_system_trash, with_unavailable_system_trash};
+
+// Existing failure scenarios use a concise helper; it still obtains a fresh token before apply.
+fn resolve_icloud_conflict(
+    repo_path: String,
+    conflict_id: String,
+    resolution: ICloudConflictResolution,
+) -> area_matrix_core::CoreResult<area_matrix_core::ICloudConflictResolveReport> {
+    let preview = preview_conflict_versions(repo_path.clone(), conflict_id.clone())?;
+    core_resolve_icloud_conflict(repo_path, conflict_id, resolution, preview.preview_token)
+}
 
 fn path_string(path: &Path) -> String {
     path.to_string_lossy().into_owned()
@@ -157,7 +168,6 @@ fn icloud_conflict_visual_failure_edge_empty_state_is_read_only_and_returns_stal
         "docs/report (Alice's conflicted copy).pdf".to_owned(),
         ICloudConflictResolution::KeepBoth,
     );
-
     assert!(matches!(preview, Err(CoreError::Conflict { .. })));
     assert!(matches!(resolve, Err(CoreError::Conflict { .. })));
     assert_eq!(snapshot_tree(repo.path()), before);

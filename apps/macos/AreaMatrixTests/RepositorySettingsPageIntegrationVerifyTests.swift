@@ -1,5 +1,5 @@
-import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 import XCTest
 
 final class RepoSettingsPageIntegrationTests: XCTestCase {

@@ -1,5 +1,5 @@
-import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 
 actor RecordingDiagnosticsCollector: CoreDiagnosticsCollecting, RepoPathRequestRecording {
     typealias SnapshotResult = Swift.Result<DiagnosticsSnapshotSnapshot, Error>

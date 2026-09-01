@@ -1,3 +1,4 @@
+using AreaMatrixTests.Architecture;
 using AreaMatrixTests.ChooseRepository;
 using AreaMatrixTests.Conflicts;
 using AreaMatrixTests.DesktopMainQuery;
@@ -7,6 +8,16 @@ using AreaMatrixTests.Recovery;
 using AreaMatrixTests.Settings;
 using AreaMatrixTests.WatcherStatus;
 
+if (args is ["native-loader-security"])
+{
+    NativeCoreLibrarySecurityTests.RunAll();
+    Console.WriteLine("AreaMatrix Windows native loader security tests passed.");
+    return;
+}
+
+ViewModelSynchronizationContextTests.RunAll();
+NativeCoreLibrarySecurityTests.RunAll();
+NativeCoreContractGoldenVectorTests.RunAll();
 await ChooseRepositoryViewModelTests.RunAllAsync();
 await ChooseRepositoryPageIntegrationTests.RunAllAsync();
 await OneDriveNoticeViewModelTests.RunAllAsync();

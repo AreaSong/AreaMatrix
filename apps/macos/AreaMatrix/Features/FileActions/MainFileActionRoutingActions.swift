@@ -1,22 +1,19 @@
 import Foundation
 
-extension MainFileListModel {
-    func beginRename(fileID: Int64? = nil) {
-        guard let fileID = writableActionFileID(fileID) else { return }
+extension FileActionCoordinator {
+    func beginRename(fileID: Int64) {
         renameState = .idle
         pendingActionDestination = .rename(fileID: fileID)
     }
 
-    func beginChangeCategory(fileID: Int64? = nil) {
-        guard let fileID = writableActionFileID(fileID) else { return }
+    func beginChangeCategory(fileID: Int64) {
         changeCategoryState = .idle
         classifierCorrectionContextState = .idle
         classifierCorrectionResult = nil
         pendingActionDestination = .changeCategory(fileID: fileID)
     }
 
-    func beginClassifierCorrection(fileID: Int64? = nil) {
-        guard let fileID = writableActionFileID(fileID) else { return }
+    func beginClassifierCorrection(fileID: Int64) {
         changeCategoryState = .idle
         classifierCorrectionContextState = .idle
         classifierCorrectionResult = nil
@@ -25,39 +22,27 @@ extension MainFileListModel {
 
     func beginRenameFromChangeCategory(fileID: Int64, targetCategory: String) {
         guard pendingActionDestination?.isChangeCategory(fileID: fileID) == true,
-              canPerformWriteAction(fileID: fileID),
               !changeCategoryState.isMoving(fileID: fileID) else { return }
         renameState = .returningToChangeCategory(fileID: fileID, targetCategory: targetCategory)
         pendingActionDestination = .rename(fileID: fileID)
     }
 
-    func beginDelete(fileID: Int64? = nil) {
-        guard let fileID = writableActionFileID(fileID) else { return }
+    func beginDelete(fileID: Int64) {
         pendingActionDestination = .delete(fileID: fileID)
     }
 
-    func openClassifierRuleEditorForBatchCategory(context: BatchChangeCategoryReturnContext) {
-        pendingSearchDestination = .classifierRuleEditor(context: context)
-    }
-
-    func clearPendingActionDestination() {
+    func clearPendingActionDestination(canClearExternalState: Bool) {
         if !renameState.isRenaming,
            !deleteState.isDeleting,
            !isMovingCategory,
-           !iCloudConflictResolutionState.isApplying {
+           canClearExternalState {
             pendingActionDestination = nil
             renameState = .idle
             deleteState = .idle
             changeCategoryState = .idle
             classifierCorrectionContextState = .idle
             classifierCorrectionResult = nil
-            iCloudConflictResolutionState = .idle
         }
-    }
-
-    func actionRoutingFile(for fileID: Int64) -> FileEntrySnapshot? {
-        files.first { $0.id == fileID } ??
-            selectedFileDetail.flatMap { $0.id == fileID ? $0 : nil }
     }
 
     private var isMovingCategory: Bool {

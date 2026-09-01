@@ -10,7 +10,7 @@
 
 | 层 | 技术 |
 |---|---|
-| Core | Rust 2021，minimum rust-version 1.75 |
+| Core | Rust 2021，minimum rust-version 1.88；仓库与 CI 固定使用 1.88.0 |
 | DB | SQLite / rusqlite bundled，WAL |
 | FFI | UniFFI 0.28，UDL + staticlib/cdylib |
 | macOS | Swift、SwiftUI、AppKit、CoreServices |
@@ -28,7 +28,7 @@ macOS deployment target 和 Xcode build settings 以
 |---|---|---|
 | `uniffi` | 0.28 | FFI scaffolding/bindings |
 | `rusqlite` | 0.31 | bundled SQLite、chrono、JSON |
-| `serde` / `serde_json` / `serde_yaml` | 1 / 1 / 0.9 | DTO、JSON、YAML |
+| `serde` / `serde_json` / `serde_yaml` | 1 / 1 / `serde_yaml_ng` 0.10 | DTO、JSON、YAML |
 | `thiserror` | 1 | CoreError |
 | `sha2` | 0.10 | SHA-256 |
 | `walkdir` | 2 | tree/reindex 遍历 |
@@ -37,7 +37,6 @@ macOS deployment target 和 Xcode build settings 以
 | `tracing-subscriber` | 0.3 | Core 进程级 subscriber、过滤与结构化事件层 |
 | `unicode-normalization` | 0.1 | 搜索/分类文本归一化 |
 | `regex` | 1 | 查询和规则处理 |
-| `trash` | 5 | 系统 Trash |
 | `uuid` | 1，v4 | token、staging、diagnostics 名称 |
 
 dev dependency 为 `tempfile` 和 `pretty_assertions`。仓库当前没有 Criterion、Tokio 或 Reqwest。

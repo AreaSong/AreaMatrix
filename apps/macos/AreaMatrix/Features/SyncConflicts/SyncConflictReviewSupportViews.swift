@@ -1,24 +1,33 @@
 import SwiftUI
 
-extension MainRepositoryContentView {
-    func applyMainRepositorySyncConflictSheet(to content: some View) -> some View {
-        content.sheet(item: $syncConflictReviewRoutingState.route, content: syncConflictReviewSheet)
+struct SyncConflictReviewHostModifier: ViewModifier {
+    @ObservedObject var coordinator: SyncConflictCoordinator
+    let dependencies: SyncConflictsFeatureDependencies
+    let errorMapper: any CoreErrorMapping
+    let onResolved: @MainActor (SyncConflictResolveReportSnapshot) async -> Void
+
+    func body(content: Content) -> some View {
+        content.sheet(item: $coordinator.reviewRoutingState.route, content: reviewSheet)
     }
 
-    func syncConflictReviewSheet(_ route: SyncConflictReviewRoute) -> some View {
+    private func reviewSheet(_ route: SyncConflictReviewRoute) -> some View {
         SyncConflictReviewView(
             model: SyncConflictReviewModel(
                 repoPath: route.repoPath,
                 conflictID: route.conflictID,
                 primaryPath: route.primaryPath,
-                conflictDetector: syncConflictsDependencies.syncConflictDetector,
-                conflictResolver: syncConflictsDependencies.conflictResolver,
+                conflictDetector: dependencies.syncConflictDetector,
+                conflictResolver: dependencies.conflictResolver,
                 errorMapper: errorMapper
             ),
-            onBackToNeedsReview: { syncConflictReviewRoutingState.route = nil },
-            onClose: { syncConflictReviewRoutingState.route = nil },
-            onResolved: handleSyncConflictResolved
+            onBackToNeedsReview: dismiss,
+            onClose: dismiss,
+            onResolved: onResolved
         )
+    }
+
+    private func dismiss() {
+        coordinator.reviewRoutingState.route = nil
     }
 }
 

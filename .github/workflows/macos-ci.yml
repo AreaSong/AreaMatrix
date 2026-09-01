@@ -18,24 +18,39 @@ jobs:
     name: prompt doctor
     runs-on: macos-14
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - run: ./dev check prompts
 
   core-sdk:
     name: Build reusable CoreSDK
     runs-on: macos-14
     needs: prompt-doctor
+    outputs:
+      archive_sha256: ${{ steps.package.outputs.archive_sha256 }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - uses: dtolnay/rust-toolchain@stable
+      - name: Show macOS build environment
+        run: |
+          set -euo pipefail
+          printf 'runner_arch=%s\n' "$(uname -m)"
+          uname -a
+          xcode-select -p
+          xcodebuild -showsdks | sed -n '/macOS SDKs:/,/iOS SDKs:/p'
+
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
         with:
           targets: aarch64-apple-darwin,x86_64-apple-darwin,aarch64-apple-ios,aarch64-apple-ios-sim,x86_64-apple-ios
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@bc2d2e71bd35c5549942babaa51a89c586b981d1 # v2.8.1
         with:
           workspaces: core
           shared-key: core-sdk
@@ -47,17 +62,32 @@ jobs:
         run: ./dev bindings verify
 
       - name: Verify generated Swift package
-        run: swift build --package-path .build/core-sdk/current
+        run: >-
+          swift build
+          --package-path .build/core-sdk/current
+          --scratch-path "$RUNNER_TEMP/areamatrix-core-sdk-swiftpm"
 
       - name: Package CoreSDK cache entry
-        run: tar -czf core-sdk.tar.gz -C .build core-sdk
+        id: package
+        run: |
+          set -euo pipefail
+          tar -czf core-sdk.tar.gz -C .build core-sdk
+          archive_sha256="$(shasum -a 256 core-sdk.tar.gz | awk '{print $1}')"
+          printf 'archive_sha256=%s\n' "$archive_sha256" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: core-sdk
           path: core-sdk.tar.gz
           if-no-files-found: error
           retention-days: 7
+
+      - name: Verify packaged CoreSDK remained immutable during upload
+        env:
+          CORE_SDK_ARCHIVE_SHA256: ${{ steps.package.outputs.archive_sha256 }}
+        run: |
+          set -euo pipefail
+          printf '%s  %s\n' "$CORE_SDK_ARCHIVE_SHA256" core-sdk.tar.gz | shasum -a 256 --check
 
   build:
     name: Xcode build-for-testing & layered tests
@@ -66,7 +96,12 @@ jobs:
     env:
       AREAMATRIX_CORE_SDK_VERIFY_ONLY: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Start CI feedback timer
+        run: echo "AREAMATRIX_CI_START=$(python3 -c 'import time; print(f\"{time.time():.6f}\")')" >> "$GITHUB_ENV"
 
       - name: Require macOS project
         run: test -d apps/macos/AreaMatrix.xcodeproj
@@ -74,15 +109,21 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: core-sdk
           path: .build/artifacts
 
       - name: Restore reusable CoreSDK
+        env:
+          CORE_SDK_ARCHIVE_SHA256: ${{ needs.core-sdk.outputs.archive_sha256 }}
         run: |
+          set -euo pipefail
+          test -n "$CORE_SDK_ARCHIVE_SHA256"
+          printf '%s  %s\n' "$CORE_SDK_ARCHIVE_SHA256" .build/artifacts/core-sdk.tar.gz | shasum -a 256 --check
           tar -xzf .build/artifacts/core-sdk.tar.gz -C .build
           ./dev build core-sdk --verify-only
 
@@ -92,12 +133,85 @@ jobs:
             -project apps/macos/AreaMatrix.xcodeproj \
             -scheme AreaMatrix
 
+      - name: Test AreaMatrixModules Swift package
+        run: swift test --package-path apps/macos/Packages/AreaMatrixModules
+
       - name: Build XCTest products once
         run: >-
           ./dev test macos --build-for-testing
+          --destination "platform=macOS,arch=$(uname -m)"
+          --test-plan AreaMatrix-Functional
           --derived-data-path .build/derived-data/macos-ci
           --enable-code-coverage
           --build-log .build/derived-data/macos-ci/xcodebuild-build-for-testing.log
+
+      - name: Upload Xcode build diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-xcode-build-diagnostics
+          path: .build/derived-data/macos-ci/**/*.log
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Print Xcode build diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          logs="$(find .build/derived-data/macos-ci -type f -name '*.log' -print 2>/dev/null || true)"
+          if [ -z "$logs" ]; then
+            echo "No Xcode diagnostic logs were produced."
+            exit 0
+          fi
+          while IFS= read -r log; do
+            [ -n "$log" ] || continue
+            echo "::group::$log"
+            tail -n 250 "$log"
+            echo "::endgroup::"
+          done <<< "$logs"
+
+      - name: Publish Xcode failure summary
+        if: failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          emit_annotation() {
+            local level="$1"
+            local message="$2"
+            message="${message//'%'/'%25'}"
+            message="${message//$'\r'/'%0D'}"
+            message="${message//$'\n'/'%0A'}"
+            printf '::%s title=Xcode build diagnostic::%s\n' "$level" "$message"
+          }
+          annotations=""
+          {
+            echo "## macOS Xcode build diagnostics"
+            echo
+            echo "- runner architecture: \`$(uname -m)\`"
+            echo "- Xcode: \`$(xcodebuild -version | tr '\\n' ' ')\`"
+            echo
+            for log in .build/derived-data/macos-ci/*.log; do
+              [ -f "$log" ] || continue
+              echo "### $log"
+              echo
+              echo "#### Error markers"
+              matches="$(grep -Ein "error:|fatal error:|BUILD FAILED|TEST BUILD FAILED|The following build commands failed|Unable to find module dependency|Testing cancelled" "$log" || true)"
+              if [ -z "$matches" ]; then
+                echo "No standard Xcode error marker found."
+              else
+                printf '%s\n' "$matches" | tail -n 80
+                annotations="${annotations}${matches}\n"
+              fi
+              echo
+              echo "#### Tail"
+              tail -n 120 "$log"
+              echo
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+          while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            emit_annotation error "$line"
+          done < <(printf '%b' "$annotations" | tail -n 20)
 
       - name: Run Unit test plan without rebuilding
         run: >-
@@ -128,18 +242,131 @@ jobs:
           --result-bundle-path TestResults.xcresult
           --disable-parallel-testing --coverage-gate
 
-      - uses: actions/upload-artifact@v4
+      - name: Publish Functional test diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          emit_annotation() {
+            local level="$1"
+            local title="$2"
+            local message="$3"
+            message="${message//'%'/'%25'}"
+            message="${message//$'\r'/'%0D'}"
+            message="${message//$'\n'/'%0A'}"
+            printf '::%s title=%s::%s\n' "$level" "$title" "$message"
+          }
+          functional_markers=""
+          {
+            echo "## macOS Functional test diagnostics"
+            echo
+            log=".build/derived-data/macos-ci/xcodebuild-functional.log"
+            if [ -f "$log" ]; then
+              echo "### Error and failure markers"
+              markers="$(grep -Ein "fatal error:|error:|BUILD FAILED|TEST BUILD FAILED|The following build commands failed|Testing cancelled|Test Case '.*' failed|Test Suite '.*' failed at|Executed [0-9]+ tests?, with [1-9][0-9]* failures|testmanagerd|timed out|timeout|signal [0-9]+|crash|TEST EXECUTE FAILED|coverage gate: FAIL|Process completed with exit code [1-9][0-9]*" "$log" | tail -n 120 || true)"
+              if [ -n "$markers" ]; then
+                printf '%s\n' "$markers"
+                functional_markers="$markers"
+              else
+                echo "No standard functional test error marker found."
+              fi
+              echo
+              echo "### Log tail"
+              tail -n 180 "$log"
+            else
+              echo "Functional test log was not produced at $log."
+            fi
+            if [ -d "TestResults.xcresult" ]; then
+              echo
+              echo "### xcresult summary"
+              summary_output="$(xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact 2>&1)"
+              if [ -n "$summary_output" ]; then
+                printf '%s\n' "$summary_output"
+              else
+                echo "xcresulttool returned no summary output."
+              fi
+              echo
+              echo "### xcresult failures"
+              if printf '%s' "$summary_output" | jq -e . >/dev/null 2>&1; then
+                failures="$(printf '%s' "$summary_output" | jq -r '.testFailures[]? | @json' 2>/dev/null || true)"
+                if [ -n "$failures" ]; then
+                  printf '%s\n' "$failures"
+                else
+                  echo "xcresult summary contains no structured testFailures entries."
+                fi
+              else
+                echo "xcresult summary was not valid JSON; raw output is shown above."
+              fi
+            else
+              echo "TestResults.xcresult was not produced."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          while IFS= read -r line; do
+            [ -n "$line" ] || continue
+            emit_annotation error "Functional test diagnostic" "$line"
+          done <<< "$(printf '%s\n' "$functional_markers" | tail -n 20)"
+
+          if [ -d "TestResults.xcresult" ]; then
+            summary="$(xcrun xcresulttool get test-results summary --path TestResults.xcresult --compact 2>/dev/null || true)"
+            if printf '%s' "$summary" | jq -e . >/dev/null 2>&1; then
+              failed_count="$(printf '%s' "$summary" | jq -r '.failedTests // 0' 2>/dev/null || printf '0')"
+              result="$(printf '%s' "$summary" | jq -r '.result // "unknown"' 2>/dev/null || printf 'unknown')"
+              emit_annotation error "Functional test plan failed" "result=$result failed_tests=$failed_count"
+              printf '%s\n' "$summary" \
+                | jq -r '.testFailures[]? | [.testCaseName // "", .message // ""] | map(select(length > 0)) | join(": ")' \
+                | while IFS= read -r failure; do
+                    [ -n "$failure" ] || continue
+                    emit_annotation error "Functional test failure" "$failure"
+                  done
+            else
+              emit_annotation error "Functional test plan failed" "xcresult summary unavailable or invalid JSON"
+            fi
+          else
+            emit_annotation error "Functional test plan failed" "TestResults.xcresult was not produced"
+          fi
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: xcresult
-          path: TestResults.xcresult
+          path: TestResults*.xcresult
+
+      - name: Record macOS CI feedback metric
+        if: always()
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          end="$(python3 -c 'import time; print(f"{time.time():.6f}")')"
+          duration="$(python3 - "$AREAMATRIX_CI_START" "$end" <<'PY'
+          import sys
+          print(f"{float(sys.argv[2]) - float(sys.argv[1]):.3f}")
+          PY
+          )"
+          if ! ./dev metrics feedback \
+            --record ci \
+            --cohort github-macos14-xcode-build-and-layered-tests \
+            --duration "$duration" \
+            --note "workflow=macos-ci;job=build;runner=macos-14" \
+            --json | tee .build/metrics/macos-ci-feedback.json; then
+            echo "::warning title=CI feedback metric unavailable::Product build and tests remain authoritative; feedback metric recording failed."
+          fi
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: macos-ci-feedback
+          path: .build/metrics/macos-ci-feedback.json
+          if-no-files-found: warn
 
   ios-package:
     name: iOS Swift package build & test
     runs-on: macos-14
     needs: [prompt-doctor, core-sdk]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -147,15 +374,21 @@ jobs:
       - name: Require iOS package
         run: test -f apps/ios/Package.swift
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@2eae45db285e407f22119950686d47e1101e071b # 1.88.0, reviewed 2026-08-21
+      - run: test "$(rustc --version | awk '{print $2}')" = "1.88.0"
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: core-sdk
           path: .build/artifacts
 
       - name: Restore and verify reusable CoreSDK
+        env:
+          CORE_SDK_ARCHIVE_SHA256: ${{ needs.core-sdk.outputs.archive_sha256 }}
         run: |
+          set -euo pipefail
+          test -n "$CORE_SDK_ARCHIVE_SHA256"
+          printf '%s  %s\n' "$CORE_SDK_ARCHIVE_SHA256" .build/artifacts/core-sdk.tar.gz | shasum -a 256 --check
           tar -xzf .build/artifacts/core-sdk.tar.gz -C .build
           ./dev build core-sdk --verify-only
 
@@ -173,11 +406,24 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Require macOS sources
         run: test -d apps/macos/AreaMatrix
       - name: Install SwiftLint
-        run: brew install swiftlint
+        env:
+          SWIFTLINT_SHA256: d6cb0aa7a2f5f1ef306fc9e37bcb54dc9a26facc8f7784ac0c3dd3eccf5c6ba6
+          SWIFTLINT_URL: https://github.com/realm/SwiftLint/releases/download/0.65.0/portable_swiftlint.zip
+        run: |
+          set -euo pipefail
+          tool_dir="$RUNNER_TEMP/areamatrix-swiftlint"
+          mkdir -p "$tool_dir/bin"
+          curl --fail --location --proto '=https' --tlsv1.2 "$SWIFTLINT_URL" --output "$tool_dir/swiftlint.zip"
+          printf '%s  %s\n' "$SWIFTLINT_SHA256" "$tool_dir/swiftlint.zip" | shasum -a 256 --check
+          unzip -q "$tool_dir/swiftlint.zip" -d "$tool_dir/bin"
+          chmod 0755 "$tool_dir/bin/swiftlint"
+          printf '%s\n' "$tool_dir/bin" >> "$GITHUB_PATH"
       - name: Run SwiftLint
         run: swiftlint lint --strict --config ../../scripts/dev_tools/swiftlint.yml --force-exclude . --no-cache
         working-directory: apps/macos
@@ -187,11 +433,24 @@ jobs:
     runs-on: macos-14
     needs: prompt-doctor
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
       - name: Require macOS sources
         run: test -d apps/macos/AreaMatrix
       - name: Install SwiftFormat
-        run: brew install swiftformat
+        env:
+          SWIFTFORMAT_SHA256: 7cb1cb1fae04932047c7015441c543848e8e60e1572d808d080e0a1f1661114a
+          SWIFTFORMAT_URL: https://github.com/nicklockwood/SwiftFormat/releases/download/0.62.1/swiftformat.zip
+        run: |
+          set -euo pipefail
+          tool_dir="$RUNNER_TEMP/areamatrix-swiftformat"
+          mkdir -p "$tool_dir/bin"
+          curl --fail --location --proto '=https' --tlsv1.2 "$SWIFTFORMAT_URL" --output "$tool_dir/swiftformat.zip"
+          printf '%s  %s\n' "$SWIFTFORMAT_SHA256" "$tool_dir/swiftformat.zip" | shasum -a 256 --check
+          unzip -q "$tool_dir/swiftformat.zip" -d "$tool_dir/bin"
+          chmod 0755 "$tool_dir/bin/swiftformat"
+          printf '%s\n' "$tool_dir/bin" >> "$GITHUB_PATH"
       - name: Run SwiftFormat (check)
         run: swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore
         working-directory: apps/macos

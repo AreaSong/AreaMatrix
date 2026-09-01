@@ -1,8 +1,6 @@
 import Foundation
 
 actor RepositoryWriteCoordinator {
-    static let shared = RepositoryWriteCoordinator()
-
     private struct Waiter {
         let id: UUID
         let continuation: CheckedContinuation<Void, Error>

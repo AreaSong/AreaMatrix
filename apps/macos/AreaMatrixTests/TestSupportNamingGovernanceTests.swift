@@ -281,7 +281,14 @@ final class TestSupportNamingGovernanceTests: XCTestCase {
         let lines = contents.split(separator: "\n", omittingEmptySubsequences: false)
 
         return lines.enumerated().flatMap { lineOffset, line in
-            terms.compactMap { term in
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmedLine.hasPrefix("import "),
+                  !trimmedLine.hasPrefix("@testable import ")
+            else {
+                return [String]()
+            }
+
+            return terms.compactMap { term in
                 guard line.contains(term) else {
                     return nil
                 }

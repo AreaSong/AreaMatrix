@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
 using AreaMatrix.Features.Onboarding;
 using Microsoft.UI.Xaml;
@@ -46,14 +47,17 @@ public sealed partial class WatcherStatusView : UserControl
         await OpenRouteAsync(route);
     }
 
-    public async Task OpenRouteAsync(WindowsRepositoryRoute route)
+    public async Task OpenRouteAsync(
+        WindowsRepositoryRoute route,
+        CancellationToken cancellationToken = default)
     {
         Route = route;
         if (ViewModel is not null)
         {
-            await ViewModel.OpenRouteAsync(route);
+            await ViewModel.OpenRouteAsync(route, cancellationToken);
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         RefreshState();
     }
 

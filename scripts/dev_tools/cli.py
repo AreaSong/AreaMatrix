@@ -47,6 +47,7 @@ from .developer import (
 )
 from .governance_status import run_governance_status
 from .macos import run_macos_tests
+from .metrics import record_feedback_metric, run_build_metrics, run_feedback_metrics
 from .middle_layer import run_workflow_middle
 from .release import (
     DEFAULT_READINESS_BUILD_DERIVED_DATA,
@@ -90,6 +91,13 @@ CODEX_OS_AUTOMATION_SCOPES = sorted(["observe-only", "registry-write", "validati
 CODEX_OS_ARCHIVE_RECOMMENDATIONS = sorted(["keep", "archive", "review"])
 CODEX_OS_VALIDATION_PROFILES = sorted(["auto", "minimal", "standard", "full"])
 CODEX_OS_COMMON_FIELDS = ("state_db", "runtime_dir", "project")
+
+
+def _positive_int(value: str) -> int:
+    parsed = int(value)
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive integer")
+    return parsed
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -295,6 +303,31 @@ def _build_parser() -> argparse.ArgumentParser:
     doctor = subparsers.add_parser("doctor", help="Diagnose local developer infrastructure")
     doctor_sub = doctor.add_subparsers(dest="doctor_target", required=True)
     doctor_sub.add_parser("build", help="Audit Cargo lanes, Xcode incrementality, locks, and CoreSDK")
+
+    metrics = subparsers.add_parser("metrics", help="Inspect local developer feedback metrics")
+    metrics_sub = metrics.add_subparsers(dest="metrics_target", required=True)
+    metrics_build = metrics_sub.add_parser(
+        "build", help="Summarize CoreSDK cache and Cargo lane lock metrics"
+    )
+    metrics_build.add_argument(
+        "--limit",
+        type=_positive_int,
+        default=200,
+        help="Number of recent records to inspect per metric file; defaults to 200",
+    )
+    metrics_feedback = metrics_sub.add_parser("feedback", help="Record or summarize Canvas/Build/Test/CI samples")
+    metrics_feedback.add_argument("--record", choices=("canvas", "build", "test", "ci"))
+    metrics_feedback.add_argument("--cohort", help="Stable command/cache/runner cohort for comparable samples")
+    metrics_feedback.add_argument("--duration", type=float)
+    metrics_feedback.add_argument("--note", default="")
+    metrics_feedback.add_argument("--limit", type=_positive_int, default=200)
+    metrics_feedback.add_argument("--json", action="store_true")
+    metrics_build.add_argument("--json", action="store_true", help="Print machine-readable metrics")
+    metrics_build.add_argument(
+        "--strict",
+        action="store_true",
+        help="Return a non-zero status when malformed metric records are found",
+    )
 
     bindings = subparsers.add_parser("bindings", help="Manage generated language bindings")
     bindings_sub = bindings.add_subparsers(dest="bindings_command", required=True)
@@ -1057,6 +1090,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         if args.command == "doctor" and args.doctor_target == "build":
             return run_build_doctor(root)
+        if args.command == "metrics" and args.metrics_target == "build":
+            return run_build_metrics(root, limit=args.limit, json_output=args.json, strict=args.strict)
+        if args.command == "metrics" and args.metrics_target == "feedback":
+            if args.record:
+                if args.duration is None:
+                    raise ToolError("--record requires --duration", code=2)
+                if not args.cohort:
+                    raise ToolError("--record requires --cohort", code=2)
+                record_feedback_metric(
+                    root,
+                    path=args.record,
+                    cohort=args.cohort,
+                    duration_seconds=args.duration,
+                    note=args.note,
+                )
+            return run_feedback_metrics(root, limit=args.limit, json_output=args.json)
         if args.command == "bindings" and args.bindings_command == "update":
             return run_bindings_update(root, args.udl, args.out_dir)
         if args.command == "bindings" and args.bindings_command == "verify":

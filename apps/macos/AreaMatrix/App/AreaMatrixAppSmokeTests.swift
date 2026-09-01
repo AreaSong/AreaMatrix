@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 import Foundation
 import XCTest
 
@@ -6,7 +7,7 @@ final class AreaMatrixAppSmokeTests: XCTestCase {
     @MainActor
     func testMainWindowShellCanBeCreated() {
         let view = MainWindow(
-            dependencies: .live,
+            dependencies: AppDependencyContainer.live(coreServices: AppCoreServices()),
             observabilityRuntime: .shared,
             commandRouter: .shared
         )

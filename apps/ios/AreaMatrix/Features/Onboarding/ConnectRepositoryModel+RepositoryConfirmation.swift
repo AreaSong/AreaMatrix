@@ -54,10 +54,18 @@ extension ConnectRepositoryModel {
         guard isCurrentRoute(route) else { return }
         beginCheckingRepositoryCandidate(candidate, route: makeRoute(candidate))
         do {
-            let scopedAccess = try await accessService.beginAccessing(candidate.bookmark.url)
-            defer { scopedAccess.stop() }
+            let scopedAccess: RepositoryScopedAccess
+            if let retainedAccess = candidate.scopedAccess {
+                scopedAccess = retainedAccess
+            } else {
+                scopedAccess = try await accessService.beginAccessing(candidate.bookmark.url)
+            }
             let refreshed = try await bridge.validateRepoPath(repoPath: candidate.validation.repoPath)
-            let updatedCandidate = MobileRepositoryCandidate(validation: refreshed, bookmark: candidate.bookmark)
+            let updatedCandidate = MobileRepositoryCandidate(
+                validation: refreshed,
+                bookmark: candidate.bookmark,
+                scopedAccess: scopedAccess
+            )
             applyRefreshedRepositoryCandidate(updatedCandidate, route: makeRoute(updatedCandidate))
             try await afterRefresh(updatedCandidate)
         } catch {
@@ -79,13 +87,21 @@ extension ConnectRepositoryModel {
             applyFailure(.invalidRepository(initialized.repoPath))
             restoreRepositoryConfirmationRoute(.repositoryInitConfirm(MobileRepositoryCandidate(
                 validation: initialized,
-                bookmark: candidate.bookmark
+                bookmark: candidate.bookmark,
+                scopedAccess: candidate.scopedAccess
             )))
             return
         }
         recordLatestValidation(initialized)
         let bookmark = try await accessService.persistBookmark(for: candidate.bookmark.url, lastOpenedAt: now())
-        try await openCreatedRepository(validation: initialized, bookmark: bookmark)
+        guard let scopedAccess = candidate.scopedAccess else {
+            throw MobileRepositoryConnectionError.permissionDenied(candidate.validation.repoPath)
+        }
+        try await openCreatedRepository(
+            validation: initialized,
+            bookmark: bookmark,
+            scopedAccess: scopedAccess
+        )
     }
 
     private func adoptValidatedExistingRepository(from candidate: MobileRepositoryCandidate) async throws {
@@ -101,13 +117,21 @@ extension ConnectRepositoryModel {
             applyFailure(.invalidRepository(initialized.repoPath))
             restoreRepositoryConfirmationRoute(.repositoryAdoptConfirm(MobileRepositoryCandidate(
                 validation: initialized,
-                bookmark: candidate.bookmark
+                bookmark: candidate.bookmark,
+                scopedAccess: candidate.scopedAccess
             )))
             return
         }
         recordLatestValidation(initialized)
         let bookmark = try await accessService.persistBookmark(for: candidate.bookmark.url, lastOpenedAt: now())
-        try await openCreatedRepository(validation: initialized, bookmark: bookmark)
+        guard let scopedAccess = candidate.scopedAccess else {
+            throw MobileRepositoryConnectionError.permissionDenied(candidate.validation.repoPath)
+        }
+        try await openCreatedRepository(
+            validation: initialized,
+            bookmark: bookmark,
+            scopedAccess: scopedAccess
+        )
     }
 
     private func beginCheckingRepositoryCandidate(

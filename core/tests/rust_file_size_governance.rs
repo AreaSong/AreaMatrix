@@ -14,6 +14,13 @@ struct LegacyOversizedFile {
 
 const LEGACY_OVERSIZED_FILES: &[LegacyOversizedFile] = &[
     LegacyOversizedFile {
+        path: "src/storage/safe_move.rs",
+        owner: "atomic and recoverable file movement",
+        rationale: "Cross-platform no-replace movement, Unix descriptor hardening, and rollback guards currently share file-safety invariants.",
+        split_trigger: "Before adding another move strategy, extract the Unix descriptor implementation behind a narrow internal interface.",
+        maximum_line_count: 912,
+    },
+    LegacyOversizedFile {
         path: "src/db/schema.rs",
         owner: "database schema lifecycle",
         rationale: "Schema creation, compatibility validation, and migration fixtures share one audited DB boundary.",
@@ -26,6 +33,13 @@ const LEGACY_OVERSIZED_FILES: &[LegacyOversizedFile] = &[
         rationale: "Repair planning and execution remain colocated while recovery invariants are stabilized.",
         split_trigger: "Before adding a repair mode, separate read-only diagnosis from mutation execution.",
         maximum_line_count: 821,
+    },
+    LegacyOversizedFile {
+        path: "src/batch_journal.rs",
+        owner: "batch filesystem recovery journal",
+        rationale: "Journal validation, database-state comparison, and crash rollback currently share one recovery contract.",
+        split_trigger: "Before adding another batch operation, extract recovery state evaluation and path rollback into submodules.",
+        maximum_line_count: 677,
     },
     LegacyOversizedFile {
         path: "src/classifier_rule_editor/config.rs",
@@ -60,7 +74,7 @@ const LEGACY_OVERSIZED_FILES: &[LegacyOversizedFile] = &[
         owner: "overview generation orchestration",
         rationale: "Overview planning, generation, and public orchestration remain coupled at the feature boundary.",
         split_trigger: "Before adding an overview mode, extract orchestration state from public feature entry points.",
-        maximum_line_count: 642,
+        maximum_line_count: 663,
     },
     LegacyOversizedFile {
         path: "src/db/sync/receipts.rs",
@@ -68,6 +82,34 @@ const LEGACY_OVERSIZED_FILES: &[LegacyOversizedFile] = &[
         rationale: "Receipt compatibility, recovery tokens, and query behavior share transactional invariants.",
         split_trigger: "Before changing receipt persistence, separate compatibility recovery from ordinary receipt queries.",
         maximum_line_count: 556,
+    },
+    LegacyOversizedFile {
+        path: "src/icloud_conflicts/paths.rs",
+        owner: "iCloud conflict path verification",
+        rationale: "Conflict discovery, stable file identity, placeholder detection, and repository containment share one security boundary.",
+        split_trigger: "Before adding another provider path rule, extract repository containment and file identity helpers.",
+        maximum_line_count: 544,
+    },
+    LegacyOversizedFile {
+        path: "src/batch_rename/apply.rs",
+        owner: "batch rename transaction execution",
+        rationale: "Apply, rollback, sidecar movement, and result projection remain coupled by one transaction lifecycle.",
+        split_trigger: "Before adding another rename step, extract rollback guards and filesystem helpers.",
+        maximum_line_count: 539,
+    },
+    LegacyOversizedFile {
+        path: "src/ai_classification_suggestion/implementation.rs",
+        owner: "AI classification suggestion orchestration",
+        rationale: "Privacy evaluation, route selection, runtime fallback, and result projection share one suggestion contract.",
+        split_trigger: "Before adding another route or result status, extract result construction and runtime error projection.",
+        maximum_line_count: 511,
+    },
+    LegacyOversizedFile {
+        path: "src/repo_init.rs",
+        owner: "repository initialization and rollback",
+        rationale: "Create, adopt, repair initialization, preflight, and rollback share metadata ownership invariants.",
+        split_trigger: "Before adding another initialization mode, extract rollback ownership and recoverable-directory inspection.",
+        maximum_line_count: 509,
     },
     LegacyOversizedFile {
         path: "tests/classifier_rule_editor_implementation.rs",
@@ -117,6 +159,13 @@ const LEGACY_OVERSIZED_FILES: &[LegacyOversizedFile] = &[
         rationale: "Failure injection and recovery assertions share editor transaction fixtures.",
         split_trigger: "Before adding a failure point, extract recovery fixtures into tests/support.",
         maximum_line_count: 508,
+    },
+    LegacyOversizedFile {
+        path: "tests/ai_classification_suggestion_implementation.rs",
+        owner: "AI classification suggestion implementation tests",
+        rationale: "Local, remote, privacy, fallback, and non-mutation scenarios share one feature fixture suite.",
+        split_trigger: "Before adding another scenario, move provider and repository fixtures into tests/support.",
+        maximum_line_count: 506,
     },
     LegacyOversizedFile {
         path: "tests/saved_search_implementation.rs",

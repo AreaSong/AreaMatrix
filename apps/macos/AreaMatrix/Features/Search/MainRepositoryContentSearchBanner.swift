@@ -3,7 +3,7 @@ import SwiftUI
 extension MainRepositoryContentView {
     @ViewBuilder
     var mainRepositorySearchStatusBanner: some View {
-        if let request = fileListModel.searchState.request {
+        if let request = searchModel.searchState.request {
             VStack(alignment: .leading, spacing: 6) {
                 mainRepositorySearchBannerHeader(request)
                 mainRepositorySearchBannerDetail
@@ -25,15 +25,15 @@ extension MainRepositoryContentView {
                 .font(.callout)
             Spacer()
             Button(L10n.string("Retry")) {
-                Task { await fileListModel.retrySearch() }
+                Task { await searchModel.retrySearch() }
             }
             .opacity(mainRepositorySearchRetryOpacity)
             .disabled(mainRepositorySearchRetryDisabled)
             Button(searchFiltersButtonTitle) {
-                searchRoutingState.isToolbarFiltersPresented.toggle()
+                searchModel.routingState.isToolbarFiltersPresented.toggle()
             }
-            Button(L10n.string("Save..."), action: fileListModel.openSavedSearchSheet)
-                .disabled(!fileListModel.canSaveCurrentSearch)
+            Button(L10n.string("Save..."), action: searchModel.openSavedSearchSheet)
+                .disabled(!searchModel.canSaveCurrentSearch)
             smartListBannerEditButton
             Button(L10n.string("Clear")) {
                 clearSearch()
@@ -43,7 +43,7 @@ extension MainRepositoryContentView {
 
     private func mainRepositorySearchBannerText(_ request: SearchQueryRequestSnapshot) -> String {
         [
-            fileListModel.searchBannerContextText(for: request),
+            searchModel.searchBannerContextText(for: request),
             L10n.format("search.banner.scope", request.scope.bannerDisplayName),
             L10n.format("search.banner.mode", request.mode.displayName),
             L10n.format("search.banner.results", mainRepositorySearchResultCountText),
@@ -52,7 +52,7 @@ extension MainRepositoryContentView {
     }
 
     private var mainRepositorySearchResultCountText: String {
-        guard let page = fileListModel.searchState.page else { return "-" }
+        guard let page = searchModel.searchState.page else { return "-" }
         if let semanticPage = page.semanticPage {
             return L10n.format(
                 "search.banner.semantic-normal-count",
@@ -64,7 +64,7 @@ extension MainRepositoryContentView {
     }
 
     private var mainRepositorySearchBannerSystemImage: String {
-        switch fileListModel.searchState.indexStatus {
+        switch searchModel.searchState.indexStatus {
         case .unavailable:
             "exclamationmark.triangle"
         case .indexing:
@@ -75,18 +75,18 @@ extension MainRepositoryContentView {
     }
 
     private var mainRepositorySearchRetryOpacity: Double {
-        fileListModel.searchState.errorMapping == nil &&
-            fileListModel.searchState.indexStatus != .unavailable ? 0 : 1
+        searchModel.searchState.errorMapping == nil &&
+            searchModel.searchState.indexStatus != .unavailable ? 0 : 1
     }
 
     private var mainRepositorySearchRetryDisabled: Bool {
-        fileListModel.searchState.errorMapping == nil &&
-            fileListModel.searchState.indexStatus != .unavailable
+        searchModel.searchState.errorMapping == nil &&
+            searchModel.searchState.indexStatus != .unavailable
     }
 
     private var mainRepositorySearchBannerBackground: Color {
-        if fileListModel.searchState.errorMapping != nil ||
-            fileListModel.searchState.indexStatus == .unavailable {
+        if searchModel.searchState.errorMapping != nil ||
+            searchModel.searchState.indexStatus == .unavailable {
             return Color.red.opacity(0.12)
         }
         return Color.blue.opacity(0.08)
@@ -94,11 +94,11 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     private var mainRepositorySearchBannerDetail: some View {
-        if let error = fileListModel.searchState.errorMapping {
+        if let error = searchModel.searchState.errorMapping {
             Text(L10n.format("search.failed", error.userMessage))
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        } else if let semanticPage = fileListModel.searchState.page?.semanticPage {
+        } else if let semanticPage = searchModel.searchState.page?.semanticPage {
             semanticBannerDetail(semanticPage)
         } else {
             searchFallbackBannerDetail
@@ -107,25 +107,25 @@ extension MainRepositoryContentView {
 
     @ViewBuilder
     private var searchFallbackBannerDetail: some View {
-        if fileListModel.searchState.indexStatus == .unavailable {
+        if searchModel.searchState.indexStatus == .unavailable {
             HStack(spacing: 10) {
                 Text(L10n.string("Search index unavailable"))
                 Button(L10n.string("Open indexing status")) {
-                    fileListModel.openIndexingStatus()
+                    searchModel.openIndexingStatus()
                 }
             }
             .font(.callout)
             .foregroundStyle(.secondary)
-        } else if fileListModel.searchState.isLoading {
+        } else if searchModel.searchState.isLoading {
             Text(searchLoadingText)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-        } else if let diagnostic = fileListModel.searchState.page?.diagnostics.first {
+        } else if let diagnostic = searchModel.searchState.page?.diagnostics.first {
             Text(L10n.format("search.diagnostic.summary", diagnostic.severityDisplayName, diagnostic.message))
                 .font(.callout)
                 .foregroundStyle(diagnostic.isError ? Color.red : Color.secondary)
                 .accessibilityHint(diagnostic.problemAccessibilityHint)
-        } else if let result = fileListModel.searchState.page?.results.first {
+        } else if let result = searchModel.searchState.page?.results.first {
             mainRepositorySearchMatchSummary(result)
         }
     }

@@ -1,34 +1,6 @@
 import AreaMatrixCoreBridgeContract
 import Foundation
 
-enum DetailPaneTab: String, CaseIterable, Identifiable {
-    case meta
-    case summary
-    case log
-    case note
-
-    var id: String {
-        rawValue
-    }
-
-    var title: String {
-        switch self {
-        case .meta:
-            L10n.string("Meta")
-        case .summary:
-            L10n.string("Summary")
-        case .log:
-            L10n.string("Log")
-        case .note:
-            L10n.string("Note")
-        }
-    }
-}
-
-enum MainDetailTabRequest: Equatable {
-    case automatic(DetailPaneTab)
-}
-
 enum MainMissingFileRelinkState: Equatable {
     case idle
     case loading(fileID: Int64)
@@ -54,17 +26,6 @@ enum MainMissingFileRelinkState: Equatable {
             currentFileID == fileID ? mapping.userMessage : nil
         case .idle, .loading, .relinking:
             nil
-        }
-    }
-}
-
-extension MainFileDeleteOperation {
-    func successBanner(fileID: Int64) -> MainListStatusBanner {
-        switch self {
-        case .moveToTrash:
-            .movedFileToTrash(fileID: fileID)
-        case .removeFromIndex:
-            .removedFileFromIndex(fileID: fileID)
         }
     }
 }

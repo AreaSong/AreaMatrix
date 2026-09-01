@@ -45,6 +45,15 @@ public enum LinuxRepositoryRouteKind
 public enum LinuxRepositoryErrorKind
 {
     Db,
+    DbLocked,
+    DbCorrupted,
+    Validation,
+    Classify,
+    RevisionConflict,
+    DuplicateFile,
+    ExpiredAction,
+    StagingRecoveryRequired,
+    Internal,
     Config,
     Conflict,
     InvalidPath,
@@ -134,14 +143,26 @@ public sealed class LinuxRepositoryCoreException : Exception
     public LinuxRepositoryCoreException(
         LinuxRepositoryErrorKind kind,
         string message,
-        string? path = null)
+        string? path = null,
+        string? coreErrorVariant = null,
+        long? expectedRevision = null,
+        long? currentRevision = null)
         : base(message)
     {
         Kind = kind;
         Path = path;
+        CoreErrorVariant = coreErrorVariant;
+        ExpectedRevision = expectedRevision;
+        CurrentRevision = currentRevision;
     }
 
     public LinuxRepositoryErrorKind Kind { get; }
 
     public string? Path { get; }
+
+    public string? CoreErrorVariant { get; }
+
+    public long? ExpectedRevision { get; }
+
+    public long? CurrentRevision { get; }
 }

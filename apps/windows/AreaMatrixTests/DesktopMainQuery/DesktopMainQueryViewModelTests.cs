@@ -16,6 +16,7 @@ public static class DesktopMainQueryViewModelTests
         await OneDriveRepositoryExposesConnectedNoticeRoute();
         await MainWindowRouteExposesWatcherStatusEntry();
         await MissingFileSelectionExposesRecoveryRouteOnlyForMissingStatus();
+        await LatestRepositoryRouteWinsWhenLoadsCompleteOutOfOrder();
     }
 
     private static async Task OpenRepositoryLoadsTreeAndFirstPageFromCoreBridge()
@@ -151,6 +152,30 @@ public static class DesktopMainQueryViewModelTests
         TestAssert.Equal(3, model.SelectedMissingFileRecoveryRoute?.FileId, "recovery file id");
     }
 
+    private static async Task LatestRepositoryRouteWinsWhenLoadsCompleteOutOfOrder()
+    {
+        const string firstPath = @"C:\Repos\First";
+        const string secondPath = @"C:\Repos\Second";
+        DelayedDesktopMainQueryCoreBridge bridge = new(firstPath, secondPath);
+        WindowsMainWindowViewModel model = new(bridge);
+
+        Task firstLoad = model.OpenRepositoryAsync(Route(firstPath));
+        Task secondLoad = model.OpenRepositoryAsync(Route(secondPath));
+
+        TestAssert.True(
+            bridge.CategoryCancellationTokens[firstPath].IsCancellationRequested,
+            "superseded repository route cancellation");
+        bridge.CompleteCategories(secondPath);
+        await secondLoad;
+        bridge.CompleteCategories(firstPath);
+        await firstLoad;
+
+        TestAssert.Equal(secondPath, model.RepoPath, "latest repository route path");
+        TestAssert.Equal("Second", model.RepoName, "latest repository route name");
+        TestAssert.SequenceEqual([secondPath], model.Files.Select(file => file.Path).ToArray(), "latest route files");
+        TestAssert.False(model.IsLoading, "latest route loading state");
+    }
+
     private static WindowsRepositoryRoute Route(string path)
     {
         return new WindowsRepositoryRoute(
@@ -282,5 +307,81 @@ internal sealed class FakeDesktopMainQueryCoreBridge : IDesktopMainQueryCoreBrid
             status,
             1_700_000_000,
             1_700_000_100);
+    }
+}
+
+internal sealed class DelayedDesktopMainQueryCoreBridge : IDesktopMainQueryCoreBridge
+{
+    private readonly Dictionary<string, TaskCompletionSource<IReadOnlyList<DesktopCategoryNode>>> categoryGates;
+
+    public DelayedDesktopMainQueryCoreBridge(params string[] repositoryPaths)
+    {
+        categoryGates = repositoryPaths.ToDictionary(
+            path => path,
+            _ => new TaskCompletionSource<IReadOnlyList<DesktopCategoryNode>>(
+                TaskCreationOptions.RunContinuationsAsynchronously));
+    }
+
+    public Dictionary<string, CancellationToken> CategoryCancellationTokens { get; } = [];
+
+    public void CompleteCategories(string repositoryPath)
+    {
+        categoryGates[repositoryPath].SetResult(
+        [
+            new DesktopCategoryNode("__root__", "All Files", "RepositoryRoot", string.Empty, 1, 1, 0, [])
+        ]);
+    }
+
+    public Task<IReadOnlyList<DesktopFileEntry>> ListFilesAsync(
+        string repoPath,
+        DesktopFileFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        IReadOnlyList<DesktopFileEntry> files =
+        [
+            new DesktopFileEntry(
+                1,
+                repoPath,
+                "route.txt",
+                "route.txt",
+                "Routes",
+                1,
+                $"hash-{repoPath}",
+                DesktopStorageMode.Copied,
+                DesktopFileOrigin.Imported,
+                null,
+                DesktopFileAvailabilityStatus.Available,
+                1_700_000_000,
+                1_700_000_100)
+        ];
+        return Task.FromResult(files);
+    }
+
+    public Task<DesktopFileEntry> GetFileAsync(
+        string repoPath,
+        long fileId,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException();
+    }
+
+    public Task<IReadOnlyList<DesktopCategoryNode>> ListCategoriesAsync(
+        string repoPath,
+        string locale,
+        CancellationToken cancellationToken = default)
+    {
+        CategoryCancellationTokens[repoPath] = cancellationToken;
+        return categoryGates[repoPath].Task;
+    }
+
+    public Task<DesktopSearchResultPage> SearchFilesAsync(
+        string repoPath,
+        string query,
+        DesktopSearchFilter filter,
+        DesktopSearchSort sort,
+        DesktopSearchPagination pagination,
+        CancellationToken cancellationToken = default)
+    {
+        throw new NotSupportedException();
     }
 }

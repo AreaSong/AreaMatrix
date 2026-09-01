@@ -124,8 +124,8 @@ Core `CoreError` variant 覆盖状态：
 
 ```bash
 cd core && cargo test --test error_recovery_matrix
-cd core && cargo test --workspace recovery
-cd core && cargo test --workspace error_mapping
+cd core && cargo test --locked --workspace recovery
+cd core && cargo test --locked --workspace error_mapping
 ```
 
 若只调整文案且未改变错误映射、恢复动作或 API 合同，可至少运行

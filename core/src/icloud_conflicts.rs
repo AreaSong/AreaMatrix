@@ -3,6 +3,7 @@
 mod paths;
 mod preview;
 mod resolve;
+mod token;
 mod types;
 
 use std::path::Path;
@@ -11,7 +12,7 @@ use walkdir::WalkDir;
 
 use crate::{
     db, CoreError, CoreResult, ICloudConflictPair, ICloudConflictPreviewReport,
-    ICloudConflictResolution, ICloudConflictResolveReport,
+    ICloudConflictResolution, ICloudConflictResolveReport, ICloudConflictVersionRole,
 };
 
 use self::{
@@ -21,6 +22,7 @@ use self::{
     },
     preview::{ensure_resolution_enabled, preview_report, trash_available},
     resolve::{resolve_destructive, resolve_keep_both},
+    token::{ensure_token_matches, preview_token},
 };
 
 /// Lists iCloud conflicted copy pairs without mutating repository files.
@@ -33,6 +35,7 @@ use self::{
 pub(crate) fn list_icloud_conflicts(repo_path: String) -> CoreResult<Vec<ICloudConflictPair>> {
     let repo = validate_repo_path(&repo_path)?;
     reject_placeholder_path(&repo)?;
+    paths::directory_identity(&repo)?;
     let mut conflicts = Vec::new();
 
     for entry in WalkDir::new(&repo)
@@ -76,8 +79,10 @@ pub(crate) fn preview_conflict_versions(
     let repo = validate_initialized_repo_path(&repo_path)?;
     let binding = bind_conflict(&repo, &conflict_id)?;
     let versions = version_states(&binding)?;
+    let token = preview_token(&binding, &versions)?;
     Ok(preview_report(
         binding.conflict_id,
+        token,
         versions,
         trash_available()?,
     ))
@@ -96,21 +101,39 @@ pub(crate) fn resolve_icloud_conflict(
     repo_path: String,
     conflict_id: String,
     resolution: ICloudConflictResolution,
+    supplied_preview_token: String,
 ) -> CoreResult<ICloudConflictResolveReport> {
     let repo = validate_initialized_repo_path(&repo_path)?;
+    if db::list_icloud_conflict_statuses(&repo)?
+        .get(&conflict_id)
+        .is_some_and(|status| *status == crate::ICloudConflictStatus::Resolved)
+    {
+        return Err(CoreError::conflict("conflict already resolved"));
+    }
     let binding = bind_conflict(&repo, &conflict_id)?;
     let versions = version_states(&binding)?;
-    let preview = preview_report(binding.conflict_id.clone(), versions, trash_available()?);
+    let expected_preview_token = preview_token(&binding, &versions)?;
+    ensure_token_matches(&expected_preview_token, &supplied_preview_token)?;
+    let preview = preview_report(
+        binding.conflict_id.clone(),
+        expected_preview_token,
+        versions,
+        trash_available()?,
+    );
     ensure_resolution_enabled(&preview, &resolution)?;
 
     match resolution {
-        ICloudConflictResolution::KeepBoth => resolve_keep_both(&repo, &binding, resolution),
+        ICloudConflictResolution::KeepBoth => {
+            resolve_keep_both(&repo, &binding, resolution, &supplied_preview_token)
+        }
         ICloudConflictResolution::KeepOriginal => resolve_destructive(
             &repo,
             &binding,
             resolution,
             &binding.conflicted_path,
             &binding.conflicted_relative_path,
+            ICloudConflictVersionRole::ConflictedCopy,
+            &supplied_preview_token,
         ),
         ICloudConflictResolution::KeepConflictedCopy => {
             let path = binding
@@ -121,7 +144,15 @@ pub(crate) fn resolve_icloud_conflict(
                 .original_relative_path
                 .as_deref()
                 .ok_or_else(|| CoreError::conflict("original version not found"))?;
-            resolve_destructive(&repo, &binding, resolution, path, relative_path)
+            resolve_destructive(
+                &repo,
+                &binding,
+                resolution,
+                path,
+                relative_path,
+                ICloudConflictVersionRole::Original,
+                &supplied_preview_token,
+            )
         }
     }
 }

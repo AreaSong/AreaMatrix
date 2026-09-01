@@ -66,7 +66,7 @@ final class QueryErrorPageFeatureTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .queryErrorConfigMapping())
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "kindd:pdf tag:finance",
             scope: .current,
             sort: .relevance,
@@ -74,9 +74,9 @@ final class QueryErrorPageFeatureTests: XCTestCase {
             filters: .empty
         )
 
-        XCTAssertEqual(model.searchPageDestination?.pageID, "query-error")
-        XCTAssertFalse(model.canSaveCurrentSearch)
-        XCTAssertEqual(model.searchState.page?.diagnostics.first, diagnostic)
+        XCTAssertEqual(model.searchModel.searchPageDestination?.pageID, "query-error")
+        XCTAssertFalse(model.searchModel.canSaveCurrentSearch)
+        XCTAssertEqual(model.searchModel.searchState.page?.diagnostics.first, diagnostic)
         XCTAssertEqual(model.files, [])
         await searcher.assertSearchRequestQueries(["kindd:pdf tag:finance"])
     }
@@ -193,9 +193,12 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
             searchQuerying: MainListRecordingSearchQuerying(results: []),
             errorMapper: StaticCoreErrorMapper(mapping: .queryErrorConfigMapping())
         )
-        model.activeSmartListSearch = saved
+        model.searchModel.activeSmartListSearch = saved
 
-        XCTAssertEqual(model.searchBannerContextText(for: request), "Smart List: Finance  query=\"Finance\"")
+        XCTAssertEqual(
+            model.searchModel.searchBannerContextText(for: request),
+            "Smart List: Finance  query=\"Finance\""
+        )
     }
 
     @MainActor
@@ -245,14 +248,14 @@ final class SmartListQueryDiagnosticPageFeatureTests: XCTestCase {
             errorMapper: mapper
         )
 
-        await model.restoreSavedSearch(saved)
-        XCTAssertEqual(model.searchState.errorMapping, mapping)
-        await model.retrySearch()
+        await model.searchModel.restoreSavedSearch(saved)
+        XCTAssertEqual(model.searchModel.searchState.errorMapping, mapping)
+        await model.searchModel.retrySearch()
 
         await runner.assertSmartListRunRequests(savedSearchID: saved.id, count: 2)
         await runner.assertSearchRequests([])
         await mapper.assertMappedCoreErrors([CoreError.FileNotFound(path: "\(saved.id)")])
-        XCTAssertEqual(model.searchState.page?.totalCount, 4)
-        XCTAssertEqual(model.lastSearchExitContext, .smartList(id: saved.id, name: saved.name))
+        XCTAssertEqual(model.searchModel.searchState.page?.totalCount, 4)
+        XCTAssertEqual(model.searchModel.lastSearchExitContext, .smartList(id: saved.id, name: saved.name))
     }
 }

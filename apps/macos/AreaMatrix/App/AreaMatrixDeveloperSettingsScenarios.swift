@@ -133,17 +133,18 @@ private struct DeveloperClassifierSettingsScenario: View {
 private struct DeveloperGeneralSettingsScenario: View {
     private let actions = DeveloperSettingsPlatformActions()
     private let configStore = DeveloperConfigurationStore(config: DeveloperSettingsScenarioFixture.config())
+    private let dependencies = AppDependencyContainer.live(coreServices: AppCoreServices())
 
     var body: some View {
         GeneralSettingsView(
             repoPath: AreaMatrixPreviewFixtures.repositoryPath,
             selectedTab: .constant("general"),
             onClose: {},
-            featureDependencies: AppDependencyContainer.live.feature.settings,
-            aiDependencies: AppDependencyContainer.live.feature.aiFeature,
-            sharedDependencies: AppDependencyContainer.live.feature.shared,
-            syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts,
-            diagnosticsDependencies: AppDependencyContainer.live.feature.diagnostics,
+            featureDependencies: dependencies.feature.settings,
+            aiDependencies: dependencies.feature.aiFeature,
+            sharedDependencies: dependencies.feature.shared,
+            syncConflictsDependencies: dependencies.feature.syncConflicts,
+            diagnosticsDependencies: dependencies.feature.diagnostics,
             loader: configStore,
             updater: configStore,
             rootOverviewInspector: actions,
@@ -159,6 +160,7 @@ private struct DeveloperGeneralSettingsScenario: View {
 private struct DeveloperIntegrationsScenario: View {
     private let actions = DeveloperSettingsPlatformActions()
     private let configStore = DeveloperConfigurationStore(config: DeveloperSettingsScenarioFixture.config())
+    private let dependencies = AppDependencyContainer.live(coreServices: AppCoreServices())
 
     var body: some View {
         IntegrationsSettingsPane(
@@ -166,7 +168,7 @@ private struct DeveloperIntegrationsScenario: View {
             loader: configStore,
             updater: configStore,
             errorMapper: CoreErrorSnapshotMapper(),
-            syncConflictsDependencies: AppDependencyContainer.live.feature.syncConflicts,
+            syncConflictsDependencies: dependencies.feature.syncConflicts,
             statusDetector: DeveloperICloudStatusDetector(),
             finderOpener: actions,
             helpOpener: actions
@@ -221,11 +223,13 @@ private struct DeveloperPlatformScenario: View {
 
 @MainActor
 private struct DeveloperRepositorySettingsScenario: View {
+    private let dependencies = AppDependencyContainer.live(coreServices: AppCoreServices())
+
     var body: some View {
         RepositorySettingsPane(
             repoPath: "",
-            featureDependencies: AppDependencyContainer.live.feature.settings,
-            sharedDependencies: AppDependencyContainer.live.feature.shared
+            featureDependencies: dependencies.feature.settings,
+            sharedDependencies: dependencies.feature.shared
         )
         .background(.background)
     }

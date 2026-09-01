@@ -1,0 +1,20 @@
+{
+  "id": "PERF-RUST-019",
+  "severity": "P1",
+  "confidence": "HIGH",
+  "status": "CONFIRMED_STATIC",
+  "domain": "Rust/redo-history",
+  "locations": [
+    {"file": "core/src/db/redo.rs", "line": "8-38", "symbol": "clear_redo_stack_in_tx", "role": "caller"},
+    {"file": "core/src/db/redo.rs", "line": "41-51", "symbol": "redo_cleared_summary_json", "role": "callee"},
+    {"file": "core/src/undo/records.rs", "line": "*", "symbol": "undo action persistence", "role": "related"}
+  ],
+  "trigger": "新写操作清理 redo 栈且 executed undo_actions 历史长期累积",
+  "scale": "R 条 executed 历史行，每行含可变长度 summary_json",
+  "concurrency": "清理在同步写事务内执行；其他 SQLite 读写等待同一写锁，无法通过取消中断",
+  "complexity": "全量 collect 造成 O(R) 空间；逐行 JSON parse/serialize 与 UPDATE 使 CPU、DB 往返和事务时长为 O(R)",
+  "impact": "长期运行后普通写操作延迟和 RSS 随历史线性增长，并放大 SQLite 锁等待；损坏 JSON 会触发长事务回滚",
+  "why_checks_miss": "现有测试只有少量 redo/undo 记录，普通 CI 没有长历史、锁等待或写操作 p95 门禁",
+  "minimal_fix": "采用有界 retention；批量或分页更新并缩短写锁范围，同时保持原子语义和取消边界",
+  "validation": "隔离数据库生成 1k/10k/100k executed 行，测单次写事务、RSS、锁等待和损坏行回滚；静态全量收集已确认，规模曲线需实测"
+}

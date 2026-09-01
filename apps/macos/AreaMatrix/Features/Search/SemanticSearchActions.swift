@@ -122,7 +122,7 @@ enum SemanticFallbackState: Equatable {
     }
 }
 
-extension MainFileListModel {
+extension SearchModel {
     func searchPage(for request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot {
         switch request.mode {
         case .normal:

@@ -9,6 +9,7 @@ use crate::{db, CoreError, CoreResult, RecoveryReport, StorageMode};
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const STAGING_DIR: &str = "staging";
+const BATCH_JOURNAL_DIR: &str = "batch";
 const SOFT_DELETE_RETENTION_DAYS: i64 = 30;
 
 enum StagingRoot {
@@ -41,6 +42,11 @@ pub(crate) fn recover_on_startup(repo_path: String) -> CoreResult<RecoveryReport
     let protected_paths = protected_staging_paths(&repo)?;
     let staging_rows = db::list_staging_file_rows(&repo)?;
     let mut report = empty_report();
+    let recovered_journal_files =
+        crate::batch_journal::recover(&repo, &mut report.warnings).map_err(map_io_error)?;
+    report.cleaned_staging_files = report
+        .cleaned_staging_files
+        .saturating_add(i64::try_from(recovered_journal_files).unwrap_or(i64::MAX));
 
     for row in staging_rows {
         recover_staging_row(&repo, &staging_root, row, &mut report)?;
@@ -181,6 +187,13 @@ fn clean_orphan_staging_files(
         let relative_path = Path::new(AREA_MATRIX_DIR)
             .join(STAGING_DIR)
             .join(entry.file_name());
+
+        // Batch journals have a separate durable recovery protocol and were
+        // reconciled before ordinary staging cleanup. Do not report their
+        // managed directory as an orphan staging entry.
+        if entry.file_name() == BATCH_JOURNAL_DIR && file_type.is_dir() {
+            continue;
+        }
 
         if protected_paths.contains(&relative_path) {
             report.warnings.push(format!(

@@ -3,7 +3,7 @@ use std::{
     path::{Component, Path},
 };
 
-use crate::{CoreError, CoreResult, FileEntry, StorageMode};
+use crate::{AiPrivacyInputField, CoreError, CoreResult, FileEntry, StorageMode};
 
 use super::{AiCategorySuggestionContextField, AiCategorySuggestionContextPolicy};
 
@@ -23,9 +23,19 @@ pub(super) fn build_context(
     repo: &Path,
     file: &FileEntry,
     policy: &AiCategorySuggestionContextPolicy,
+    allowed_fields: &[AiPrivacyInputField],
 ) -> CoreResult<AiSuggestionContext> {
-    let mut fields = vec![AiCategorySuggestionContextField::FileName];
-    let extension = file_extension(&file.current_name);
+    let mut fields = Vec::new();
+    let filename = if allowed_fields.contains(&AiPrivacyInputField::FileName) {
+        fields.push(AiCategorySuggestionContextField::FileName);
+        file.current_name.clone()
+    } else {
+        String::new()
+    };
+    let extension = allowed_fields
+        .contains(&AiPrivacyInputField::Extension)
+        .then(|| file_extension(&file.current_name))
+        .flatten();
     if extension.is_some() {
         fields.push(AiCategorySuggestionContextField::Extension);
     }
@@ -33,16 +43,21 @@ pub(super) fn build_context(
     let repo_relative_path = match policy {
         AiCategorySuggestionContextPolicy::FileNameOnly => None,
         AiCategorySuggestionContextPolicy::FileNameAndPath
-        | AiCategorySuggestionContextPolicy::LimitedTextSummary => {
+        | AiCategorySuggestionContextPolicy::LimitedTextSummary
+            if allowed_fields.contains(&AiPrivacyInputField::RepoRelativePath) =>
+        {
             fields.push(AiCategorySuggestionContextField::RepoRelativePath);
             Some(file.path.clone())
         }
+        _ => None,
     };
 
     let limited_text_summary = if matches!(
         policy,
         AiCategorySuggestionContextPolicy::LimitedTextSummary
-    ) {
+    ) && allowed_fields
+        .contains(&AiPrivacyInputField::ExtractedTextExcerpt)
+    {
         let summary = limited_text_summary(repo, file)?;
         if summary.is_some() {
             fields.push(AiCategorySuggestionContextField::LimitedTextSummary);
@@ -54,7 +69,7 @@ pub(super) fn build_context(
 
     Ok(AiSuggestionContext {
         fields,
-        filename: file.current_name.clone(),
+        filename,
         extension,
         repo_relative_path,
         limited_text_summary,

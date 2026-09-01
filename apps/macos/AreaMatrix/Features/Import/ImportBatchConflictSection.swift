@@ -115,6 +115,17 @@ struct ImportBatchConflictSection: View {
     }
 }
 
+@MainActor
+enum ConflictSelectionAccessibility {
+    static func label(path: String, localizer: AppLocalizer) -> String {
+        localizer.format("File: %@", arguments: [.string(path)])
+    }
+
+    static func value(isSelected: Bool, localizer: AppLocalizer) -> String {
+        localizer.string(isSelected ? "Selected" : "Not selected")
+    }
+}
+
 private extension ImportBatchConflictSection {
     @ViewBuilder
     private var coreConflictBatchSummary: some View {
@@ -204,6 +215,14 @@ private extension ImportBatchConflictSection {
                     }
                 ))
                 .labelsHidden()
+                .accessibilityLabel(ConflictSelectionAccessibility.label(
+                    path: item.targetPath ?? item.incomingPath,
+                    localizer: localizer
+                ))
+                .accessibilityValue(ConflictSelectionAccessibility.value(
+                    isSelected: batchImportModel.selectedConflictBatchIDs.contains(item.id),
+                    localizer: localizer
+                ))
                 .disabled(batchImportModel.appliesConflictBatchToAll)
             }
             TableColumn(L10n.string("File")) { item in

@@ -25,28 +25,28 @@ extension MainRepositoryContentView {
 
     func openBatchAddTagsFromCommandPalette() {
         let route = commandPaletteBatchAddTagsRoute()
-        fileActionRoutingState.batchAddTagsRoute = route
+        fileActionCoordinator.routingState.batchAddTagsRoute = route
         closeCommandPalette()
     }
 
     func openBatchChangeCategoryFromCommandPalette() {
         let route = commandPaletteBatchChangeCategoryRoute()
-        fileActionRoutingState.batchChangeCategoryRoute = route
+        fileActionCoordinator.routingState.batchChangeCategoryRoute = route
         closeCommandPalette()
     }
 
     func openBatchDeleteFromCommandPalette() {
-        fileActionRoutingState.batchDeleteRoute = commandPaletteBatchDeleteRoute()
+        fileActionCoordinator.routingState.batchDeleteRoute = commandPaletteBatchDeleteRoute()
         closeCommandPalette()
     }
 
     func openBatchRenameFromCommandPalette() {
-        fileActionRoutingState.batchRenameRoute = commandPaletteBatchRenameRoute()
+        fileActionCoordinator.routingState.batchRenameRoute = commandPaletteBatchRenameRoute()
         closeCommandPalette()
     }
 
     func focusFileFromCommandPalette(_ fileID: Int64) {
-        selectedFileIDs = [fileID]
+        selectionModel.fileIDs = [fileID]
         closeCommandPalette()
         Task { await fileListModel.selectFiles([fileID]) }
     }
@@ -62,8 +62,8 @@ extension MainRepositoryContentView {
     }
 
     func openClassifierRuleEditorFromCommandPalette() {
-        fileListModel.clearCommandPaletteState()
-        fileListModel.commandPaletteQuery = ""
-        fileListModel.pendingSearchDestination = .classifierRuleEditor(context: nil)
+        commandPaletteModel.clear()
+        commandPaletteModel.query = ""
+        searchModel.pendingSearchDestination = .classifierRuleEditor(context: nil)
     }
 }

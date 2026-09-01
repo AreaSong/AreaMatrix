@@ -4,6 +4,7 @@ import SwiftUI
 /// Small AppKit-inspired visual primitives shared by the onboarding dioramas.
 public struct AreaMatrixTrafficLights: View {
     @State private var isHovered = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
 
@@ -14,7 +15,7 @@ public struct AreaMatrixTrafficLights: View {
             trafficLight(color: Color(red: 0.153, green: 0.788, blue: 0.247), symbol: "plus")
         }
         .onHover { hovering in
-            withAnimation(.easeOut(duration: 0.2)) {
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) {
                 isHovered = hovering
             }
         }

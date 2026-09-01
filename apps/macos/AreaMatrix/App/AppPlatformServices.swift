@@ -1,3 +1,5 @@
+import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
 import Foundation
 
 struct AppShellModel: Equatable {

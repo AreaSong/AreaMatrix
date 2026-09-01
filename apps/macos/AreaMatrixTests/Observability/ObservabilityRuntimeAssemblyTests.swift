@@ -9,13 +9,12 @@ final class ObservabilityRuntimeAssemblyTests: XCTestCase {
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
 
+        await fixture.startRuntime()
         fixture.runtime.start()
         fixture.runtime.start()
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition {
-            await core.initializeCallCount() == 1 && fixture.runtime.state == .running
-        }
-        XCTAssertTrue(didStart)
+        let initializeCallCountAfterStart = await core.initializeCallCount()
+        XCTAssertEqual(fixture.runtime.state, .running)
+        XCTAssertEqual(initializeCallCountAfterStart, 1)
 
         fixture.runtime.start()
         await Task.yield()
@@ -36,9 +35,8 @@ final class ObservabilityRuntimeAssemblyTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler()
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
 
         let first = Task { try await fixture.runtime.update(.runtimeMode(.diagnostic)) }
         await core.waitUntilModeUpdateEntered()
@@ -65,9 +63,8 @@ final class ObservabilityRuntimeAssemblyTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler()
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
 
         let firstStop = Task { await fixture.runtime.stop(deadline: .seconds(5)) }
         await core.waitUntilFlushEntered()
@@ -109,9 +106,8 @@ final class ObservabilityRuntimeAssemblyTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler()
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
 
         let report = await fixture.runtime.stop()
         let recentEventIDs = await fixture.hub.recentEvents().map(\.eventID)
@@ -132,9 +128,8 @@ final class ObservabilityRuntimeAssemblyTests: XCTestCase {
         let scheduler = TestObservabilityRuntimeScheduler()
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
 
         let report = await fixture.runtime.stop()
 
@@ -179,9 +174,8 @@ final class ObservabilityRuntimeAssemblyTests: XCTestCase {
         let fixture = try ObservabilityRuntimeFixture(core: core, scheduler: scheduler)
         defer { fixture.cleanup() }
 
-        fixture.runtime.start()
-        let didStart = await waitForRuntimeCondition { fixture.runtime.state == .running }
-        XCTAssertTrue(didStart)
+        await fixture.startRuntime()
+        XCTAssertEqual(fixture.runtime.state, .running)
         let first = await fixture.runtime.health()
         let second = await fixture.runtime.health()
         let expectedIssues = [

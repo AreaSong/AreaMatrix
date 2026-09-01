@@ -100,6 +100,8 @@ public struct AreaMatrixFeatureCard: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.areaMatrixInteractionFeedback) private var interactionFeedback
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var hasEntered = false
     @State private var hoverPoint = UnitPoint.center
     @FocusState private var isFocused: Bool
@@ -113,10 +115,15 @@ public struct AreaMatrixFeatureCard: View {
             }
             .onAppear {
                 hasEntered = true
-                withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false).delay(6.0 + entranceDelay)) {
-                    idleGlarePhase = 1.5
-                }
+                updateIdleGlare()
             }
+            .onChange(of: reduceMotion) { _, _ in
+                updateIdleGlare()
+            }
+            .onChange(of: reduceTransparency) { _, _ in
+                updateIdleGlare()
+            }
+            .onDisappear(perform: stopIdleGlare)
         }
     }
 
@@ -128,7 +135,9 @@ public struct AreaMatrixFeatureCard: View {
             .focusEffectDisabled()
             .onChange(of: isFocused) { _, focused in
                 if focused {
-                    interactionFeedback.performHaptic(.alignment)
+                    MainActor.assumeIsolated {
+                        interactionFeedback.performHaptic(.alignment)
+                    }
                 }
                 onHoverChanged(focused)
             }
@@ -146,7 +155,11 @@ public struct AreaMatrixFeatureCard: View {
         .padding(.vertical, 16)
         .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(.ultraThinMaterial)
+        .background(
+            reduceTransparency
+                ? AnyShapeStyle(colorScheme == .dark ? Color.black : Color.white)
+                : AnyShapeStyle(.ultraThinMaterial)
+        )
         .background(isHovered ? Color.primary.opacity(0.05) : Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(cardSpotlight)
@@ -158,11 +171,18 @@ public struct AreaMatrixFeatureCard: View {
         .shadow(color: Color.black.opacity(isHovered ? 0.25 : 0.05), radius: isHovered ? 24 : 10, y: isHovered ? 12 : 4)
         .offset(y: hasEntered ? 0 : 16)
         .opacity(hasEntered ? 1 : 0)
-        .rotation3DEffect(.degrees(hasEntered ? 0 : 5), axis: (x: 1, y: 0, z: 0), perspective: 0.5)
+        .rotation3DEffect(
+            .degrees(reduceMotion || hasEntered ? 0 : 5),
+            axis: (x: 1, y: 0, z: 0),
+            perspective: 0.5
+        )
         .areaMatrixFeatureCardFocus(isHovered: isHovered, anyCardHovered: anyCardHovered)
-        .animation(.easeOut(duration: 0.15), value: hoverPoint)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.15), value: hoverPoint)
         .allowsHitTesting(false)
-        .animation(.areaMatrixSceneFlow.delay(entranceDelay), value: hasEntered)
+        .animation(
+            reduceMotion ? nil : .areaMatrixSceneFlow.delay(entranceDelay),
+            value: hasEntered
+        )
     }
 
     private var iconBox: some View {
@@ -209,6 +229,7 @@ public struct AreaMatrixFeatureCard: View {
         )
         .blendMode(colorScheme == .dark ? .screen : .normal)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .opacity(reduceTransparency ? 0 : 1)
     }
 
     private var cardIdleGlare: some View {
@@ -220,7 +241,7 @@ public struct AreaMatrixFeatureCard: View {
         .frame(width: 250)
         .offset(x: (idleGlarePhase * 800) - 400)
         .mask(RoundedRectangle(cornerRadius: 8))
-        .opacity(isHovered ? 0 : 1)
+        .opacity(isHovered || reduceTransparency || reduceMotion ? 0 : 1)
         .allowsHitTesting(false)
     }
 
@@ -249,7 +270,10 @@ public struct AreaMatrixFeatureCard: View {
         }
         .frame(height: 3)
         .opacity(isHovered ? 1 : 0.5)
-        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: isHovered)
+        .animation(
+            reduceMotion ? nil : .spring(response: 0.4, dampingFraction: 0.7),
+            value: isHovered
+        )
     }
 
     private var cardGlare: some View {
@@ -265,7 +289,7 @@ public struct AreaMatrixFeatureCard: View {
                 x: (hoverPoint.x - 0.5) * proxy.size.width * 1.5,
                 y: (hoverPoint.y - 0.5) * proxy.size.height * 1.5
             )
-            .opacity(isHovered ? 1 : 0)
+            .opacity(isHovered && !reduceTransparency && !reduceMotion ? 1 : 0)
             .blendMode(colorScheme == .dark ? .plusLighter : .screen)
         }
         .allowsHitTesting(false)
@@ -279,7 +303,9 @@ public struct AreaMatrixFeatureCard: View {
                 y: max(0, min(1, location.y / max(size.height, 1)))
             )
             if !isHovered {
-                interactionFeedback.performHaptic(.levelChange)
+                MainActor.assumeIsolated {
+                    interactionFeedback.performHaptic(.levelChange)
+                }
                 onHoverChanged(true)
             }
         case .ended:
@@ -287,6 +313,27 @@ public struct AreaMatrixFeatureCard: View {
                 hoverPoint = .center
                 onHoverChanged(false)
             }
+        }
+    }
+
+    private func updateIdleGlare() {
+        stopIdleGlare()
+        guard !reduceMotion, !reduceTransparency else { return }
+
+        withAnimation(
+            .linear(duration: 2.0)
+                .repeatForever(autoreverses: false)
+                .delay(6.0 + entranceDelay)
+        ) {
+            idleGlarePhase = 1.5
+        }
+    }
+
+    private func stopIdleGlare() {
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            idleGlarePhase = -0.5
         }
     }
 }

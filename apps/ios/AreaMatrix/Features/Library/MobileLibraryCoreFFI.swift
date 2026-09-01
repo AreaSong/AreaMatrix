@@ -84,7 +84,7 @@ enum MobileLibraryCoreSDKMapping {
             return queryError
         }
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return .unavailable(error.localizedDescription)
+            return .unavailable("Repository data is unavailable.")
         }
         switch coreError {
         case let .RepoNotInitialized(path):
@@ -92,7 +92,7 @@ enum MobileLibraryCoreSDKMapping {
         case let .Db(message), let .DbLocked(message), let .DbCorrupted(message):
             return .database(message)
         default:
-            return .unavailable(String(describing: coreError))
+            return .unavailable("Repository data is unavailable.")
         }
     }
 }

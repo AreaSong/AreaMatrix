@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
 enum UndoHistoryState: Equatable {
@@ -270,38 +271,56 @@ enum UndoHistoryActionLog {
     }
 }
 
-extension MainFileListModel {
-    func requestCurrentListDiagnostics() {
-        guard diagnosticsState != .collecting else { return }
-        diagnosticsGeneration += 1
-        diagnosticsState = .confirmingPrivacy
+@MainActor
+final class MainListDiagnosticsModel: ObservableObject {
+    @Published private(set) var state = MainListDiagnosticsState.idle
+
+    private let repoPath: String
+    private let diagnosticsCollector: any CoreDiagnosticsCollecting
+    private let errorMapper: any CoreErrorMapping
+    private var generation = 0
+
+    init(
+        repoPath: String,
+        diagnosticsCollector: any CoreDiagnosticsCollecting,
+        errorMapper: any CoreErrorMapping
+    ) {
+        self.repoPath = repoPath
+        self.diagnosticsCollector = diagnosticsCollector
+        self.errorMapper = errorMapper
     }
 
-    func cancelCurrentListDiagnostics() {
-        guard diagnosticsState == .confirmingPrivacy || diagnosticsState == .collecting else { return }
-        diagnosticsGeneration += 1
-        diagnosticsState = .idle
+    func requestCollection() {
+        guard state != .collecting else { return }
+        generation += 1
+        state = .confirmingPrivacy
     }
 
-    func collectCurrentListDiagnostics() async {
-        guard diagnosticsState == .confirmingPrivacy else { return }
+    func cancelCollection() {
+        guard state == .confirmingPrivacy || state == .collecting else { return }
+        generation += 1
+        state = .idle
+    }
 
-        diagnosticsGeneration += 1
-        let generation = diagnosticsGeneration
-        diagnosticsState = .collecting
+    func collect() async {
+        guard state == .confirmingPrivacy else { return }
+
+        generation += 1
+        let expectedGeneration = generation
+        state = .collecting
         do {
             let snapshot = try await diagnosticsCollector.createDiagnosticsSnapshot(repoPath: repoPath)
-            guard diagnosticsGeneration == generation else { return }
-            diagnosticsState = .collected(snapshot)
+            guard generation == expectedGeneration else { return }
+            state = .collected(snapshot)
         } catch {
-            let mapping = await mapCoreError(error)
-            guard diagnosticsGeneration == generation else { return }
-            diagnosticsState = .failed(mapping)
+            let mapping = await errorMapper.mapError(error)
+            guard generation == expectedGeneration else { return }
+            state = .failed(mapping)
         }
     }
 
-    func clearDiagnosticsState() {
-        diagnosticsGeneration += 1
-        diagnosticsState = .idle
+    func clear() {
+        generation += 1
+        state = .idle
     }
 }

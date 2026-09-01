@@ -1,6 +1,6 @@
+@testable import AreaMatrix
 import AreaMatrixCoreBridgeContract
 import AreaMatrixCoreBridgeRuntime
-@testable import AreaMatrix
 import XCTest
 
 final class CoreBridgeBoundaryGovernanceTests: MacOSGovernanceTestCase {
@@ -29,7 +29,9 @@ final class CoreBridgeBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "try listFiles(repoPath:",
             "try getFile(repoPath:",
             "try listTreeJson(repoPath:",
-            "try listCommandTargets(repoPath:"
+            "try listCommandTargets(repoPath:",
+            "try AreaMatrix.listAiCalls(",
+            "try AreaMatrix.clearAiCallLog("
         ] {
             XCTAssertTrue(
                 adapterSource.contains(generatedCall),
@@ -48,6 +50,7 @@ final class CoreBridgeBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "Bridge/CoreBindingContractInspecting.swift",
             "Bridge/CoreChangeLogListing.swift",
             "Bridge/CoreSearchQuerying.swift",
+            "Bridge/CoreAICallLogSnapshots.swift",
             "Bridge/CoreSearchFacetSnapshots.swift"
         ])
         let sources = try productionSwiftFiles()
@@ -60,7 +63,9 @@ final class CoreBridgeBoundaryGovernanceTests: MacOSGovernanceTestCase {
             "try inspectBindingContract(",
             "try listChanges(",
             "try searchFiles(",
-            "try listFilterFacets("
+            "try listFilterFacets(",
+            "try listAiCalls(",
+            "try clearAiCallLog("
         ] {
             XCTAssertFalse(
                 sources.contains(generatedCall),

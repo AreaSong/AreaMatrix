@@ -2,6 +2,12 @@
 
 use std::{fs, path::Path};
 
+#[path = "ai_persisted_privacy.rs"]
+mod ai_persisted_privacy;
+
+use ai_persisted_privacy::allow_remote_ai;
+pub(crate) use ai_persisted_privacy::install_blocking_rule;
+
 use area_matrix_core::{
     complete_remote_ai_provider_probe, enable_remote_ai_provider, import_file, init_repo,
     prepare_remote_ai_provider_probe, update_ai_config, AiConfig, AiFeatureConfig, AiFeatureKind,
@@ -319,6 +325,7 @@ pub(crate) fn enable_remote_tags(repo: &Path) {
         .expect("enable remote AI tags");
     enable_remote_ai_provider(repo_path, remote_enable_request(token))
         .expect("enable remote provider");
+    allow_remote_ai(repo);
 }
 
 fn remote_test_request() -> RemoteProviderTestRequest {

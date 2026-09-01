@@ -1,9 +1,5 @@
+import AreaMatrixFeatureLibrary
 import Foundation
-
-enum SemanticSearchResultGroup: Equatable {
-    case semantic
-    case normal
-}
 
 struct SemanticSearchRowPresentation: Identifiable, Equatable {
     var id: Int64

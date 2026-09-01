@@ -138,8 +138,7 @@ fn command_file_candidate_from_row(row: &Row<'_>) -> rusqlite::Result<CommandFil
 }
 
 fn placeholders(count: usize) -> String {
-    std::iter::repeat("?")
-        .take(count)
+    std::iter::repeat_n("?", count)
         .collect::<Vec<_>>()
         .join(",")
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-enum ShareImportItemKind: String, Equatable, Sendable {
+enum ShareImportItemKind: String, Equatable {
     case file
     case url
 }
@@ -16,7 +16,7 @@ final class ShareImportDeferredFileProvider: @unchecked Sendable {
     }
 }
 
-struct ShareImportItem: Equatable, Identifiable, Sendable {
+struct ShareImportItem: Equatable, Identifiable {
     var id: String
     var sourceURL: URL
     var displayName: String
@@ -77,7 +77,7 @@ struct ShareImportItem: Equatable, Identifiable, Sendable {
     }
 }
 
-struct ShareImportPayload: Equatable, Sendable {
+struct ShareImportPayload: Equatable {
     var items: [ShareImportItem]
 
     var readableItems: [ShareImportItem] {
@@ -92,43 +92,6 @@ struct ShareImportPayload: Equatable, Sendable {
         let sizes = readableItems.compactMap(\.sizeBytes)
         guard sizes.count == readableItems.count else { return nil }
         return sizes.reduce(0, +)
-    }
-}
-
-enum ExtensionRepositoryResolution: Equatable, Sendable {
-    case available(RecentRepository, URL)
-    case none
-    case expired(RecentRepository)
-}
-
-protocol ExtensionRepositoryAccessing: Sendable {
-    func defaultRepository() async -> ExtensionRepositoryResolution
-    func beginAccessing(_ url: URL) async throws -> RepositoryScopedAccess
-}
-
-actor ExtensionRepositoryAccess: ExtensionRepositoryAccessing {
-    private let service: any RepositoryAccessServicing
-
-    init(service: any RepositoryAccessServicing = SecurityScopedRepositoryAccessService()) {
-        self.service = service
-    }
-
-    func defaultRepository() async -> ExtensionRepositoryResolution {
-        guard let recent = await service.recentRepositories().first else {
-            return .none
-        }
-        guard recent.accessStatus == .available else {
-            return .expired(recent)
-        }
-        do {
-            return try await .available(recent, service.resolveBookmark(for: recent))
-        } catch {
-            return .expired(recent)
-        }
-    }
-
-    func beginAccessing(_ url: URL) async throws -> RepositoryScopedAccess {
-        try await service.beginAccessing(url)
     }
 }
 
@@ -164,6 +127,11 @@ final class ShareImportModel: ObservableObject {
     private let queue: any SharedContainerImportQueuing
     private var repoURL: URL?
     private var repoPath: String = ""
+    private var saveTask: Task<Void, Never>?
+    private var saveTaskGeneration: UInt64?
+    private var saveGeneration: UInt64 = 0
+    private var saveCancellationRequested = false
+    private var activeImmediateStagedItem: ShareImportImmediateStagedItem?
 
     init(
         payload: ShareImportPayload,
@@ -180,6 +148,7 @@ final class ShareImportModel: ObservableObject {
 
     var canSave: Bool {
         phase == .ready
+            && saveTask == nil
             && !payload.readableItems.isEmpty
             && repoURL != nil
             && filenameValidation == nil
@@ -268,30 +237,46 @@ final class ShareImportModel: ObservableObject {
         }
     }
 
-    func save() async {
-        guard canSave, let repoURL else { return }
-        phase = .saving
-        error = nil
-        do {
-            let access = try await repositoryAccess.beginAccessing(repoURL)
-            defer { access.stop() }
-            if payload.readableItems.count == 1 {
-                try await importSingleItemOrQueueConflict()
-            } else {
-                result = .queued(try await makeQueueTicket(needsConflictReview: false))
-            }
-            phase = .saved
-        } catch {
-            self.error = ShareImportError.map(error)
-            phase = .failed
+    /// Starts one retained save operation. Repeated calls while a save is in
+    /// flight return the existing handle and never enqueue a second import.
+    @discardableResult
+    func startSave() -> Task<Void, Never>? {
+        guard canSave else { return saveTask }
+        let generation = beginSave()
+        let task = Task { @MainActor [self] in
+            // Give startSave a chance to publish the handle before a fast fake
+            // or local import can complete and clear it.
+            await Task.yield()
+            await performSave(generation: generation)
         }
+        saveTask = task
+        saveTaskGeneration = generation
+        return task
+    }
+
+    func cancelSave() {
+        guard saveTask != nil || phase == .saving else { return }
+        saveCancellationRequested = true
+        saveGeneration &+= 1
+        saveTask?.cancel()
+        if phase == .saving {
+            phase = .ready
+        }
+    }
+
+    func cancelSaveAndWait() async {
+        let task = saveTask
+        cancelSave()
+        await task?.value
     }
 
     func updateCategory(_ value: String) {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         category = trimmed.isEmpty ? "inbox" : trimmed
     }
+}
 
+private extension ShareImportModel {
     private var resultQueued: Bool {
         if case .queued = result {
             return true
@@ -299,11 +284,78 @@ final class ShareImportModel: ObservableObject {
         return false
     }
 
+    private func beginSave() -> UInt64 {
+        saveGeneration &+= 1
+        saveCancellationRequested = false
+        activeImmediateStagedItem = nil
+        phase = .saving
+        error = nil
+        return saveGeneration
+    }
+
+    private func performSave(generation: UInt64) async {
+        defer { finishSaveTask(generation: generation) }
+        do {
+            try Task.checkCancellation()
+            guard let repoURL else {
+                throw ShareImportError.noRepository
+            }
+            let access = try await repositoryAccess.beginAccessing(repoURL)
+            defer { access.stop() }
+            try Task.checkCancellation()
+
+            let saveResult = try await savePayload()
+            try Task.checkCancellation()
+            guard isCurrentSave(generation) else {
+                await cleanupImmediateStaging(reportWarning: false)
+                return
+            }
+            result = saveResult
+            phase = .saved
+            await cleanupImmediateStaging(reportWarning: true)
+        } catch is CancellationError {
+            await cleanupImmediateStaging(reportWarning: false)
+            if phase == .saving, result == nil {
+                phase = .ready
+            }
+        } catch {
+            await cleanupImmediateStaging(reportWarning: true)
+            guard isCurrentSave(generation) else { return }
+            self.error = ShareImportError.map(error)
+            phase = .failed
+        }
+    }
+
+    private func finishSaveTask(generation: UInt64) {
+        guard saveTaskGeneration == generation else { return }
+        saveTask = nil
+        saveTaskGeneration = nil
+    }
+
+    private func isCurrentSave(_ generation: UInt64) -> Bool {
+        generation == saveGeneration
+            && !saveCancellationRequested
+            && !Task.isCancelled
+    }
+
+    private func cleanupImmediateStaging(reportWarning: Bool) async {
+        guard let stagedItem = activeImmediateStagedItem else { return }
+        await removeImmediateStaging(stagedItem, reportWarning: reportWarning)
+    }
+
+    private func savePayload() async throws -> ShareImportResult {
+        if payload.readableItems.count == 1 {
+            return try await importSingleItemOrQueueConflict()
+        }
+        let ticket = try await makeQueueTicket(needsConflictReview: false)
+        return .queued(ticket)
+    }
+
     private func applyPrediction() async {
         do {
             let prediction = try await bridge.predictCategory(repoPath: repoPath, filename: filename)
             category = prediction.category.isEmpty ? "inbox" : prediction.category
-            if allowsFilenameEditing && !prediction.suggestedName.isEmpty {
+            if allowsFilenameEditing, !prediction.suggestedName.isEmpty {
                 filename = ShareImportItem.safeFilename(prediction.suggestedName)
             }
             phase = .ready
@@ -320,15 +372,21 @@ final class ShareImportModel: ObservableObject {
         }
     }
 
-    private func importSingleItemOrQueueConflict() async throws {
+    private func importSingleItemOrQueueConflict() async throws -> ShareImportResult {
         let item = try singleReadableItem()
         let stagedItem = try await queue.stageItemForImmediateImport(item)
+        activeImmediateStagedItem = stagedItem
         do {
+            try Task.checkCancellation()
             let importedFile = try await bridge.importSharedItem(
                 request: makeCoreRequest(sourceURL: stagedItem.fileURL)
             )
-            result = .imported(importedFile)
+            try Task.checkCancellation()
             await removeImmediateStaging(stagedItem)
+            return .imported(importedFile)
+        } catch is CancellationError {
+            await removeImmediateStaging(stagedItem, reportWarning: false)
+            throw CancellationError()
         } catch {
             let mapped = ShareImportError.map(error)
             guard case .conflictNeedsReview = mapped else {
@@ -336,11 +394,17 @@ final class ShareImportModel: ObservableObject {
                 throw mapped
             }
             do {
-                result = .queued(try await makeQueueTicket(
+                try Task.checkCancellation()
+                let ticket = try await makeQueueTicket(
                     needsConflictReview: true,
                     items: [stagedQueueItem(from: item, stagedURL: stagedItem.fileURL)]
-                ))
+                )
+                try Task.checkCancellation()
                 await removeImmediateStaging(stagedItem)
+                return .queued(ticket)
+            } catch is CancellationError {
+                await removeImmediateStaging(stagedItem, reportWarning: false)
+                throw CancellationError()
             } catch {
                 await removeImmediateStaging(stagedItem)
                 throw error
@@ -356,7 +420,7 @@ final class ShareImportModel: ObservableObject {
     }
 
     private func makeCoreRequest(sourceURL: URL) -> ShareImportCoreRequest {
-        return ShareImportCoreRequest(
+        ShareImportCoreRequest(
             repoPath: repoPath,
             sourceURL: sourceURL,
             filename: ShareImportItem.safeFilename(filename),
@@ -364,11 +428,21 @@ final class ShareImportModel: ObservableObject {
         )
     }
 
-    private func removeImmediateStaging(_ item: ShareImportImmediateStagedItem) async {
+    private func removeImmediateStaging(
+        _ item: ShareImportImmediateStagedItem,
+        reportWarning: Bool = true
+    ) async {
+        defer {
+            if activeImmediateStagedItem == item {
+                activeImmediateStagedItem = nil
+            }
+        }
         do {
             try await queue.removeImmediateStagedItem(item)
         } catch {
-            warning = ShareImportError.map(error).message
+            if reportWarning {
+                warning = ShareImportError.map(error).message
+            }
         }
     }
 

@@ -171,7 +171,8 @@ public sealed record CoreDesktopImportOptions(
     string? TargetDirectory,
     string? OverrideCategory,
     string? OverrideFilename,
-    string DuplicateStrategy);
+    string DuplicateStrategy,
+    string ContentLocale = "En");
 
 public sealed record CoreDesktopImportResult(
     CoreDesktopFileEntry Entry,
@@ -267,7 +268,8 @@ internal static partial class DesktopImportCoreMapping
             NormalizeOptional(request.TargetDirectory),
             NormalizeOptional(request.OverrideCategory),
             NormalizeOptional(request.OverrideFilename),
-            request.DuplicateStrategy.ToCoreDuplicateStrategy());
+            request.DuplicateStrategy.ToCoreDuplicateStrategy(),
+            "En");
     }
 
     public static DesktopImportResult ToDesktopResult(

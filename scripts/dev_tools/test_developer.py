@@ -36,6 +36,20 @@ class DeveloperWorkflowTest(unittest.TestCase):
         with self.assertRaises(SystemExit):
             parser.parse_args(["test", "macos", "--build-for-testing", "--test-without-building"])
 
+    def test_cli_parser_supports_build_metrics_summary(self) -> None:
+        args = _build_parser().parse_args(
+            ["metrics", "build", "--limit", "25", "--json", "--strict"]
+        )
+
+        self.assertEqual(args.metrics_target, "build")
+        self.assertEqual(args.limit, 25)
+        self.assertTrue(args.json)
+        self.assertTrue(args.strict)
+
+        with self.assertRaises(SystemExit) as error:
+            _build_parser().parse_args(["metrics", "build", "--limit", "0"])
+        self.assertEqual(error.exception.code, 2)
+
     def test_developer_workflow_contract_keeps_cli_swift_and_docs_aligned(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -45,6 +59,7 @@ class DeveloperWorkflowTest(unittest.TestCase):
                     'test_sub.add_parser("changed")',
                     'run_sub.add_parser("macos")',
                     'doctor_sub.add_parser("build")',
+                    'metrics_sub.add_parser("build")',
                 ]),
                 "apps/macos/AreaMatrix/App/AreaMatrixDeveloperScenario.swift": '\n'.join([
                     'enum AreaMatrixDeveloperScenario: String {',
@@ -54,6 +69,7 @@ class DeveloperWorkflowTest(unittest.TestCase):
                 ]),
                 "docs/development/build.md": '\n'.join([
                     './dev doctor build',
+                    './dev metrics build',
                     './dev run macos --scenario catalog',
                     './dev run macos --scenario catalog-dark',
                 ]),
@@ -151,6 +167,27 @@ class DeveloperWorkflowTest(unittest.TestCase):
         )
         localization.assert_not_called()
         macos_tests.assert_not_called()
+
+    def test_macos_change_tests_modules_before_xctest(self) -> None:
+        root = Path("/repo")
+        completed = subprocess.CompletedProcess(args=[], returncode=0)
+        with (
+            patch(
+                "scripts.dev_tools.developer.changed_paths",
+                return_value=["apps/macos/Packages/AreaMatrixModules/Package.swift"],
+            ),
+            patch("scripts.dev_tools.developer.run_step", return_value=completed) as run_step,
+            patch("scripts.dev_tools.developer.run_localization_check", return_value=0),
+            patch("scripts.dev_tools.developer.run_macos_tests", return_value=0) as macos_tests,
+        ):
+            self.assertEqual(developer.run_changed_tests(root), 0)
+
+        run_step.assert_called_once_with(
+            ["swift", "test", "--package-path", "apps/macos/Packages/AreaMatrixModules"],
+            cwd=root,
+            check=False,
+        )
+        macos_tests.assert_called_once_with(root)
 
     def test_build_doctor_accepts_isolated_lanes_and_incremental_xcode_phase(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

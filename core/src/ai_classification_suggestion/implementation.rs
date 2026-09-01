@@ -1,8 +1,9 @@
 use std::path::{Path, PathBuf};
 
 use crate::{
-    classify, db, AiCapabilityState, AiFeatureKind, AiProviderPreference, ClassifyResult,
-    CoreError, CoreResult, FileEntry, RemoteProviderConfigSnapshot,
+    classify, db, AiCapabilityState, AiFeatureKind, AiPrivacyDecision, AiPrivacyEvaluationReport,
+    AiPrivacyEvaluationRoute, AiPrivacyInputField, AiPrivacySkippedReason, AiProviderPreference,
+    ClassifyResult, CoreError, CoreResult, FileEntry, RemoteProviderConfigSnapshot,
 };
 
 use super::{
@@ -44,39 +45,32 @@ pub(super) fn suggest_category_with_ai(
             None,
         );
     }
-    if privacy_blocks(&ai_config.config.privacy_policy_ref, &request) {
-        return skipped(
-            &repo,
-            &file,
-            AiCategorySuggestionSkipReason::PrivacyRule,
-            "Skipped by privacy rule",
-            true,
-            privacy_rule_id(&request),
-        );
-    }
-
     let rule_result =
         classify::predict_category(repo_path, file.current_name.clone()).map_err(map_rule_error)?;
     if rule_result_is_confident(&rule_result, &file.category) {
         return no_suggestion_for_confident_rule(&repo, &file);
     }
 
-    let context = build_context(&repo, &file, &request.context_policy)?;
+    let Some(route) = select_route(capability, &ai_config.config.provider_preference, &repo)?
+    else {
+        return unavailable_provider(&repo, &file);
+    };
+    let requested_fields = requested_privacy_fields(&file, &request.context_policy);
+    let privacy = evaluate_privacy(&repo, &file, &route, requested_fields)?;
+    if privacy_blocks(&privacy) {
+        return skipped_by_privacy(&repo, &file, privacy);
+    }
+    let context = build_context(&repo, &file, &request.context_policy, &privacy.sent_fields)?;
     if context.fields.is_empty() {
         return skipped(
             &repo,
             &file,
             AiCategorySuggestionSkipReason::NoEligibleContext,
-            "No eligible AI context is available",
+            "No eligible AI context is available after privacy filtering",
             true,
             None,
         );
     }
-
-    let Some(route) = select_route(capability, &ai_config.config.provider_preference, &repo)?
-    else {
-        return unavailable_provider(&repo, &file);
-    };
     ensure_classification_call_log_gate(&repo)?;
     let route_for_error = route.clone();
     let draft = match execute_suggestion(route, &repo, &context, request.content_locale.as_str()) {
@@ -98,21 +92,72 @@ fn classification_capability(capabilities: &[AiCapabilityState]) -> CoreResult<&
         .ok_or_else(|| CoreError::config("AI classification capability is not configured"))
 }
 
-fn privacy_blocks(config_ref: &Option<String>, request: &AiCategorySuggestionRequest) -> bool {
-    let reference = request.privacy_policy_ref.as_ref().or(config_ref.as_ref());
-    reference.is_some_and(|value| {
-        let normalized = value.to_ascii_lowercase();
-        normalized.contains("block")
-            || normalized.contains("deny")
-            || normalized.contains("private")
-    })
+fn evaluate_privacy(
+    repo: &Path,
+    file: &FileEntry,
+    route: &AiCategorySuggestionRoute,
+    requested_fields: Vec<AiPrivacyInputField>,
+) -> CoreResult<AiPrivacyEvaluationReport> {
+    crate::ai_privacy_rules::evaluate_persisted_ai_privacy(
+        repo,
+        AiFeatureKind::ClassificationSuggestions,
+        privacy_route(route),
+        requested_fields,
+        crate::ai_privacy_rules::evaluation_context_for_file(repo, file)?,
+    )
 }
 
-fn privacy_rule_id(request: &AiCategorySuggestionRequest) -> Option<String> {
-    request
-        .privacy_policy_ref
-        .as_ref()
-        .map(|value| format!("rule:{value}"))
+fn requested_privacy_fields(
+    file: &FileEntry,
+    policy: &super::AiCategorySuggestionContextPolicy,
+) -> Vec<AiPrivacyInputField> {
+    let mut fields = vec![AiPrivacyInputField::FileName];
+    if Path::new(&file.current_name).extension().is_some() {
+        fields.push(AiPrivacyInputField::Extension);
+    }
+    if !matches!(
+        policy,
+        super::AiCategorySuggestionContextPolicy::FileNameOnly
+    ) {
+        fields.push(AiPrivacyInputField::RepoRelativePath);
+    }
+    if matches!(
+        policy,
+        super::AiCategorySuggestionContextPolicy::LimitedTextSummary
+    ) {
+        fields.push(AiPrivacyInputField::ExtractedTextExcerpt);
+    }
+    fields
+}
+
+fn privacy_route(route: &AiCategorySuggestionRoute) -> AiPrivacyEvaluationRoute {
+    match route {
+        AiCategorySuggestionRoute::Local => AiPrivacyEvaluationRoute::Local,
+        AiCategorySuggestionRoute::Remote => AiPrivacyEvaluationRoute::Remote,
+    }
+}
+
+fn privacy_blocks(report: &AiPrivacyEvaluationReport) -> bool {
+    report.decision != AiPrivacyDecision::Allowed
+}
+
+fn skipped_by_privacy(
+    repo: &Path,
+    file: &FileEntry,
+    report: AiPrivacyEvaluationReport,
+) -> CoreResult<AiCategorySuggestion> {
+    let rule_id = report
+        .matched_rules
+        .first()
+        .map(|rule| rule.rule_id.clone());
+    let reason = if report.skipped_reason == Some(AiPrivacySkippedReason::NoEligibleInput) {
+        AiCategorySuggestionSkipReason::NoEligibleContext
+    } else if report.provider_gate_reason.is_some() {
+        AiCategorySuggestionSkipReason::ProviderUnavailable
+    } else {
+        AiCategorySuggestionSkipReason::PrivacyRule
+    };
+    skipped(repo, file, reason, &report.message, true, rule_id)
 }
 
 fn rule_result_is_confident(rule_result: &ClassifyResult, current_category: &str) -> bool {
@@ -213,7 +258,7 @@ fn no_suggestion_for_confident_rule(
             route: None,
             status: "skipped",
             sent_fields: &[],
-            privacy_rules_checked: true,
+            privacy_rules_checked: false,
             privacy_rule_id: None,
             result_summary: "Rule classification is already confident",
             error_code: None,
@@ -290,7 +335,7 @@ fn unavailable_provider(repo: &Path, file: &FileEntry) -> CoreResult<AiCategoryS
             route: None,
             status: "unavailable",
             sent_fields: &[],
-            privacy_rules_checked: true,
+            privacy_rules_checked: false,
             privacy_rule_id: None,
             result_summary: "AI classification provider is unavailable",
             error_code: Some("ProviderUnavailable"),

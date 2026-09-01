@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import SwiftUI
 
 #if DEBUG
@@ -132,7 +133,7 @@ private struct DeveloperDetailPaneScenario: View {
             selectedImportProgressRow: nil,
             semanticDetail: nil,
             repoPath: fixture.repoPath,
-            aiDependencies: AppDependencyContainer.live.feature.aiFeature,
+            aiDependencies: AppDependencyContainer.live(coreServices: AppCoreServices()).feature.aiFeature,
             batchTagStore: core,
             batchTagUndoStore: core,
             batchTagErrorMapper: CoreErrorSnapshotMapper(),

@@ -9,6 +9,7 @@ public static class WatcherStatusViewModelTests
     public static async Task RunAllAsync()
     {
         await OpeningWatcherStatusRecordsPlatformSnapshotThroughCoreBridge();
+        await OpeningWatcherStatusNotifiesOnCapturedSynchronizationContext();
         await RestartWatcherUsesExplicitPlatformRestartAndRecordsUpdatedSnapshot();
         await RunRescanNowPreparesCorePreviewBeforeConfirmationHandoff();
         await StartingSnapshotDisablesRecoveryActionsAndRescanPreview();
@@ -16,6 +17,7 @@ public static class WatcherStatusViewModelTests
         await MissingPathMapsToRecoveryTextAndDisablesRescanEntry();
         await DatabaseLockedSnapshotDisablesRescanWithoutCallingManualRescan();
         await ExportDiagnosticsWritesRedactedWatcherSnapshot();
+        await ExportDiagnosticsNotifiesOnCapturedSynchronizationContext();
         await OpenRepositoryFolderUsesPlatformDiagnosticsAction();
         await CoreErrorMapsToReadableWatcherError();
     }
@@ -39,6 +41,46 @@ public static class WatcherStatusViewModelTests
         TestAssert.True(model.CanOpenRepositoryFolder, nameof(model.CanOpenRepositoryFolder));
         TestAssert.Contains("OneDrive may generate bursts", model.OneDriveNoticeText, nameof(model.OneDriveNoticeText));
         TestAssert.Contains("AreaMatrix is watching", model.SummaryText, nameof(model.SummaryText));
+    }
+
+    private static async Task OpeningWatcherStatusNotifiesOnCapturedSynchronizationContext()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeWatcherStatusCoreBridge bridge = new();
+        FakeWindowsWatcherDiagnostics diagnostics = new(RunningSignal(path))
+        {
+            PendingCapture = new(TaskCreationOptions.RunContinuationsAsynchronously)
+        };
+        WatcherStatusViewModel model = new(bridge, diagnostics);
+
+        QueuedSynchronizationContext context = new();
+        SynchronizationContext? previousContext = SynchronizationContext.Current;
+        SynchronizationContext? notificationContext = null;
+        model.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(model.Snapshot) && model.Snapshot is not null)
+            {
+                notificationContext = SynchronizationContext.Current;
+            }
+        };
+
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            Task openTask = model.OpenRouteAsync(Route(path));
+            diagnostics.PendingCapture.SetResult(RunningSignal(path));
+            context.Drain();
+
+            await openTask.ConfigureAwait(false);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        TestAssert.True(
+            ReferenceEquals(context, notificationContext),
+            "watcher refresh notifications stayed on the captured synchronization context");
     }
 
     private static async Task RestartWatcherUsesExplicitPlatformRestartAndRecordsUpdatedSnapshot()
@@ -78,6 +120,48 @@ public static class WatcherStatusViewModelTests
             model.LastDiagnosticsExportPath,
             nameof(model.LastDiagnosticsExportPath));
         TestAssert.Null(model.Error, nameof(model.Error));
+    }
+
+    private static async Task ExportDiagnosticsNotifiesOnCapturedSynchronizationContext()
+    {
+        const string path = @"C:\Repos\AreaMatrix";
+        FakeWatcherStatusCoreBridge bridge = new();
+        FakeWindowsWatcherDiagnostics diagnostics = new(RunningSignal(path))
+        {
+            PendingExport = new(TaskCreationOptions.RunContinuationsAsynchronously)
+        };
+        WatcherStatusViewModel model = new(bridge, diagnostics);
+        await model.OpenRouteAsync(Route(path));
+
+        QueuedSynchronizationContext context = new();
+        SynchronizationContext? previousContext = SynchronizationContext.Current;
+        SynchronizationContext? notificationContext = null;
+        model.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(model.LastDiagnosticsExportPath))
+            {
+                notificationContext = SynchronizationContext.Current;
+            }
+        };
+
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            Task<bool> exportTask = model.ExportDiagnosticsAsync();
+            diagnostics.PendingExport.SetResult(
+                @"C:\Repos\AreaMatrix\.areamatrix\generated\diagnostics\watcher-status.txt");
+            context.Drain();
+
+            TestAssert.True(await exportTask.ConfigureAwait(false), "export completed");
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousContext);
+        }
+
+        TestAssert.True(
+            ReferenceEquals(context, notificationContext),
+            "diagnostics notification stayed on the captured synchronization context");
     }
 
     private static async Task OpenRepositoryFolderUsesPlatformDiagnosticsAction()
@@ -444,12 +528,16 @@ internal sealed class FakeWindowsWatcherDiagnostics : IWindowsWatcherDiagnostics
 
     public WatcherStatusHealthSignal RestartSignal { get; set; }
 
+    public TaskCompletionSource<WatcherStatusHealthSignal>? PendingCapture { get; set; }
+
+    public TaskCompletionSource<string>? PendingExport { get; set; }
+
     public Task<WatcherStatusHealthSignal> CaptureSnapshotAsync(
         string repoPath,
         CancellationToken cancellationToken = default)
     {
         CapturedPaths.Add(repoPath);
-        return Task.FromResult(captureSignal);
+        return PendingCapture?.Task ?? Task.FromResult(captureSignal);
     }
 
     public Task<WatcherStatusHealthSignal> RestartWatcherAsync(
@@ -467,8 +555,14 @@ internal sealed class FakeWindowsWatcherDiagnostics : IWindowsWatcherDiagnostics
     {
         ExportedPaths.Add(repoPath);
         ExportedSnapshots.Add(snapshot);
+        if (PendingExport is { } pendingExport && !pendingExport.Task.IsCompleted)
+        {
+            return pendingExport.Task;
+        }
+
         return Task.FromResult(
-            @"C:\Repos\AreaMatrix\.areamatrix\generated\diagnostics\watcher-status.txt");
+            PendingExport?.Task.Result
+            ?? @"C:\Repos\AreaMatrix\.areamatrix\generated\diagnostics\watcher-status.txt");
     }
 
     public Task OpenRepositoryFolderAsync(
@@ -477,5 +571,46 @@ internal sealed class FakeWindowsWatcherDiagnostics : IWindowsWatcherDiagnostics
     {
         OpenedFolders.Add(repoPath);
         return Task.CompletedTask;
+    }
+}
+
+internal sealed class QueuedSynchronizationContext : SynchronizationContext
+{
+    private readonly Queue<(SendOrPostCallback Callback, object? State)> callbacks = new();
+
+    public override void Post(SendOrPostCallback callback, object? state)
+    {
+        lock (callbacks)
+        {
+            callbacks.Enqueue((callback, state));
+        }
+    }
+
+    public void Drain()
+    {
+        while (true)
+        {
+            (SendOrPostCallback Callback, object? State) work;
+            lock (callbacks)
+            {
+                if (callbacks.Count == 0)
+                {
+                    return;
+                }
+
+                work = callbacks.Dequeue();
+            }
+
+            SynchronizationContext? previous = Current;
+            SetSynchronizationContext(this);
+            try
+            {
+                work.Callback(work.State);
+            }
+            finally
+            {
+                SetSynchronizationContext(previous);
+            }
+        }
     }
 }

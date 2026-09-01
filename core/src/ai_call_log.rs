@@ -303,7 +303,7 @@ fn validate_selected_clear_request(request: &AiCallLogClearRequest) -> CoreResul
 }
 
 fn validate_older_than_clear_request(request: &AiCallLogClearRequest) -> CoreResult<()> {
-    if !request.entry_ids.is_empty() || !request.older_than.is_some_and(|value| value >= 0) {
+    if !request.entry_ids.is_empty() || request.older_than.is_none_or(|value| value < 0) {
         return Err(CoreError::db(
             "AI call log retention clear request is invalid",
         ));

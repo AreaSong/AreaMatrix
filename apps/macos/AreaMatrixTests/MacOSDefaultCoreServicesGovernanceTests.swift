@@ -1,3 +1,4 @@
+import AreaMatrixFeatureAI
 import XCTest
 
 final class MacOSDefaultCoreServicesGovernanceTests: MacOSGovernanceTestCase {
@@ -327,14 +328,14 @@ final class AppShellCoreServiceGovernanceTests: MacOSGovernanceTestCase {
         )
         let source = try String(contentsOf: appShellFile, encoding: .utf8)
         for dependency in [
-            "repositoryInitializer: any CoreRepositoryInitializing = AppCoreServices.repositoryInitializer",
-            "importProgressImporter: any CoreFileImporting = AppCoreServices.importProgressImporter",
-            "startupRecoverer: any CoreStartupRecovering = AppCoreServices.startupRecoverer",
-            "externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices.externalChangesSyncer"
+            "repositoryInitializer: any CoreRepositoryInitializing = AppCoreServices().repositoryInitializer",
+            "importProgressImporter: any CoreFileImporting = AppCoreServices().importProgressImporter",
+            "startupRecoverer: any CoreStartupRecovering = AppCoreServices().startupRecoverer",
+            "externalChangesSyncer: any CoreExternalChangesSyncing = AppCoreServices().externalChangesSyncer"
         ] {
             XCTAssertTrue(
                 source.contains(dependency),
-                "AppShellModel lifecycle defaults must resolve through AppCoreServices: \(dependency)"
+                "AppShellModel test-compatible defaults must resolve from an AppCoreServices instance: \(dependency)"
             )
         }
     }

@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureOperation
 
 extension FileEntrySnapshot {
     static func renameFixture(id: Int64, name: String, updatedAt: Int64 = 1_700_000_100) -> FileEntrySnapshot {

@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureAI
 import Foundation
 import XCTest
 
@@ -133,8 +134,8 @@ final class LocalFileURLOpenerTests: XCTestCase {
         try NSWorkspaceRepositoryIgnoreRulesManager(localURLOpener: localURLOpener)
             .openIgnoreRules(repoPath: fixture.repoURL.path)
 
-        localURLOpener.assertOpenedPaths([fixture.ignoreRulesURL.path])
-        localURLOpener.assertNoOpenExistingRequests()
+        localURLOpener.assertOpenExistingRequests([(path: fixture.ignoreRulesURL.path, requiresDirectory: false)])
+        localURLOpener.assertNoOpenedURLs()
         localURLOpener.assertNoRevealExistingURLs()
     }
 
@@ -151,7 +152,8 @@ final class LocalFileURLOpenerTests: XCTestCase {
             .openIgnoreRules(repoPath: fixture.repoURL.path)) { error in
                 XCTAssertEqual(error as? RepositoryIgnoreRulesError, .openRejected)
             }
-        localURLOpener.assertOpenedPaths([fixture.ignoreRulesURL.path])
+        localURLOpener.assertOpenExistingRequests([(path: fixture.ignoreRulesURL.path, requiresDirectory: false)])
+        localURLOpener.assertNoOpenedURLs()
     }
 
     @MainActor
@@ -181,6 +183,26 @@ final class LocalFileURLOpenerTests: XCTestCase {
                 XCTAssertEqual(error as? RepositoryIgnoreRulesError, .ignoreRulesNotRegularFile)
             }
         localURLOpener.assertNoOpenedURLs()
+    }
+
+    @MainActor
+    func testIgnoreRulesCreationRejectsSymlinkedMetadataWithoutTouchingExternalSentinel() throws {
+        let repoURL = try makeTestTemporaryDirectory(named: "AreaMatrixIgnoreRulesSymlink")
+        let externalURL = try makeTestTemporaryDirectory(named: "AreaMatrixIgnoreRulesExternal")
+        defer {
+            removeTestTemporaryItems(repoURL)
+            removeTestTemporaryItems(externalURL)
+        }
+
+        let metadataURL = repoURL.appendingPathComponent(".areamatrix", isDirectory: true)
+        let sentinelURL = externalURL.appendingPathComponent("ignore.yaml")
+        try Data("external-sentinel".utf8).write(to: sentinelURL)
+        try FileManager.default.createSymbolicLink(at: metadataURL, withDestinationURL: externalURL)
+
+        XCTAssertThrowsError(try NSWorkspaceRepositoryIgnoreRulesManager(
+            localURLOpener: RecordingLocalFileURLOpener()
+        ).createDefaultIgnoreRules(repoPath: repoURL.path))
+        XCTAssertEqual(try Data(contentsOf: sentinelURL), Data("external-sentinel".utf8))
     }
 }
 

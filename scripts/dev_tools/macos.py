@@ -129,6 +129,61 @@ def _parallel_xcodebuild_retry_allowed(log_path: Path) -> bool:
     return ("Testing started" in text or "Test Suite '" in text) and not _has_real_test_or_build_failure(text)
 
 
+def _xcode_result_bundles(derived_data_dir: Path) -> set[Path]:
+    return set((derived_data_dir / "Logs/Test").glob("*.xcresult"))
+
+
+def _xcresult_test_failure_count(result_bundles: Sequence[Path]) -> int:
+    failures = 0
+    for result_bundle in result_bundles:
+        proc = subprocess.run(
+            [
+                "xcrun",
+                "xcresulttool",
+                "get",
+                "test-results",
+                "summary",
+                "--path",
+                str(result_bundle),
+            ],
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            check=False,
+        )
+        if proc.returncode != 0:
+            continue
+        try:
+            summary = json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            continue
+        failed_tests = summary.get("failedTests", 0)
+        if isinstance(failed_tests, int):
+            failures += failed_tests
+    return failures
+
+
+def _preserve_failed_result_bundle_for_retry(result_bundle: str | Path) -> bool:
+    """Keep an incomplete xcresult out of the path used by a controlled retry."""
+    path = Path(result_bundle)
+    if not path.exists():
+        return True
+
+    attempt = 1
+    while True:
+        candidate = path.with_name(f"{path.stem}.failed-attempt-{attempt}{path.suffix}")
+        if not candidate.exists():
+            break
+        attempt += 1
+
+    try:
+        path.rename(candidate)
+    except OSError:
+        return False
+    print(f"macOS tests: preserved incomplete result bundle at {candidate}.")
+    return True
+
+
 def _find_test_bundle(derived_data_dir: Path, test_bundle_name: str) -> Path | None:
     products_dir = derived_data_dir / "Build/Products"
     default_bundle = products_dir / "Debug" / test_bundle_name
@@ -627,6 +682,7 @@ def _run_macos_tests_inner(
     build_for_testing: bool = False,
     test_without_building: bool = False,
     test_plan: str | None = None,
+    retry_attempted: bool = False,
 ) -> int:
     plan_selected_tests = _test_plan_selected_tests(root, test_plan)
     fallback_only_testing = list(only_testing) if only_testing else plan_selected_tests
@@ -659,7 +715,15 @@ def _run_macos_tests_inner(
 
     xcode_action = "test-without-building" if test_without_building else "test"
     print(f"==> xcodebuild {xcode_action}")
+    result_bundles_before = _xcode_result_bundles(derived_data_dir)
     rc = _run_and_tee(["xcodebuild", xcode_action, *base], test_log_path, env=_xcode_test_env(only_testing, test_plan))
+    current_result_bundles = _xcode_result_bundles(derived_data_dir) - result_bundles_before
+    if result_bundle is not None:
+        current_result_bundles.add(Path(result_bundle))
+    test_failure_count = _xcresult_test_failure_count(sorted(current_result_bundles))
+    if test_failure_count:
+        print(f"macOS tests: xcresult records {test_failure_count} test failure(s); not retrying.")
+        return rc if rc != 0 else 1
     if rc == 0:
         performance_rc = _run_explicit_performance_tests(
             derived_data_dir,
@@ -714,6 +778,36 @@ def _run_macos_tests_inner(
         print("macOS tests: run 'xcodebuild -runFirstLaunch' or repair Xcode outside this sandbox.")
         print("macOS tests: CI and non-sandbox local runs remain required for XCTest evidence.")
         return MACOS_TESTS_BLOCKED_BY_XCODE_ENVIRONMENT
+    if (
+        not retry_attempted
+        and result_bundle is not None
+        and rc == 65
+        and not _sandbox_failure(test_log_path)
+        and _parallel_xcodebuild_retry_allowed(test_log_path)
+    ):
+        if _preserve_failed_result_bundle_for_retry(result_bundle):
+            print("macOS tests: XCTest runner exited 65 without a real test or build failure.")
+            print("macOS tests: retrying once while preserving the coverage result bundle.")
+            return _run_macos_tests_inner(
+                root,
+                project_path,
+                scheme,
+                test_bundle_name,
+                destination,
+                derived_data_dir,
+                test_log_path,
+                build_log_path,
+                result_bundle,
+                only_testing,
+                disable_parallel_testing,
+                enable_code_coverage,
+                coverage_gate,
+                build_for_testing,
+                test_without_building,
+                test_plan,
+                True,
+            )
+        print("macOS tests: could not preserve the incomplete coverage result bundle; not retrying.")
     if not _sandbox_failure(test_log_path):
         if not disable_parallel_testing and result_bundle is None and _parallel_xcodebuild_retry_allowed(test_log_path):
             print("macOS tests: parallel xcodebuild ended without a real test or build failure.")
@@ -735,6 +829,7 @@ def _run_macos_tests_inner(
                 build_for_testing,
                 test_without_building,
                 test_plan,
+                True,
             )
         fail(f"xcodebuild test failed for a non-sandbox reason. See {test_log_path}.", rc)
 

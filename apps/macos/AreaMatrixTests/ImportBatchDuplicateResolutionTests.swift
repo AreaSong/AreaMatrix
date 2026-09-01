@@ -3,6 +3,38 @@ import XCTest
 
 final class ImportBatchDuplicateResolutionTests: XCTestCase {
     @MainActor
+    func testConflictSelectionAccessibilityLocalizesUniquePathAndState() {
+        let english = AppLocalizer(runtime: AppLanguageRuntime(selection: .en))
+        let simplifiedChinese = AppLocalizer(runtime: AppLanguageRuntime(selection: .zhHans))
+        let path = "docs/contracts/Invoice.pdf"
+
+        XCTAssertEqual(
+            ConflictSelectionAccessibility.label(path: path, localizer: english),
+            "File: docs/contracts/Invoice.pdf"
+        )
+        XCTAssertEqual(
+            ConflictSelectionAccessibility.value(isSelected: true, localizer: english),
+            "Selected"
+        )
+        XCTAssertEqual(
+            ConflictSelectionAccessibility.value(isSelected: false, localizer: english),
+            "Not selected"
+        )
+        XCTAssertEqual(
+            ConflictSelectionAccessibility.label(path: path, localizer: simplifiedChinese),
+            "文件：docs/contracts/Invoice.pdf"
+        )
+        XCTAssertEqual(
+            ConflictSelectionAccessibility.value(isSelected: true, localizer: simplifiedChinese),
+            "已选择"
+        )
+        XCTAssertEqual(
+            ConflictSelectionAccessibility.value(isSelected: false, localizer: simplifiedChinese),
+            "未选择"
+        )
+    }
+
+    @MainActor
     func testImportConflictBatchManualScopeWithoutSelectionShowsSelectAtLeastOneConflict() async {
         let invoiceURL = importBatchInvoiceURL()
         let batcher = ImportConflictBatcher(previews: [.importConflictBatchMixedPreview()])

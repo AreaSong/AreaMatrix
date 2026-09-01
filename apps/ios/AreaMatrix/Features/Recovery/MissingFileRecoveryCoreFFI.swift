@@ -124,17 +124,17 @@ enum MissingFileRecoveryCoreSDKMapping {
             return recoveryError
         }
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return .unavailable(error.localizedDescription)
+            return .unavailable("Missing file recovery is unavailable.")
         }
         switch coreError {
         case let .FileNotFound(path):
             return .fileNotFound(path)
-        case let .Db(message), let .DbLocked(message), let .DbCorrupted(message):
-            return .database(message)
+        case .Db, .DbLocked, .DbCorrupted:
+            return .database("")
         case let .PermissionDenied(path):
             return .permissionDenied(path)
         default:
-            return .unavailable(String(describing: coreError))
+            return .unavailable("Missing file recovery is unavailable.")
         }
     }
 }

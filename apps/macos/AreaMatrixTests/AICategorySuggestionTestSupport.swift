@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureAI
 
 @MainActor
 func aiCategorySuggestionSuggestionModel(

@@ -1,3 +1,4 @@
+import AreaMatrixFeatureAI
 import Foundation
 
 struct AIPrivacyRuleRegistrySnapshot: Equatable {

@@ -1,4 +1,5 @@
 import AppKit
+import AreaMatrixUIFoundation
 import SwiftUI
 
 struct RenameFileSheet: View {
@@ -35,7 +36,7 @@ struct RenameFileSheet: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: L10n.string("Rename File"), pageID: "rename-file") {
+        AreaMatrixActionSheetContainer(title: L10n.string("Rename File"), pageID: "rename-file") {
             if let file {
                 VStack(alignment: .leading, spacing: 12) {
                     summaryRows(file)
@@ -45,7 +46,11 @@ struct RenameFileSheet: View {
                     actionButtons(for: file)
                 }
             } else {
-                MissingFileActionContext(onCancel: onCancel)
+                AreaMatrixUnavailableActionContext(
+                    message: L10n.string("The selected file context is no longer available."),
+                    cancelTitle: L10n.string("Cancel"),
+                    onCancel: onCancel
+                )
             }
         }
     }

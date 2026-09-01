@@ -7,6 +7,7 @@ import io
 import json
 import os
 import subprocess
+import tarfile
 import tempfile
 import time
 import unittest
@@ -116,6 +117,33 @@ with cargo_lane_lock(root, lane="sdk", operation=operation, poll_interval=0.01):
             self.assertEqual(metadata["operation"], "second")
             self.assertEqual(metadata["state"], "released")
             self.assertGreater(metadata["wait_seconds"], 0.1)
+            metric_records = [
+                json.loads(line)
+                for line in (root / ".build/metrics/cargo-lock.jsonl").read_text(encoding="utf-8").splitlines()
+            ]
+            self.assertEqual([record["operation"] for record in metric_records], ["first", "second"])
+            self.assertGreater(metric_records[1]["wait_seconds"], 0.1)
+
+    def test_cargo_lane_metric_is_recorded_after_flock_release(self) -> None:
+        events: list[str] = []
+
+        def observe_flock(_descriptor: int, operation: int) -> None:
+            if operation == artifacts.fcntl.LOCK_UN:
+                events.append("unlock")
+
+        with tempfile.TemporaryDirectory() as temp:
+            with (
+                patch("scripts.dev_tools.artifacts.fcntl.flock", side_effect=observe_flock),
+                patch("scripts.dev_tools.artifacts._write_lock_metadata"),
+                patch(
+                    "scripts.dev_tools.artifacts.record_metric",
+                    side_effect=lambda *_args, **_kwargs: events.append("metric") or True,
+                ),
+            ):
+                with artifacts.cargo_lane_lock(Path(temp), lane="sdk", operation="order"):
+                    pass
+
+        self.assertEqual(events, ["unlock", "metric"])
 
     def test_xcode_core_build_uses_isolated_lane_and_writes_dependency_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -405,12 +433,10 @@ documents:
 
             self.assertEqual(build._locked_uniffi_bindgen_version(core_dir), "0.28.3")
 
-    def test_uniffi_command_prefers_configured_binary(self) -> None:
+    def test_uniffi_command_rejects_configured_binary_override(self) -> None:
         with patch.dict("os.environ", {"UNIFFI_BINDGEN": "/tmp/custom-uniffi-bindgen"}):
-            self.assertEqual(
-                build._uniffi_bindgen_command(Path("/tmp/core")),
-                ["/tmp/custom-uniffi-bindgen"],
-            )
+            with self.assertRaisesRegex(ToolError, "overrides are disabled"):
+                build._uniffi_bindgen_command(Path("/tmp/core"))
 
     def test_uniffi_command_uses_locked_fallback_instead_of_arbitrary_path_binary(self) -> None:
         with (
@@ -423,15 +449,232 @@ documents:
     def test_wrapper_crate_calls_uniffi_cli_entrypoint(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             wrapper_dir = Path(tmp) / "wrapper"
-            uniffi_source = Path(tmp) / "uniffi-0.28.3"
-
-            build._write_uniffi_wrapper_crate(wrapper_dir, uniffi_source)
+            build._write_uniffi_wrapper_crate(wrapper_dir, "0.28.3", "1.2.2")
 
             self.assertIn(
-                f'uniffi_bindgen = {{ path = "{uniffi_source}" }}',
+                'uniffi_bindgen = { version = "=0.28.3", default-features = false }',
                 (wrapper_dir / "Cargo.toml").read_text(encoding="utf-8"),
             )
+            self.assertIn('camino = "=1.2.2"', (wrapper_dir / "Cargo.toml").read_text(encoding="utf-8"))
             self.assertIn("uniffi_bindgen::generate_bindings", (wrapper_dir / "src/main.rs").read_text(encoding="utf-8"))
+
+    def test_registry_source_verification_allows_cargo_marker_but_rejects_extra_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "example-1.0.0"
+            source.mkdir()
+            (source / "Cargo.toml").write_text("[package]\nname = \"example\"\nversion = \"1.0.0\"\n")
+            (source / ".cargo-ok").write_text('{"v":1}')
+            archive = root / "example-1.0.0.crate"
+            with tarfile.open(archive, mode="w:gz") as tar:
+                tar.add(source / "Cargo.toml", arcname="example-1.0.0/Cargo.toml")
+            checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+
+            build._verify_registry_source(source, archive, checksum)
+            (source / "unexpected.txt").write_text("unexpected")
+            with self.assertRaisesRegex(ToolError, "does not match"):
+                build._verify_registry_source(source, archive, checksum)
+
+    def test_registry_source_verification_rejects_special_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "example-1.0.0"
+            source.mkdir()
+            (source / "Cargo.toml").write_text("[package]\nname = \"example\"\nversion = \"1.0.0\"\n")
+            archive = root / "example-1.0.0.crate"
+            with tarfile.open(archive, mode="w:gz") as tar:
+                tar.add(source / "Cargo.toml", arcname="example-1.0.0/Cargo.toml")
+            checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+            os.mkfifo(source / "unexpected.fifo")
+
+            with self.assertRaisesRegex(ToolError, "unsupported entry"):
+                build._verify_registry_source(source, archive, checksum)
+
+    def test_registry_source_verification_rejects_multiply_linked_files(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "example-1.0.0"
+            source.mkdir()
+            cargo_toml = source / "Cargo.toml"
+            cargo_toml.write_text('[package]\nname = "example"\nversion = "1.0.0"\n', encoding="utf-8")
+            archive = root / "example-1.0.0.crate"
+            with tarfile.open(archive, mode="w:gz") as tar:
+                tar.add(cargo_toml, arcname="example-1.0.0/Cargo.toml")
+            checksum = hashlib.sha256(archive.read_bytes()).hexdigest()
+            os.link(cargo_toml, root / "hardlink-to-cargo-toml")
+
+            with self.assertRaisesRegex(ToolError, "multiply linked"):
+                build._verify_registry_source(source, archive, checksum)
+
+    @staticmethod
+    def _write_registry_package(registry_home: Path, name: str, version: str) -> tuple[Path, str]:
+        registry_id = "index.crates.io-test"
+        source = registry_home / "registry/src" / registry_id / f"{name}-{version}"
+        source.mkdir(parents=True)
+        (source / "Cargo.toml").write_text(
+            f'[package]\nname = "{name}"\nversion = "{version}"\n',
+            encoding="utf-8",
+        )
+        (source / "src").mkdir()
+        (source / "src/lib.rs").write_text("pub fn value() -> u8 { 1 }\n", encoding="utf-8")
+        archive = registry_home / "registry/cache" / registry_id / f"{name}-{version}.crate"
+        archive.parent.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(archive, mode="w:gz") as tar:
+            tar.add(source, arcname=source.name)
+        return source, hashlib.sha256(archive.read_bytes()).hexdigest()
+
+    def test_wrapper_registry_closure_excludes_unrelated_core_packages(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            core_dir = Path(tmp) / "core"
+            core_dir.mkdir()
+            checksum = "a" * 64
+            entries = [
+                ('name = "camino"\nversion = "1.2.2"', checksum, ""),
+                (
+                    'name = "uniffi_bindgen"\nversion = "0.28.3"',
+                    checksum,
+                    'dependencies = [\n "camino",\n "dep",\n]',
+                ),
+                ('name = "dep"\nversion = "1.0.0"', checksum, ""),
+                ('name = "unrelated"\nversion = "9.9.9"', checksum, ""),
+            ]
+            lock = ["version = 4", ""]
+            for package, package_checksum, dependencies in entries:
+                lock.extend(
+                    [
+                        "[[package]]",
+                        package,
+                        'source = "registry+https://example.invalid"',
+                        f'checksum = "{package_checksum}"',
+                    ]
+                )
+                if dependencies:
+                    lock.append(dependencies)
+                lock.append("")
+            (core_dir / "Cargo.lock").write_text("\n".join(lock), encoding="utf-8")
+
+            closure = build._wrapper_registry_closure(core_dir)
+
+            self.assertEqual({key[0] for key in closure}, {"camino", "uniffi_bindgen", "dep"})
+
+    def test_temp_cargo_home_copies_registry_index_and_cache_without_symlinks(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_home = root / "source-home"
+            source_index = source_home / "registry/index"
+            source_index.mkdir(parents=True)
+            (source_index / "marker").write_text("index", encoding="utf-8")
+            (source_home / "registry/cache").mkdir(parents=True)
+            tool_root = root / "tool"
+            (tool_root / "cargo-home/registry").mkdir(parents=True)
+            (tool_root / "cargo-home/registry/cache").symlink_to(
+                source_home / "registry/cache", target_is_directory=True
+            )
+
+            with self.assertRaisesRegex(ToolError, "must not be a symlink"):
+                build._prepare_temp_cargo_home(tool_root, source_home)
+
+            clean_tool_root = root / "clean-tool"
+            cargo_home = build._prepare_temp_cargo_home(clean_tool_root, source_home)
+            self.assertFalse((cargo_home / "registry/cache").is_symlink())
+            self.assertFalse((cargo_home / "registry/index").is_symlink())
+            self.assertEqual((cargo_home / "registry/index/marker").read_text(encoding="utf-8"), "index")
+
+    def test_temp_cargo_home_rejects_symlinked_source_home(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_home = root / "source-home"
+            (source_home / "registry/index").mkdir(parents=True)
+            alias = root / "source-alias"
+            try:
+                os.symlink(source_home, alias, target_is_directory=True)
+            except (NotImplementedError, OSError):
+                self.skipTest("symbolic links are unavailable on this platform")
+
+            with self.assertRaisesRegex(ToolError, "home must not be a symlink"):
+                build._prepare_temp_cargo_home(root / "tool", alias)
+
+    def test_wrapper_registry_closure_rejects_tampered_transitive_source(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            core_dir = root / "core"
+            core_dir.mkdir()
+            source_home = root / "source-home"
+            (source_home / "registry/index").mkdir(parents=True)
+            packages: dict[str, tuple[Path, str]] = {}
+            for name, version in (("camino", "1.2.2"), ("uniffi_bindgen", "0.28.3"), ("dep", "1.0.0")):
+                packages[name] = self._write_registry_package(source_home, name, version)
+            lock = ["version = 4", ""]
+            dependencies = {"camino": (), "uniffi_bindgen": ("camino", "dep"), "dep": ()}
+            for name, version in (("camino", "1.2.2"), ("uniffi_bindgen", "0.28.3"), ("dep", "1.0.0")):
+                checksum = packages[name][1]
+                lock.extend(
+                    [
+                        "[[package]]",
+                        f'name = "{name}"',
+                        f'version = "{version}"',
+                        'source = "registry+https://github.com/rust-lang/crates.io-index"',
+                        f'checksum = "{checksum}"',
+                    ]
+                )
+                if dependencies[name]:
+                    lock.extend(["dependencies = [", *[f' "{dep}",' for dep in dependencies[name]], "]"])
+                lock.append("")
+            (core_dir / "Cargo.lock").write_text("\n".join(lock), encoding="utf-8")
+
+            cargo_home = build._prepare_temp_cargo_home(root / "tool", source_home)
+            with patch("scripts.dev_tools.build._candidate_cargo_homes", return_value=[source_home]):
+                build._copy_verified_registry_closure(cargo_home, core_dir, source_home)
+            self.assertTrue(
+                (cargo_home / "registry/src/index.crates.io-test/dep-1.0.0/src/lib.rs").is_file()
+            )
+
+            (packages["dep"][0] / "src/lib.rs").write_text("THIS_IS_NOT_VALID_RUST\n", encoding="utf-8")
+
+            tampered_cargo_home = build._prepare_temp_cargo_home(root / "tampered-tool", source_home)
+            with patch("scripts.dev_tools.build._candidate_cargo_homes", return_value=[source_home]):
+                with self.assertRaisesRegex(ToolError, "missing verified Cargo registry package: dep 1.0.0"):
+                    build._copy_verified_registry_closure(tampered_cargo_home, core_dir, source_home)
+
+    def test_wrapper_lock_records_must_match_core_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            core_dir = root / "core"
+            wrapper_dir = root / "wrapper"
+            core_dir.mkdir()
+            wrapper_dir.mkdir()
+            core_lock = """version = 4
+
+[[package]]
+name = "dep"
+version = "1.0.0"
+source = "registry+https://example.invalid"
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+"""
+            (core_dir / "Cargo.lock").write_text(core_lock)
+            (wrapper_dir / "Cargo.lock").write_text(
+                """version = 4
+
+[[package]]
+name = "areamatrix_uniffi_bindgen_wrapper"
+version = "0.1.0"
+dependencies = [
+ "dep",
+]
+
+[[package]]
+name = "dep"
+version = "1.0.0"
+source = "registry+https://example.invalid"
+checksum = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+"""
+            )
+            build._verify_wrapper_lock(wrapper_dir, core_dir)
+            (wrapper_dir / "Cargo.lock").write_text(
+                (wrapper_dir / "Cargo.lock").read_text(encoding="utf-8").replace('version = "1.0.0"', 'version = "1.1.0"')
+            )
+            with self.assertRaisesRegex(ToolError, "outside core/Cargo.lock"):
+                build._verify_wrapper_lock(wrapper_dir, core_dir)
 
     def test_root_udl_uses_synthetic_bindgen_crate(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -792,6 +1035,83 @@ private var initializationResult: InitializationResult = {
             )
         )
         self.assertFalse(checks._localization_placeholders_match("%@ %lld", "%lld %@", pattern))
+
+    def test_xcstringstool_extract_command_includes_swiftui_when_supported(self) -> None:
+        command = checks._xcstringstool_extract_command(
+            "/usr/bin/xcrun",
+            Path("/tmp/output"),
+            [Path("Sources/Example.swift")],
+            supports_swiftui=True,
+        )
+
+        self.assertIn("--SwiftUI", command)
+        self.assertIn("--modern-localizable-strings", command)
+
+    def test_xcstringstool_extract_command_omits_unsupported_swiftui_flag(self) -> None:
+        command = checks._xcstringstool_extract_command(
+            "/usr/bin/xcrun",
+            Path("/tmp/output"),
+            [Path("Sources/Example.swift")],
+            supports_swiftui=False,
+        )
+
+        self.assertNotIn("--SwiftUI", command)
+        self.assertIn("--modern-localizable-strings", command)
+
+    def test_xcstringstool_extract_command_uses_legacy_flags_on_older_tool(self) -> None:
+        command = checks._xcstringstool_extract_command(
+            "/usr/bin/xcrun",
+            Path("/tmp/output"),
+            [Path("Sources/Example.swift")],
+            supports_swiftui=False,
+            supports_modern_localizable_strings=False,
+            supports_swiftui_text=True,
+            supports_legacy_localizable_strings=True,
+        )
+
+        self.assertIn("--legacy-localizable-strings", command)
+        self.assertIn("--SwiftUI-Text", command)
+        self.assertNotIn("--modern-localizable-strings", command)
+        self.assertNotIn("--SwiftUI", command)
+
+    def test_xcstringstool_support_detection_requires_a_standalone_swiftui_option(self) -> None:
+        completed = type(
+            "Completed",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "  --SwiftUI-Text\n",
+                "stderr": "",
+            },
+        )()
+
+        with patch("scripts.dev_tools.checks.subprocess.run", return_value=completed) as run:
+            self.assertFalse(checks._xcstringstool_supports_swiftui("/usr/bin/xcrun"))
+
+        run.assert_called_once_with(
+            ["/usr/bin/xcrun", "xcstringstool", "extract", "--help"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    def test_xcstringstool_support_detection_accepts_supported_help_output(self) -> None:
+        completed = type(
+            "Completed",
+            (),
+            {
+                "returncode": 0,
+                "stdout": "  --SwiftUI\n  --SwiftUI-Text\n",
+                "stderr": "",
+            },
+        )()
+
+        with patch("scripts.dev_tools.checks.subprocess.run", return_value=completed):
+            self.assertTrue(checks._xcstringstool_supports_swiftui("/usr/bin/xcrun"))
+
+    def test_xcstringstool_supports_option_requires_standalone_help_entry(self) -> None:
+        self.assertTrue(checks._xcstringstool_supports_option("  --modern-localizable-strings\n", "--modern-localizable-strings"))
+        self.assertFalse(checks._xcstringstool_supports_option("  --modern-localizable-strings-legacy\n", "--modern-localizable-strings"))
 
     def test_swift_l10n_calls_extracts_multiline_descriptor_keys(self) -> None:
         source = '''
@@ -2177,10 +2497,10 @@ repo_domains:
         self.assertEqual(
             checks._core_task_test_commands(text),
             [
-                ["cargo", "test", "--test", "saved_search_contract_api", "--", "--nocapture"],
-                ["cargo", "test", "--test", "saved_search_implementation", "--", "--nocapture"],
-                ["cargo", "test", "--test", "saved_search_failure_recovery", "--", "--nocapture"],
-                ["cargo", "test", "--test", "saved_search_validation", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "saved_search_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "saved_search_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "saved_search_failure_recovery", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "saved_search_validation", "--", "--nocapture"],
             ],
         )
 
@@ -2190,9 +2510,9 @@ repo_domains:
         self.assertEqual(
             checks._core_task_test_commands(text),
             [
-                ["cargo", "test", "--test", "smart_list_contract_api", "--", "--nocapture"],
-                ["cargo", "test", "--test", "smart_list_implementation", "--", "--nocapture"],
-                ["cargo", "test", "--test", "smart_list_failure_recovery", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "smart_list_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "smart_list_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "smart_list_failure_recovery", "--", "--nocapture"],
             ],
         )
 
@@ -2214,9 +2534,9 @@ repo_domains:
             self.assertEqual(
                 checks._core_task_test_commands("Core ability tag-crud-core tag-crud", root),
                 [
-                    ["cargo", "test", "--test", "tag_crud_contract_api", "--", "--nocapture"],
-                    ["cargo", "test", "--test", "tag_crud_failure_recovery", "--", "--nocapture"],
-                    ["cargo", "test", "--test", "tag_crud_implementation", "--", "--nocapture"],
+                    ["cargo", "test", "--locked", "--test", "tag_crud_contract_api", "--", "--nocapture"],
+                    ["cargo", "test", "--locked", "--test", "tag_crud_failure_recovery", "--", "--nocapture"],
+                    ["cargo", "test", "--locked", "--test", "tag_crud_implementation", "--", "--nocapture"],
                 ],
             )
 
@@ -2251,7 +2571,7 @@ repo_domains:
 
         self.assertEqual(
             [call.args[0] for call in run_step.call_args_list],
-            [["cargo", "test", "--workspace"]],
+            [["cargo", "test", "--locked", "--workspace"]],
         )
 
     def test_atomic_core_task_check_runs_only_targeted_tests(self) -> None:
@@ -2268,9 +2588,9 @@ repo_domains:
         self.assertEqual(
             [call.args[0] for call in run_step.call_args_list],
             [
-                ["cargo", "test", "--test", "smart_list_contract_api", "--", "--nocapture"],
-                ["cargo", "test", "--test", "smart_list_implementation", "--", "--nocapture"],
-                ["cargo", "test", "--test", "smart_list_failure_recovery", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "smart_list_contract_api", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "smart_list_implementation", "--", "--nocapture"],
+                ["cargo", "test", "--locked", "--test", "smart_list_failure_recovery", "--", "--nocapture"],
             ],
         )
 
@@ -2289,7 +2609,7 @@ repo_domains:
             [call.args[0] for call in run_step.call_args_list][:2],
             [
                 ["cargo", "fmt", "--all", "--", "--check"],
-                ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+                ["cargo", "clippy", "--locked", "--all-targets", "--all-features", "--", "-D", "warnings"],
             ],
         )
 
@@ -2317,7 +2637,7 @@ repo_domains:
             [call.args[0] for call in run_step.call_args_list][:2],
             [
                 ["cargo", "fmt", "--all", "--", "--check"],
-                ["cargo", "clippy", "--all-targets", "--all-features", "--", "-D", "warnings"],
+                ["cargo", "clippy", "--locked", "--all-targets", "--all-features", "--", "-D", "warnings"],
             ],
         )
 

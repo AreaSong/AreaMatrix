@@ -321,7 +321,7 @@ enum SyncConflictEntryError: Error, Equatable {
         if let detailError = error as? MobileFileDetailError {
             return .unavailable(detailError.message)
         }
-        return .unavailable(error.localizedDescription)
+        return .unavailable("Conflict review is unavailable.")
     }
 }
 

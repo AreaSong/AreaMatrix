@@ -7,8 +7,6 @@ struct RepositoryOverviewSharedOperation: Equatable {
 }
 
 final class OverviewRegenerationCoordinator: ObservableObject {
-    static let shared = OverviewRegenerationCoordinator()
-
     let objectWillChange = ObservableObjectPublisher()
     @MainActor private(set) var operations: [String: RepositoryOverviewSharedOperation] = [:]
 
@@ -74,6 +72,9 @@ final class RepositoryOverviewRegenerationModel: ObservableObject {
     private let errorMapper: any CoreErrorMapping
     private var concreteContentLocale: String?
     private var coordinatorObservation: AnyCancellable?
+    private var loadGeneration = 0
+    private var prepareGeneration = 0
+    private var languageStatusGeneration = 0
 
     init(
         repoPath: String,
@@ -102,29 +103,39 @@ final class RepositoryOverviewRegenerationModel: ObservableObject {
 
     func load(contentLocale: String) async {
         guard !repoPath.isEmpty else { return }
+        languageStatusGeneration &+= 1
+        loadGeneration &+= 1
+        let requestGeneration = loadGeneration
         concreteContentLocale = contentLocale
         phase = .loading
         do {
-            languageStatus = try await bridge.overviewLanguageStatus(
+            let status = try await bridge.overviewLanguageStatus(
                 repoPath: repoPath,
                 contentLocale: contentLocale
             )
+            guard requestGeneration == loadGeneration, !Task.isCancelled else { return }
+            languageStatus = status
             phase = .idle
         } catch {
+            guard requestGeneration == loadGeneration, !Task.isCancelled else { return }
             phase = await .failed(mappedError(error))
         }
     }
 
     func prepare() async {
         guard let concreteContentLocale, !phase.isBusy, sharedOperation == nil else { return }
+        prepareGeneration &+= 1
+        let requestGeneration = prepareGeneration
         phase = .loading
         do {
             let plan = try await bridge.prepareOverviewRegeneration(
                 repoPath: repoPath,
                 contentLocale: concreteContentLocale
             )
+            guard requestGeneration == prepareGeneration, !Task.isCancelled else { return }
             phase = .preflight(plan)
         } catch {
+            guard requestGeneration == prepareGeneration, !Task.isCancelled else { return }
             phase = await .failed(mappedError(error))
         }
     }
@@ -223,10 +234,26 @@ final class RepositoryOverviewRegenerationModel: ObservableObject {
 
     private func refreshLanguageStatus() async {
         guard let concreteContentLocale else { return }
-        languageStatus = try? await bridge.overviewLanguageStatus(
-            repoPath: repoPath,
-            contentLocale: concreteContentLocale
-        )
+        languageStatusGeneration &+= 1
+        let requestGeneration = languageStatusGeneration
+        let requestLocale = concreteContentLocale
+        do {
+            let status = try await bridge.overviewLanguageStatus(
+                repoPath: repoPath,
+                contentLocale: requestLocale
+            )
+            guard requestGeneration == languageStatusGeneration,
+                  self.concreteContentLocale == requestLocale,
+                  !Task.isCancelled
+            else { return }
+            languageStatus = status
+        } catch {
+            guard requestGeneration == languageStatusGeneration,
+                  self.concreteContentLocale == requestLocale,
+                  !Task.isCancelled
+            else { return }
+            languageStatus = nil
+        }
     }
 
     private func mappedError(_ error: Error) async -> RepositoryOverviewRegenerationError {

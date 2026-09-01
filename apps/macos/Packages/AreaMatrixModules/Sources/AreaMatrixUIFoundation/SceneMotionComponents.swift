@@ -88,33 +88,39 @@ public extension AreaMatrixParallax {
 public struct AreaMatrixSceneVisualMotionModifier: ViewModifier {
     @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
     @Environment(\.areaMatrixSceneParallax) private var parallax
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     public init() {}
 
     public func body(content: Content) -> some View {
         content
             .opacity(sceneVisibility.isVisible ? 1 : 0)
-            .offset(y: sceneVisibility.isVisible ? 0 : verticalOffset)
-            .scaleEffect(sceneVisibility.isVisible ? 1 : scale)
-            .blur(radius: sceneVisibility.isVisible ? 0 : 16)
-            .rotationEffect(.degrees(sceneVisibility.isVisible ? 0 : rotationAngle))
+            .offset(y: reduceMotion || sceneVisibility.isVisible ? 0 : verticalOffset)
+            .scaleEffect(reduceMotion || sceneVisibility.isVisible ? 1 : scale)
+            .blur(radius: reduceTransparency || sceneVisibility.isVisible ? 0 : 16)
+            .rotationEffect(.degrees(reduceMotion || sceneVisibility.isVisible ? 0 : rotationAngle))
             .rotation3DEffect(
-                .degrees(sceneVisibility.isVisible ? 0 : scene3DRotation),
+                .degrees(reduceMotion || sceneVisibility.isVisible ? 0 : scene3DRotation),
                 axis: (x: 1, y: 0, z: 0),
                 perspective: 0.85
             )
             .rotation3DEffect(
-                .degrees(parallax.vertical * -12),
+                .degrees(effectiveParallax.vertical * -12),
                 axis: (x: 1, y: 0, z: 0),
                 perspective: 0.75
             )
             .rotation3DEffect(
-                .degrees(parallax.horizontal * 12),
+                .degrees(effectiveParallax.horizontal * 12),
                 axis: (x: 0, y: 1, z: 0),
                 perspective: 0.75
             )
-            .animation(.areaMatrixSceneEnterExit, value: sceneVisibility)
-            .animation(.areaMatrixSceneParallax, value: parallax)
+            .animation(reduceMotion ? nil : .areaMatrixSceneEnterExit, value: sceneVisibility)
+            .animation(reduceMotion ? nil : .areaMatrixSceneParallax, value: effectiveParallax)
+    }
+
+    private var effectiveParallax: AreaMatrixParallax {
+        reduceMotion ? .zero : parallax
     }
 
     private var verticalOffset: CGFloat {
@@ -150,6 +156,8 @@ public struct AreaMatrixSceneVisualMotionModifier: ViewModifier {
 public struct AreaMatrixSceneTextMotionModifier: ViewModifier {
     let delay: Double
     @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     public init(delay: Double) {
         self.delay = delay
@@ -158,9 +166,9 @@ public struct AreaMatrixSceneTextMotionModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .opacity(sceneVisibility.isVisible ? 1 : 0)
-            .offset(y: sceneVisibility.isVisible ? 0 : offsetValue)
-            .blur(radius: sceneVisibility.isVisible ? 0 : 4)
-            .animation(animation, value: sceneVisibility)
+            .offset(y: reduceMotion || sceneVisibility.isVisible ? 0 : offsetValue)
+            .blur(radius: reduceTransparency || sceneVisibility.isVisible ? 0 : 4)
+            .animation(reduceMotion ? nil : animation, value: sceneVisibility)
     }
 
     private var offsetValue: CGFloat {

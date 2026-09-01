@@ -8,8 +8,8 @@ extension MainFileListModel {
             selection = .multiple(ids)
             selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
             missingFileRelinkState = .idle
-            detailTagEditorState = .notLoaded
-            detailTagSuggestionState = .idle
+            detailTagModel.editorState = .notLoaded
+            detailTagModel.suggestionState = .idle
             isDetailLoading = true
             resetDetailLog()
             await loadMultiSelectionDetails(ids: ids)
@@ -60,8 +60,8 @@ extension MainFileListModel {
             files = files.map { $0.id == loadedFile.id ? loadedFile : $0 }
             detailErrorMapping = nil
             isDetailLoading = false
-            detailTagEditorState = .notLoaded
-            detailTagSuggestionState = .idle
+            detailTagModel.editorState = .notLoaded
+            detailTagModel.suggestionState = .idle
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == detailGeneration, selection.singleFileID == id else { return }
@@ -103,9 +103,9 @@ extension MainFileListModel {
         selection = .none
         selectedFileDetail = nil; selectedFileNoteWriteBlock = nil; detailErrorMapping = nil
         missingFileRelinkState = .idle
-        detailTagEditorState = .notLoaded
-        detailTagSuggestionState = .idle
-        clearTagFilterRegistry()
+        detailTagModel.editorState = .notLoaded
+        detailTagModel.suggestionState = .idle
+        detailTagModel.clearTagFilterRegistry()
         isDetailLoading = false
         resetDetailLog()
         pendingActionDestination = nil; renameState = .idle; deleteState = .idle; changeCategoryState = .idle
@@ -119,9 +119,7 @@ extension MainFileListModel {
         detailTabRequest = nil
         iCloudConflictResolutionState = .idle
     }
-}
 
-extension MainFileListModel {
     func locateMissingFile(fileID: Int64) async {
         guard canStartMissingFileRelink(fileID: fileID) else { return }
         missingFileRelinkState = .loading(fileID: fileID)

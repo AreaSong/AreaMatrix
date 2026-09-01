@@ -1,3 +1,4 @@
+import AreaMatrixFeatureIngestion
 import Foundation
 
 protocol ImportFolderScanning: Sendable {

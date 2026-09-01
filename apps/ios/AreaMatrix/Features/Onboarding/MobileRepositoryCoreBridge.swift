@@ -88,11 +88,23 @@ struct MobileRepositoryConnection: Equatable {
     var validation: MobileRepositoryValidation
     var config: MobileRepositoryConfig
     var bookmark: RepositoryBookmark
+    var scopedAccess: RepositoryScopedAccess? = nil
+
+    static func == (lhs: MobileRepositoryConnection, rhs: MobileRepositoryConnection) -> Bool {
+        lhs.validation == rhs.validation
+            && lhs.config == rhs.config
+            && lhs.bookmark == rhs.bookmark
+    }
 }
 
 struct MobileRepositoryCandidate: Equatable {
     var validation: MobileRepositoryValidation
     var bookmark: RepositoryBookmark
+    var scopedAccess: RepositoryScopedAccess? = nil
+
+    static func == (lhs: MobileRepositoryCandidate, rhs: MobileRepositoryCandidate) -> Bool {
+        lhs.validation == rhs.validation && lhs.bookmark == rhs.bookmark
+    }
 }
 
 enum MobileRepositoryConnectionRoute: Equatable {

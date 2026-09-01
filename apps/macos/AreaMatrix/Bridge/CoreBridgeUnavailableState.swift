@@ -1,16 +1,6 @@
 import AreaMatrixCoreBridgeContract
 import Foundation
 
-protocol ExistingRepositoryMetadataReading: Sendable {
-    func metadata(repoPath: String) async throws -> ExistingRepositoryMetadataSnapshot
-}
-
-struct ExistingRepositoryMetadataSnapshot: Equatable {
-    var schemaVersion: Int64
-    var lastOpenedAt: Int64?
-    var configuredRepoPath: String?
-}
-
 struct ConfigLoadFailure: Equatable {
     var repoPath: String
     var title: LocalizedMessage

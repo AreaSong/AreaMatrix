@@ -1,3 +1,4 @@
+import AreaMatrixFeatureOperation
 import Foundation
 
 enum RedoActionState: Equatable {
@@ -74,26 +75,6 @@ enum BatchRenameUndoAction {
             undoStore: undoStore,
             errorMapper: errorMapper
         )
-    }
-}
-
-extension DetailTagUndoToast {
-    static func make(
-        operation: DetailTagEditorOperation,
-        fileID: Int64,
-        previous: TagSetSnapshot?,
-        current: TagSetSnapshot
-    ) -> DetailTagUndoToast? {
-        switch operation {
-        case .load:
-            nil
-        case .add:
-            DetailTagUndoToast.addedTag(fileID: fileID, previous: previous, current: current)
-        case .remove:
-            DetailTagUndoToast.removedTag(fileID: fileID, previous: previous, current: current)
-        case .suggest, .applySuggestions:
-            nil
-        }
     }
 }
 

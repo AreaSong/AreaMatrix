@@ -1,3 +1,4 @@
+import AreaMatrixCoreBridgeContract
 import SwiftUI
 
 struct StartupRecoveryCheckStatusView: View {

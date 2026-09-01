@@ -17,6 +17,7 @@ use crate::{
 
 const AREA_MATRIX_DIR: &str = ".areamatrix";
 const INIT_DIR_PREFIX: &str = ".areamatrix.init-";
+const INIT_MARKER: &str = ".owner-marker";
 const DEFAULT_CLASSIFIER_YAML: &str = include_str!("../resources/classifier.yaml");
 const DEFAULT_IGNORE_YAML: &str = r#"version: 1
 ignore:
@@ -87,6 +88,13 @@ fn create_repair_metadata_staging(
     fs::create_dir(init_dir.join("generated")).map_err(map_io_error)?;
     write_new_file(&init_dir.join("classifier.yaml"), DEFAULT_CLASSIFIER_YAML)?;
     write_new_file(&init_dir.join("ignore.yaml"), DEFAULT_IGNORE_YAML)?;
+    write_new_file(
+        &init_dir.join(INIT_MARKER),
+        init_dir
+            .file_name()
+            .and_then(OsStr::to_str)
+            .unwrap_or_default(),
+    )?;
 
     let mut config =
         config::default_repo_config(repo_path.to_owned(), OverviewOutput::GeneratedOnly);
@@ -141,7 +149,7 @@ fn init_create_empty_inner(
     }
     if config.overview_output == OverviewOutput::RootAreaMatrixFile {
         overview::write_root_areamatrix_file(repo, options.content_locale.as_str())?;
-        rollback.mark_root_entry_created();
+        rollback.mark_root_entry_created(repo);
     }
     overview::record_initialized_overview_provenance(repo, &options.content_locale)?;
 
@@ -176,6 +184,13 @@ fn create_metadata_staging(
 
     write_new_file(&init_dir.join("classifier.yaml"), DEFAULT_CLASSIFIER_YAML)?;
     write_new_file(&init_dir.join("ignore.yaml"), DEFAULT_IGNORE_YAML)?;
+    write_new_file(
+        &init_dir.join(INIT_MARKER),
+        init_dir
+            .file_name()
+            .and_then(OsStr::to_str)
+            .unwrap_or_default(),
+    )?;
 
     let mut config =
         config::default_repo_config(repo_path.to_owned(), options.overview_output.clone());
@@ -263,7 +278,7 @@ fn cleanup_recoverable_init_dirs(repo: &Path) -> CoreResult<bool> {
         }
 
         let path = entry.path();
-        if !is_recoverable_init_dir(&path)? {
+        if !is_recoverable_init_dir(&path, entry_name)? {
             return Err(CoreError::config("configuration error"));
         }
 
@@ -273,7 +288,7 @@ fn cleanup_recoverable_init_dirs(repo: &Path) -> CoreResult<bool> {
     Ok(cleaned)
 }
 
-fn is_recoverable_init_dir(path: &Path) -> CoreResult<bool> {
+fn is_recoverable_init_dir(path: &Path, expected_name: &str) -> CoreResult<bool> {
     let metadata = fs::symlink_metadata(path).map_err(map_io_error)?;
     if metadata.file_type().is_symlink() || !metadata.is_dir() {
         return Ok(false);
@@ -294,6 +309,13 @@ fn is_recoverable_init_dir(path: &Path) -> CoreResult<bool> {
         let recoverable = match name {
             "staging" | "archives" => file_type.is_dir() && is_empty_dir(&path)?,
             "generated" => file_type.is_dir() && is_recoverable_generated_dir(&path)?,
+            INIT_MARKER => {
+                file_type.is_file()
+                    && !file_type.is_symlink()
+                    && fs::read_to_string(&path)
+                        .map(|value| value.trim() == expected_name)
+                        .unwrap_or(false)
+            }
             "classifier.yaml" | "ignore.yaml" | "index.db" | "index.db-wal" | "index.db-shm" => {
                 file_type.is_file()
             }
@@ -409,6 +431,7 @@ struct InitRollback {
     init_dir: PathBuf,
     metadata_committed: bool,
     root_entry_created: bool,
+    root_entry_snapshot: Option<Vec<u8>>,
     created_category_dirs: Vec<PathBuf>,
     complete: bool,
 }
@@ -420,6 +443,7 @@ impl InitRollback {
             init_dir,
             metadata_committed: false,
             root_entry_created: false,
+            root_entry_snapshot: None,
             created_category_dirs: Vec::new(),
             complete: false,
         }
@@ -433,8 +457,9 @@ impl InitRollback {
         self.metadata_committed
     }
 
-    fn mark_root_entry_created(&mut self) {
+    fn mark_root_entry_created(&mut self, repo: &Path) {
         self.root_entry_created = true;
+        self.root_entry_snapshot = fs::read(repo.join("AREAMATRIX.md")).ok();
     }
 
     fn track_category_dir(&mut self, path: PathBuf) {
@@ -453,12 +478,32 @@ impl InitRollback {
             let _ = fs::remove_dir(path);
         }
         if self.root_entry_created {
-            let _ = fs::remove_file(self.repo.join("AREAMATRIX.md"));
+            let path = self.repo.join("AREAMATRIX.md");
+            if self
+                .root_entry_snapshot
+                .as_ref()
+                .is_some_and(|expected| fs::read(&path).ok().as_ref() == Some(expected))
+            {
+                let _ = fs::remove_file(path);
+            }
         }
         if self.metadata_committed {
-            let _ = fs::remove_dir_all(self.repo.join(AREA_MATRIX_DIR));
+            let metadata = self.repo.join(AREA_MATRIX_DIR);
+            if is_owned_init_metadata(&metadata, &self.init_dir) {
+                let _ = fs::remove_dir_all(metadata);
+            }
         } else {
             let _ = fs::remove_dir_all(&self.init_dir);
         }
     }
+}
+
+fn is_owned_init_metadata(path: &Path, init_dir: &Path) -> bool {
+    let marker = path.join(INIT_MARKER);
+    let Some(expected) = init_dir.file_name().and_then(OsStr::to_str) else {
+        return false;
+    };
+    fs::read_to_string(&marker)
+        .map(|value| value.trim() == expected)
+        .unwrap_or(false)
 }

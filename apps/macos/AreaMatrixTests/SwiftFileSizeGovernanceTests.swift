@@ -14,15 +14,6 @@ final class SwiftFileSizeGovernanceTests: MacOSGovernanceTestCase {
             maximumLineCount: 461
         ),
         NearLimitSwiftFile(
-            path: "AreaMatrixTests/AreaMatrixDeveloperScenarioTests.swift",
-            owner: "developer scenario and preview coverage contract tests",
-            rationale: "Keeps the scenario inventory, language matrix, and in-memory scenario smoke assertions "
-                + "together so the debug UI surface remains covered by one governance owner.",
-            splitTrigger: "Before any growth beyond the current inventory, move scenario fixture smoke assertions "
-                + "into a dedicated AreaMatrixDeveloperScenarioFixtureTests.swift file.",
-            maximumLineCount: 460
-        ),
-        NearLimitSwiftFile(
             path: "AreaMatrixTests/DetailMetaPageFeatureTests.swift",
             owner: "missing-file detail and relink feature tests",
             rationale: "Keeps the Locate cancellation, hash safety, pagination, and selection-race "

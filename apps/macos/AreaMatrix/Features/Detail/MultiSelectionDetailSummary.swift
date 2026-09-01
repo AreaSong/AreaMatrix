@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import Foundation
 
 struct MultiSelectionDetailSummary: Equatable {
@@ -97,9 +98,7 @@ struct MultiSelectionDetailSummary: Equatable {
     private func importedDateDisplay(_ valueSelector: ([Int64]) -> Int64?) -> String {
         let importedValues = files.map(\.importedAt)
         guard let timestamp = valueSelector(importedValues) else { return L10n.string("Not available") }
-        return FileEntrySnapshot.mainDisplayDateFormatter.string(
-            from: Date(timeIntervalSince1970: TimeInterval(timestamp))
-        )
+        return Date(timeIntervalSince1970: TimeInterval(timestamp)).formatted(date: .abbreviated, time: .omitted)
     }
 
     private static func orderedSelectedFiles(

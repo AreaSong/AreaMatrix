@@ -134,6 +134,9 @@ struct ICloudConflictResolutionOptionSnapshot: Equatable, Identifiable {
 
 struct ICloudConflictPreviewSnapshot: Equatable {
     var conflictID: String
+    /// Opaque Core token bound to this repository and the exact version identities.
+    /// An empty value is only valid for local display fixtures; apply paths fail closed.
+    var previewToken: String = ""
     var versions: [ICloudConflictVersionMetadataSnapshot]
     var defaultResolution: ICloudConflictResolutionStrategy
     var resolutionOptions: [ICloudConflictResolutionOptionSnapshot]
@@ -186,7 +189,8 @@ extension CoreBridge: CoreICloudConflictReviewing {
             try ICloudConflictResolveReportSnapshot(coreReport: AreaMatrix.resolveIcloudConflict(
                 repoPath: request.repoPath,
                 conflictId: request.conflictID,
-                resolution: ICloudConflictResolution(strategy: request.strategy)
+                resolution: ICloudConflictResolution(strategy: request.strategy),
+                previewToken: request.previewToken
             ))
         }.value
         return ICloudConflictResolutionResult(report: report)
@@ -219,6 +223,7 @@ extension ICloudConflictPairSnapshot {
 private extension ICloudConflictPreviewSnapshot {
     init(coreReport: ICloudConflictPreviewReport) {
         conflictID = coreReport.conflictId
+        previewToken = coreReport.previewToken
         versions = coreReport.versions.map(ICloudConflictVersionMetadataSnapshot.init)
         defaultResolution = ICloudConflictResolutionStrategy(coreResolution: coreReport.defaultResolution)
         resolutionOptions = coreReport.resolutionOptions.map(ICloudConflictResolutionOptionSnapshot.init)

@@ -1,6 +1,6 @@
 import Foundation
 
-extension MainFileListModel {
+extension SearchModel {
     func searchBannerContextText(for request: SearchQueryRequestSnapshot) -> String {
         activeSmartListSearch
             .map { L10n.format("search.smartList.context", $0.name, request.query) } ??
@@ -18,13 +18,11 @@ extension MainFileListModel {
         searchGeneration += 1
         let generation = searchGeneration
         let request = SearchQueryRequestSnapshot(savedSearchQuery: savedSearch.query)
-        let previousPage = searchState.page
+        let previousPage = state.page
 
-        searchState = .loading(request: request, previousPage: previousPage)
-        pendingSearchDestination = nil
-        isLoading = true
-        errorMapping = nil
-        diagnosticsState = .idle
+        state = .loading(request: request, previousPage: previousPage)
+        pendingDestination = nil
+        applyResult(.loading)
 
         do {
             let page = try await searchQuerying.runSmartList(
@@ -34,17 +32,15 @@ extension MainFileListModel {
                 offset: request.offset
             )
             guard generation == searchGeneration else { return }
-            files = page.results.map(\.file)
-            searchState = .loaded(request: request, page: page)
-            pendingSearchDestination = nil
-            errorMapping = nil
-            isLoading = false
+            state = .loaded(request: request, page: page)
+            pendingDestination = nil
+            applyResult(.loaded(page.results.map(\.file)))
         } catch {
             let mappedError = await mapCoreError(error)
             guard generation == searchGeneration else { return }
-            searchState = .failed(request: request, mappedError)
-            pendingSearchDestination = nil
-            isLoading = false
+            state = .failed(request: request, mappedError)
+            pendingDestination = nil
+            applyResult(.failed)
         }
     }
 }

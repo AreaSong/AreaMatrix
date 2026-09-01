@@ -12,7 +12,12 @@ let package = Package(
         .library(name: "AreaMatrixCoreBridgeContract", targets: ["AreaMatrixCoreBridgeContract"]),
         .library(name: "AreaMatrixCoreBridgeRuntime", targets: ["AreaMatrixCoreBridgeRuntime"]),
         .library(name: "AreaMatrixUIFoundation", targets: ["AreaMatrixUIFoundation"]),
-        .library(name: "AreaMatrixPlatformKit", targets: ["AreaMatrixPlatformKit"])
+        .library(name: "AreaMatrixPlatformKit", targets: ["AreaMatrixPlatformKit"]),
+        .library(name: "AreaMatrixFeatureLibrary", targets: ["AreaMatrixFeatureLibrary"]),
+        .library(name: "AreaMatrixFeatureIngestion", targets: ["AreaMatrixFeatureIngestion"]),
+        .library(name: "AreaMatrixFeatureOperation", targets: ["AreaMatrixFeatureOperation"]),
+        .library(name: "AreaMatrixFeatureSettings", targets: ["AreaMatrixFeatureSettings"]),
+        .library(name: "AreaMatrixFeatureAI", targets: ["AreaMatrixFeatureAI"])
     ],
     targets: [
         .target(
@@ -36,6 +41,31 @@ let package = Package(
         .target(
             name: "AreaMatrixPlatformKit",
             path: "Sources/AreaMatrixPlatformKit"
+        ),
+        .target(
+            name: "AreaMatrixFeatureLibrary",
+            dependencies: ["AreaMatrixCoreContracts", "AreaMatrixCoreBridgeContract"],
+            path: "Sources/AreaMatrixFeatureLibrary"
+        ),
+        .target(
+            name: "AreaMatrixFeatureIngestion",
+            dependencies: ["AreaMatrixCoreContracts", "AreaMatrixUIFoundation"],
+            path: "Sources/AreaMatrixFeatureIngestion"
+        ),
+        .target(
+            name: "AreaMatrixFeatureOperation",
+            dependencies: ["AreaMatrixCoreContracts"],
+            path: "Sources/AreaMatrixFeatureOperation"
+        ),
+        .target(
+            name: "AreaMatrixFeatureSettings",
+            dependencies: ["AreaMatrixCoreContracts"],
+            path: "Sources/AreaMatrixFeatureSettings"
+        ),
+        .target(
+            name: "AreaMatrixFeatureAI",
+            dependencies: ["AreaMatrixCoreContracts"],
+            path: "Sources/AreaMatrixFeatureAI"
         ),
         .testTarget(
             name: "AreaMatrixCoreContractsTests",
@@ -61,6 +91,18 @@ let package = Package(
             name: "AreaMatrixPlatformKitTests",
             dependencies: ["AreaMatrixPlatformKit"],
             path: "Tests/AreaMatrixPlatformKitTests"
+        ),
+        .testTarget(
+            name: "AreaMatrixFeatureModulesTests",
+            dependencies: [
+                "AreaMatrixFeatureLibrary",
+                "AreaMatrixCoreBridgeContract",
+                "AreaMatrixFeatureIngestion",
+                "AreaMatrixFeatureOperation",
+                "AreaMatrixFeatureSettings",
+                "AreaMatrixFeatureAI"
+            ],
+            path: "Tests/AreaMatrixFeatureModulesTests"
         )
     ]
 )

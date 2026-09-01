@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import Foundation
 
 struct SearchDateRangeEditResult: Equatable {

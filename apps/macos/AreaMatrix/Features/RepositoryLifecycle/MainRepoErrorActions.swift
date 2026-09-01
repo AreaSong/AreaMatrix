@@ -17,19 +17,31 @@ extension OnboardingModel {
         Task { [weak self] in
             guard let self else { return }
             let repoPath = opening.config.repoPath
-            guard let session = await importBatchSessionStore.loadSession(repoPath: repoPath),
-                  session.isUnfinishedCopySession
-            else { return }
+            do {
+                guard let session = try await importBatchSessionStore.loadSession(repoPath: repoPath),
+                      session.isUnfinishedCopySession
+                else { return }
 
-            guard await shouldRouteInterruptedImportSession(repoPath: repoPath) else { return }
-            await MainActor.run {
-                guard self.currentMainRouteRepoPath == repoPath else { return }
-                self.pendingImportEntry = nil
-                self.route = .importResult(ImportResultRouteState(
-                    sourceOpening: opening,
-                    interruptedSession: session
-                ))
-                self.toastMessage = L10n.message("import.interruptedSession.detected")
+                guard await shouldRouteInterruptedImportSession(repoPath: repoPath) else { return }
+                await MainActor.run {
+                    guard self.currentMainRouteRepoPath == repoPath else { return }
+                    self.pendingImportEntry = nil
+                    self.route = .importResult(ImportResultRouteState(
+                        sourceOpening: opening,
+                        interruptedSession: session
+                    ))
+                    self.toastMessage = L10n.message("import.interruptedSession.detected")
+                }
+            } catch let error as ImportBatchSessionStoreError {
+                await MainActor.run {
+                    guard self.currentMainRouteRepoPath == repoPath else { return }
+                    self.toastMessage = error.userMessage
+                }
+            } catch {
+                await MainActor.run {
+                    guard self.currentMainRouteRepoPath == repoPath else { return }
+                    self.toastMessage = L10n.message("import.session.io")
+                }
             }
         }
     }

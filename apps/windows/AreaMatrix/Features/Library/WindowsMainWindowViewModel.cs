@@ -274,30 +274,6 @@ public sealed partial class WindowsMainWindowViewModel : INotifyPropertyChanged
         }
     }
 
-    public async Task OpenRepositoryAsync(
-        WindowsRepositoryRoute route,
-        CancellationToken cancellationToken = default)
-    {
-        currentRoute = route;
-        RepoPath = route.RepoPath;
-        RepoName = RepositoryName(route.RepoPath);
-        SearchQuery = string.Empty;
-        SelectedCategory = null;
-        OnPropertyChanged(nameof(CanOpenOneDriveStatus));
-        OnPropertyChanged(nameof(OneDriveStatusRoute));
-        OnPropertyChanged(nameof(CanOpenWatcherStatus));
-        OnPropertyChanged(nameof(WatcherStatusRoute));
-        OnPropertyChanged(nameof(ImportRoute));
-        OnPropertyChanged(nameof(SelectedMissingFileRecoveryRoute));
-        OnPropertyChanged(nameof(CanOpenMissingFileRecovery));
-        await LoadSnapshotAsync(isInitialLoad: true, cancellationToken);
-        if (SyncConflictEntry is not null)
-        {
-            await SyncConflictEntry.OpenRepositoryAsync(RepoPath, cancellationToken);
-            OnPropertyChanged(nameof(SelectedFileSyncConflict));
-        }
-    }
-
     public async Task RefreshAsync(CancellationToken cancellationToken = default)
     {
         await LoadSnapshotAsync(isInitialLoad: false, cancellationToken);

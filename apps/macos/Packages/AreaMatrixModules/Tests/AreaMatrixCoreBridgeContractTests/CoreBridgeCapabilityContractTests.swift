@@ -1,5 +1,5 @@
-import AreaMatrixCoreContracts
 @testable import AreaMatrixCoreBridgeContract
+import AreaMatrixCoreContracts
 import XCTest
 
 final class CoreBridgeCapabilityContractTests: XCTestCase {

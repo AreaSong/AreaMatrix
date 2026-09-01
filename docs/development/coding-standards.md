@@ -24,7 +24,7 @@ CI 会运行：
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
+cargo clippy --locked --all-targets --all-features -- -D warnings
 ```
 
 PR 不通过则不允许合并。
@@ -339,7 +339,7 @@ chore(ci): 升级 macos-14 runner
 PR 必须通过：
 
 - [ ] `cargo fmt --all -- --check`
-- [ ] `cargo clippy --all-targets --all-features -- -D warnings`
+- [ ] `cargo clippy --locked --all-targets --all-features -- -D warnings`
 - [ ] `cargo test --all-features --workspace`
 - [ ] `cargo llvm-cov --fail-under-lines 70`（核心模块）
 - [ ] `cd apps/macos && swiftformat --lint . --config ../../scripts/dev_tools/swiftformat.conf --exclude AreaMatrix/Bridge/Generated,AreaMatrix/Bridge/UniFFI,DerivedData --cache ignore`

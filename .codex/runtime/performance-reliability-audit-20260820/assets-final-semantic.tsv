@@ -1,0 +1,31 @@
+assets/brand/final/areamatrix-app-icon-dark.svg	NOT_APPLICABLE	1-47	semantic-read	静态 SVG 品牌矢量源；逐行确认仅含图形、渐变和可访问性描述，无运行时控制流；由 assets/brand/brand-manifest.json 与 scripts/brand/export_assets.py 生成平台位图。
+assets/brand/final/areamatrix-app-icon-light.svg	NOT_APPLICABLE	1-52	semantic-read	静态 SVG 品牌矢量源；逐行确认仅含图形、渐变和滤镜，无运行时控制流；导出源为品牌 manifest 与 export_assets.py。
+assets/brand/final/areamatrix-app-icon-maskable-dark.svg	NOT_APPLICABLE	1-13	semantic-read	PWA maskable 静态 SVG 源；仅声明矢量图元，无可执行逻辑；平台资源由品牌导出脚本生成。
+assets/brand/final/areamatrix-app-icon-maskable-light.svg	NOT_APPLICABLE	1-13	semantic-read	PWA maskable 静态 SVG 源；仅声明矢量图元，无可执行逻辑；平台资源由品牌导出脚本生成。
+assets/brand/final/areamatrix-app-icon-opaque-dark.svg	NOT_APPLICABLE	1-48	semantic-read	静态不透明 app icon SVG；逐行确认只有图形定义，无生产控制流；由品牌 manifest/导出脚本消费。
+assets/brand/final/areamatrix-app-icon-opaque-light.svg	NOT_APPLICABLE	1-53	semantic-read	静态不透明 app icon SVG；逐行确认只有图形定义，无生产控制流；由品牌 manifest/导出脚本消费。
+assets/brand/final/areamatrix-app-icon-small-dark.svg	NOT_APPLICABLE	1-11	semantic-read	小尺寸静态 SVG 图标源；仅图元声明，无可执行性能路径；由 export_assets.py 生成尺寸变体。
+assets/brand/final/areamatrix-app-icon-small-light.svg	NOT_APPLICABLE	1-11	semantic-read	小尺寸静态 SVG 图标源；仅图元声明，无可执行性能路径；由 export_assets.py 生成尺寸变体。
+assets/brand/final/areamatrix-logo-lockup-dark.svg	NOT_APPLICABLE	1-66	semantic-read	静态横版品牌 SVG；逐行确认仅矢量图元/文本，无运行时控制流；位图与平台副本由品牌导出脚本生成。
+assets/brand/final/areamatrix-logo-lockup-light.svg	NOT_APPLICABLE	1-71	semantic-read	静态横版品牌 SVG；逐行确认仅矢量图元/文本，无运行时控制流；位图与平台副本由品牌导出脚本生成。
+assets/brand/final/areamatrix-logo-lockup-mono-dark.svg	NOT_APPLICABLE	1-19	semantic-read	单色静态品牌 SVG；仅图元和文字声明，无可执行逻辑；导出链为 brand-manifest/export_assets.py。
+assets/brand/final/areamatrix-logo-lockup-mono-light.svg	NOT_APPLICABLE	1-19	semantic-read	单色静态品牌 SVG；仅图元和文字声明，无可执行逻辑；导出链为 brand-manifest/export_assets.py。
+assets/brand/final/areamatrix-logo-lockup-outlined-dark.svg	NOT_APPLICABLE	1-56	semantic-read	字体转轮廓后的静态 SVG；长 path 数据是生成图形，不执行生产逻辑；来源含 generate_wordmark_outlines.swift 与品牌导出脚本。
+assets/brand/final/areamatrix-logo-lockup-outlined-light.svg	NOT_APPLICABLE	1-61	semantic-read	字体转轮廓后的静态 SVG；长 path 数据是生成图形，不执行生产逻辑；来源含 generate_wordmark_outlines.swift 与品牌导出脚本。
+assets/brand/final/areamatrix-logo-lockup-outlined.svg	NOT_APPLICABLE	1-56	semantic-read	字体转轮廓后的静态 SVG；仅图形数据，无运行时资源生命周期；来源为 outline 生成器和品牌导出链。
+assets/brand/final/areamatrix-logo-lockup.svg	NOT_APPLICABLE	1-66	semantic-read	默认横版静态品牌 SVG；逐行确认只有矢量/文本声明，无可执行控制流；由品牌导出脚本消费。
+assets/brand/final/areamatrix-logo-mark-dark.svg	NOT_APPLICABLE	1-44	semantic-read	静态 logo mark SVG；逐行仅图元/渐变/滤镜，无生产控制流；由品牌 manifest/导出脚本消费。
+assets/brand/final/areamatrix-logo-mark-light.svg	NOT_APPLICABLE	1-49	semantic-read	静态 logo mark SVG；逐行仅图元/渐变/滤镜，无生产控制流；由品牌 manifest/导出脚本消费。
+assets/brand/final/areamatrix-logo-mark-mono-dark.svg	NOT_APPLICABLE	1-14	semantic-read	单色静态 logo mark；仅 SVG 图元，无可执行逻辑；平台变体由 export_assets.py 生成。
+assets/brand/final/areamatrix-logo-mark-mono-light.svg	NOT_APPLICABLE	1-14	semantic-read	单色静态 logo mark；仅 SVG 图元，无可执行逻辑；平台变体由 export_assets.py 生成。
+assets/brand/final/areamatrix-logo-stacked-dark.svg	NOT_APPLICABLE	1-46	semantic-read	堆叠版静态 SVG；长 path 为字体轮廓数据，不含运行时循环或 IO；由 outline/brand 导出链生成衍生资源。
+assets/brand/final/areamatrix-logo-stacked-light.svg	NOT_APPLICABLE	1-51	semantic-read	堆叠版静态 SVG；长 path 为字体轮廓数据，不含运行时循环或 IO；由 outline/brand 导出链生成衍生资源。
+assets/brand/final/areamatrix-logo-symbol-dark.svg	NOT_APPLICABLE	1-11	semantic-read	静态 symbol SVG；仅矢量声明，无生产控制流；由品牌导出脚本生成位图变体。
+assets/brand/final/areamatrix-logo-symbol-light.svg	NOT_APPLICABLE	1-11	semantic-read	静态 symbol SVG；仅矢量声明，无生产控制流；由品牌导出脚本生成位图变体。
+assets/brand/final/areamatrix-wordmark-dark.svg	NOT_APPLICABLE	1-6	semantic-read	静态 wordmark SVG；单行 path 为字体轮廓数据，无运行时逻辑；来源为 generate_wordmark_outlines.swift。
+assets/brand/final/areamatrix-wordmark-light.svg	NOT_APPLICABLE	1-6	semantic-read	静态 wordmark SVG；单行 path 为字体轮廓数据，无运行时逻辑；来源为 generate_wordmark_outlines.swift。
+assets/brand/final/native/README.md	NOT_APPLICABLE	1-10	semantic-read	平台品牌产物说明；逐行仅记录 macOS/iOS/Android/Windows 生成物及生成命令，不执行逻辑；权威生成源为 export_assets.py。
+assets/brand/final/native/android/res/mipmap-anydpi-v26/ic_launcher.xml	NOT_APPLICABLE	1-5	semantic-read	Android adaptive-icon 声明式生成物；仅引用颜色与前景 drawable，无代码路径；由 export_assets.py:127-159 写入。
+assets/brand/final/native/android/res/mipmap-anydpi-v26/ic_launcher_round.xml	NOT_APPLICABLE	1-5	semantic-read	Android round adaptive-icon 声明式生成物；仅资源引用，无代码路径；由 export_assets.py:127-159 写入。
+assets/brand/final/native/android/res/values/colors.xml	NOT_APPLICABLE	1-4	semantic-read	Android 颜色资源生成物；只有静态色值声明，无可执行逻辑；由 export_assets.py:146-150 写入。
+assets/brand/final/native/ios/AreaMatrixAppIcon.appiconset/Contents.json	NOT_APPLICABLE	1-116	semantic-read	iOS AppIcon 声明式生成清单；逐项只映射 idiom/size/scale/filename，无运行时控制流；由 export_assets.py:101-124 生成。

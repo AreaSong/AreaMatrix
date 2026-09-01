@@ -1,5 +1,5 @@
-import AreaMatrixCoreBridgeContract
 @testable import AreaMatrix
+import AreaMatrixCoreBridgeContract
 import Foundation
 import XCTest
 
@@ -133,14 +133,14 @@ final class RepositoryRemediationTests: XCTestCase {
         let collector = RemediationSuspendedDiagnosticsCollector(snapshot: snapshot)
         let model = remediationModel(diagnosticsCollector: collector)
 
-        model.requestCurrentListDiagnostics()
-        let collection = Task { await model.collectCurrentListDiagnostics() }
+        model.currentListDiagnostics.requestCollection()
+        let collection = Task { await model.currentListDiagnostics.collect() }
         await collector.waitForRequest()
-        model.cancelCurrentListDiagnostics()
+        model.currentListDiagnostics.cancelCollection()
         await collector.finish()
         await collection.value
 
-        XCTAssertEqual(model.diagnosticsState, .idle)
+        XCTAssertEqual(model.currentListDiagnostics.state, .idle)
     }
 
     @MainActor
@@ -156,7 +156,7 @@ final class RepositoryRemediationTests: XCTestCase {
 
         let sync = Task { await model.syncExternalChanges([event]) }
         await lister.waitForRequest()
-        model.searchState = .loaded(
+        model.searchModel.searchState = .loaded(
             request: .testFixture(query: "current"),
             page: .testFixture(query: "current")
         )

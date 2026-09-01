@@ -20,6 +20,9 @@
     <Compile Include="../AreaMatrix/Core/NativeCoreInterop.cs" Link="Core/NativeCoreInterop.cs" />
     <Compile Include="../AreaMatrix/Core/NativeCoreLibrary.cs" Link="Core/NativeCoreLibrary.cs" />
     <Compile
+      Include="../AreaMatrix/Core/NativeCoreLibrary.Loading.cs"
+      Link="Core/NativeCoreLibrary.Loading.cs" />
+    <Compile
       Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.CloudStorage.cs"
       Link="Core/AreaMatrixNativeCoreClient.CloudStorage.cs" />
     <Compile Include="../AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" Link="Core/AreaMatrixNativeCoreClient.DesktopMainQuery.cs" />
@@ -71,6 +74,9 @@
     <Compile
       Include="../AreaMatrix/Features/Library/WindowsMainWindowViewModel.Snapshot.cs"
       Link="Features/Library/WindowsMainWindowViewModel.Snapshot.cs" />
+    <Compile
+      Include="../AreaMatrix/Features/Library/WindowsMainWindowViewModel.RepositoryLoad.cs"
+      Link="Features/Library/WindowsMainWindowViewModel.RepositoryLoad.cs" />
     <Compile Include="../AreaMatrix/Features/Library/DesktopMainQueryCoreBridge.cs" Link="Features/Library/DesktopMainQueryCoreBridge.cs" />
     <Compile Include="../AreaMatrix/Features/Library/DesktopMainQueryModels.cs" Link="Features/Library/DesktopMainQueryModels.cs" />
     <Compile Include="../AreaMatrix/Features/Library/DesktopTreeJsonParser.cs" Link="Features/Library/DesktopTreeJsonParser.cs" />

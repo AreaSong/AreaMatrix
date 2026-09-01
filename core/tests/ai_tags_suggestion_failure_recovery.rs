@@ -14,8 +14,8 @@ use failure::{
     ai_call_log_count, ai_call_log_text, apply_request, assert_kind, assert_no_secret_material,
     change_log_kinds, enable_local_tags, enable_remote_tags, import_fixture, initialized_repo,
     install_ai_tag_apply_log_failure, install_ai_tag_change_log_failure,
-    install_ai_tag_undo_failure, open_db, path_string, request, snapshot, tag_rows,
-    undo_action_count, user_visible_paths,
+    install_ai_tag_undo_failure, install_blocking_rule, open_db, path_string, request, snapshot,
+    tag_rows, undo_action_count, user_visible_paths,
 };
 use pretty_assertions::assert_eq;
 
@@ -185,11 +185,15 @@ fn ai_tags_failure_privacy_skip_does_not_call_provider_or_leak_keys() {
     let file_id = import_fixture(repo.path(), "private.txt", "Private AI tag input.");
     enable_local_tags(repo.path());
     let runtime = AiTagsRuntime::probe();
-    let mut blocked = request(file_id);
-    blocked.privacy_policy_ref = Some("private-folder".to_owned());
+    install_blocking_rule(
+        repo.path(),
+        "rule:private-folder",
+        area_matrix_core::AiPrivacyRuleKind::Keyword,
+        "private.txt",
+    );
     let before = snapshot(repo.path());
 
-    let report = suggest_tags_with_ai(repo_path, blocked).expect("privacy skip");
+    let report = suggest_tags_with_ai(repo_path, request(file_id)).expect("privacy skip");
 
     assert_eq!(report.status, AiTagSuggestionReportStatus::Skipped);
     assert_eq!(

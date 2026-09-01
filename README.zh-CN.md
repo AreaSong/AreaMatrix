@@ -47,7 +47,7 @@ AreaMatrix 目前以源码形式提供，尚未提供完成签名与公证的安
 
 - macOS 14 Sonoma 或更高版本
 - Xcode 15 或更高版本
-- Rust stable 1.75 或更高版本
+- Rust 1.88 或更高版本；仓库与 CI 构建固定使用 Rust 1.88.0
 
 ```bash
 ./dev build core

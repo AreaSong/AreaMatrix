@@ -1,6 +1,5 @@
+import AreaMatrixFeatureLibrary
 import Foundation
-
-enum SearchDateFilterPreset { case any, last7Days, last30Days, thisYear }
 
 enum SearchFilterDateField {
     case imported
@@ -203,21 +202,6 @@ enum MainSearchDestination: Equatable, Identifiable {
             false
         }
     }
-}
-
-enum MainSearchEntryContext: Equatable {
-    case toolbar
-    case commandFind
-    case smartList(id: Int64, name: String)
-    case commandPalette
-    case sidebar(String)
-}
-
-enum MainSearchExitContext: Equatable {
-    case toolbar
-    case smartList(id: Int64, name: String)
-    case sidebar(String)
-    case list
 }
 
 struct SmartListFilterDraft: Equatable {

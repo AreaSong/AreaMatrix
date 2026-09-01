@@ -1,59 +1,63 @@
 @testable import AreaMatrix
 import Foundation
 
+func makeTestAppDependencyContainer() -> AppDependencyContainer {
+    AppDependencyContainer.live(coreServices: AppCoreServices())
+}
+
 /// Test-only dependency conveniences stay separate from shell fixtures so the
 /// shell support file remains focused on route and model construction.
 extension SharedFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.shared
+        makeTestAppDependencyContainer().feature.shared
     }
 }
 
 extension AIFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.aiFeature
+        makeTestAppDependencyContainer().feature.aiFeature
     }
 }
 
 extension OnboardingFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.onboarding
+        makeTestAppDependencyContainer().feature.onboarding
     }
 }
 
 extension FileActionsFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.fileActions
+        makeTestAppDependencyContainer().feature.fileActions
     }
 }
 
 extension ImportFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.import
+        makeTestAppDependencyContainer().feature.import
     }
 }
 
 extension MainListFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.mainList
+        makeTestAppDependencyContainer().feature.mainList
     }
 }
 
 extension SearchFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.search
+        makeTestAppDependencyContainer().feature.search
     }
 }
 
 extension SettingsFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.settings
+        makeTestAppDependencyContainer().feature.settings
     }
 }
 
 extension SyncConflictsFeatureDependencies {
     static var live: Self {
-        AppDependencyContainer.live.feature.syncConflicts
+        makeTestAppDependencyContainer().feature.syncConflicts
     }
 }
 

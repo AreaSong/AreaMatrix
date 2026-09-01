@@ -215,18 +215,14 @@ fn resolve_name_conflict_integration_verify_storage_quality_stays_platform_neutr
         );
     }
 
-    for fragment in [
-        "cargo:rustc-check-cfg=cfg(areamatrix_system_trash)",
-        "cargo:rustc-cfg=areamatrix_system_trash",
-    ] {
-        assert_contains(BUILD_RS, fragment);
-    }
-    for fragment in [
-        "#[cfg(areamatrix_system_trash)]",
-        "#[cfg(not(areamatrix_system_trash))]",
-    ] {
-        assert_contains(REPLACEMENT_TRASH_RS, fragment);
-    }
+    assert!(
+        !BUILD_RS.contains("areamatrix_system_trash"),
+        "build.rs must not advertise a platform Trash cfg when storage uses the audited user-trash path"
+    );
+    assert!(
+        !REPLACEMENT_TRASH_RS.contains("areamatrix_system_trash"),
+        "replacement_trash.rs must not depend on an obsolete platform Trash cfg"
+    );
 }
 
 #[test]

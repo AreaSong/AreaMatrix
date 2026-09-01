@@ -1,3 +1,4 @@
+import AreaMatrixFeatureIngestion
 import Foundation
 
 struct LocalSystemCapabilities: OnboardingSystemCapabilityChecking {

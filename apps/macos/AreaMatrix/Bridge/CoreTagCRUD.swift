@@ -1,30 +1,8 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
-protocol CoreTagCRUD: Sendable {
-    func listTags(repoPath: String, fileID: Int64) async throws -> TagSetSnapshot
-    func addTag(repoPath: String, fileID: Int64, tag: String) async throws -> TagSetSnapshot
-    func removeTag(repoPath: String, fileID: Int64, tag: String) async throws -> TagSetSnapshot
-    func batchAddTags(repoPath: String, fileIDs: [Int64], tags: [String]) async throws -> BatchMutationReportSnapshot
-    func suggestTagsForFile(
-        repoPath: String,
-        request: TagSuggestionRequestSnapshot
-    ) async throws -> TagSuggestionReportSnapshot
-    func applyTagSuggestions(
-        repoPath: String,
-        request: ApplyTagSuggestionsRequestSnapshot
-    ) async throws -> TagSuggestionApplyReportSnapshot
-}
-
-protocol CoreAITagSuggestionManaging: Sendable {
-    func suggestTagsWithAI(
-        repoPath: String,
-        request: AITagSuggestionRequestSnapshot
-    ) async throws -> AITagSuggestionReportSnapshot
-    func applyAITagSuggestions(
-        repoPath: String,
-        request: ApplyAITagSuggestionsRequestSnapshot
-    ) async throws -> AITagSuggestionApplyReportSnapshot
-}
+typealias CoreTagCRUD = AreaMatrixCoreBridgeContract.CoreTagCRUD
+typealias CoreAITagSuggestionManaging = AreaMatrixCoreBridgeContract.CoreAITagSuggestionManaging
 
 extension CoreTagCRUD {
     func batchAddTags(

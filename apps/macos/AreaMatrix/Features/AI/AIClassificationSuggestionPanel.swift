@@ -1,3 +1,5 @@
+import AreaMatrixFeatureAI
+import AreaMatrixUIFoundation
 import SwiftUI
 
 @MainActor
@@ -54,7 +56,7 @@ struct AIClassificationSuggestionRouteView: View {
     }
 
     var body: some View {
-        MainFileActionSheetContainer(title: L10n.string("AI Category Suggestion"), pageID: "ai-category-suggestion") {
+        AreaMatrixActionSheetContainer(title: L10n.string("AI Category Suggestion"), pageID: "ai-category-suggestion") {
             if let file {
                 AIClassificationSuggestionPanel(
                     model: model,
@@ -74,7 +76,11 @@ struct AIClassificationSuggestionRouteView: View {
                     errorMapper: errorMapper
                 )
             } else {
-                MissingFileActionContext(onCancel: onCancel)
+                AreaMatrixUnavailableActionContext(
+                    message: L10n.string("The selected file context is no longer available."),
+                    cancelTitle: L10n.string("Cancel"),
+                    onCancel: onCancel
+                )
             }
         }
         .sheet(item: $presentedRecoverySheet, content: recoverySheet)

@@ -442,7 +442,7 @@ fn newest_valid_classifier_backup(repo: &Path) -> CoreResult<Option<Vec<u8>>> {
         ensure_regular_file(&path)?;
         candidates.push((sequence, path));
     }
-    candidates.sort_by(|left, right| right.0.cmp(&left.0));
+    candidates.sort_by_key(|candidate| std::cmp::Reverse(candidate.0));
     for (_, path) in candidates {
         let content = fs::read(&path).map_err(|error| map_read_io_error(error, &path))?;
         let Ok(config) = serde_yaml::from_slice::<ClassifierConfig>(&content) else {

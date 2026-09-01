@@ -100,6 +100,8 @@ pub struct ICloudConflictResolutionOption {
 pub struct ICloudConflictPreviewReport {
     /// Conflict id from `list_icloud_conflicts`.
     pub conflict_id: String,
+    /// Opaque repository- and version-bound token required by resolution.
+    pub preview_token: String,
     /// Version metadata and preview summaries available for the conflict.
     pub versions: Vec<ICloudConflictVersionMetadata>,
     /// Default safe choice; must remain KeepBoth.

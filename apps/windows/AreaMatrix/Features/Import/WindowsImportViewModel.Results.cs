@@ -40,7 +40,7 @@ public sealed partial class WindowsImportViewModel
         {
             ReplaceResultForSource(
                 item.SourcePath,
-                await ImportPreviewItemAsync(item, cancellationToken).ConfigureAwait(false));
+                await ImportPreviewItemAsync(item, cancellationToken));
             CurrentStep = DesktopImportStep.Done;
         }
         finally
@@ -89,8 +89,7 @@ public sealed partial class WindowsImportViewModel
             DesktopImportRequest request = MakeRequest(item);
             CurrentStep = DesktopImportStep.Hashing;
             DesktopImportResult result = await coreBridge
-                .ImportFileWithResultAsync(RepoPath, item.SourcePath, request, cancellationToken)
-                .ConfigureAwait(false);
+                .ImportFileWithResultAsync(RepoPath, item.SourcePath, request, cancellationToken);
             CurrentStep = DesktopImportStep.UpdatingDatabase;
             return ResultForItem(item, result);
         }

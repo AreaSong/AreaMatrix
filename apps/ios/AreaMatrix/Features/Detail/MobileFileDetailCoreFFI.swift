@@ -92,7 +92,7 @@ enum MobileFileDetailCoreSDKMapping {
             return detailError
         }
         guard let coreError = error as? AreaMatrixCoreSDK.CoreError else {
-            return .unavailable(error.localizedDescription)
+            return .unavailable("File detail is unavailable.")
         }
         switch coreError {
         case let .FileNotFound(path):
@@ -102,7 +102,7 @@ enum MobileFileDetailCoreSDKMapping {
         case let .PermissionDenied(path):
             return .permissionDenied(path)
         default:
-            return .unavailable(String(describing: coreError))
+            return .unavailable("File detail is unavailable.")
         }
     }
 }

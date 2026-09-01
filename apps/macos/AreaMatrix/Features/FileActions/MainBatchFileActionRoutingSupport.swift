@@ -1,13 +1,17 @@
+import AreaMatrixFeatureOperation
 import SwiftUI
 
 extension MainRepositoryContentView {
     func applyMainRepositoryBatchFileActionSheets(to content: some View) -> some View {
         content
-            .sheet(item: $fileActionRoutingState.batchAddTagsRoute, content: batchAddTagsRoutingSheet)
-            .sheet(item: $fileActionRoutingState.batchChangeCategoryRoute, content: batchChangeCategoryRoutingSheet)
-            .sheet(item: $fileActionRoutingState.batchDeleteRoute, content: batchDeleteRoutingSheet)
-            .sheet(item: $fileActionRoutingState.batchRenameRoute, content: batchRenameRoutingSheet)
-            .sheet(item: $fileActionRoutingState.undoHistoryRequest, content: undoHistorySheet)
+            .sheet(item: $fileActionCoordinator.routingState.batchAddTagsRoute, content: batchAddTagsRoutingSheet)
+            .sheet(
+                item: $fileActionCoordinator.routingState.batchChangeCategoryRoute,
+                content: batchChangeCategoryRoutingSheet
+            )
+            .sheet(item: $fileActionCoordinator.routingState.batchDeleteRoute, content: batchDeleteRoutingSheet)
+            .sheet(item: $fileActionCoordinator.routingState.batchRenameRoute, content: batchRenameRoutingSheet)
+            .sheet(item: $fileActionCoordinator.routingState.undoHistoryRequest, content: undoHistorySheet)
     }
 
     func batchAddTagsRoutingSheet(_ route: BatchAddTagsRoute) -> some View {
@@ -20,7 +24,7 @@ extension MainRepositoryContentView {
             undoStore: fileListModel.undoActionStore,
             errorMapper: fileListModel.errorMapper,
             onUndoStateChange: updateBatchTagUndoState,
-            onClose: { fileActionRoutingState.batchAddTagsRoute = nil }
+            onClose: { fileActionCoordinator.routingState.batchAddTagsRoute = nil }
         )
     }
 
@@ -40,7 +44,7 @@ extension MainRepositoryContentView {
             onApplied: applyBatchCategoryChangeResult,
             onUndoStateChange: updateBatchTagUndoState,
             onCreateNewCategory: { openClassifierRuleEditorFromBatchCategory($0, route: route) },
-            onClose: { fileActionRoutingState.batchChangeCategoryRoute = nil }
+            onClose: { fileActionCoordinator.routingState.batchChangeCategoryRoute = nil }
         )
     }
 
@@ -56,7 +60,7 @@ extension MainRepositoryContentView {
             errorMapper: fileListModel.errorMapper,
             onApplied: applyBatchDeleteResult,
             onUndoStateChange: updateBatchTagUndoState,
-            onClose: { fileActionRoutingState.batchDeleteRoute = nil }
+            onClose: { fileActionCoordinator.routingState.batchDeleteRoute = nil }
         )
     }
 
@@ -72,13 +76,13 @@ extension MainRepositoryContentView {
             errorMapper: fileListModel.errorMapper,
             onApplied: applyBatchRenameResult,
             onUndoStateChange: updateBatchTagUndoState,
-            onClose: { fileActionRoutingState.batchRenameRoute = nil }
+            onClose: { fileActionCoordinator.routingState.batchRenameRoute = nil }
         )
     }
 
     func openBatchAddTagsRoute(_ ids: Set<Int64>, source: MainFileBatchActionRouteSource) {
         let context = batchActionRouteContext(ids)
-        fileActionRoutingState.batchAddTagsRoute = BatchFileActionRouteBuilder.batchAddTagsRoute(
+        fileActionCoordinator.routingState.batchAddTagsRoute = BatchFileActionRouteBuilder.batchAddTagsRoute(
             source: source,
             context: context
         )
@@ -86,15 +90,16 @@ extension MainRepositoryContentView {
 
     func openBatchChangeCategoryRoute(_ ids: Set<Int64>, source: MainFileBatchActionRouteSource) {
         let context = batchActionRouteContext(ids)
-        fileActionRoutingState.batchChangeCategoryRoute = BatchFileActionRouteBuilder.batchChangeCategoryRoute(
-            source: source,
-            context: context
-        )
+        fileActionCoordinator.routingState.batchChangeCategoryRoute = BatchFileActionRouteBuilder
+            .batchChangeCategoryRoute(
+                source: source,
+                context: context
+            )
     }
 
     func openBatchDeleteRoute(_ ids: Set<Int64>, source: MainFileBatchActionRouteSource) {
         let context = batchActionRouteContext(ids)
-        fileActionRoutingState.batchDeleteRoute = BatchFileActionRouteBuilder.batchDeleteRoute(
+        fileActionCoordinator.routingState.batchDeleteRoute = BatchFileActionRouteBuilder.batchDeleteRoute(
             source: source,
             context: context
         )
@@ -102,29 +107,29 @@ extension MainRepositoryContentView {
 
     func openBatchRenameRoute(_ ids: Set<Int64>, source: MainFileBatchActionRouteSource) {
         let context = batchActionRouteContext(ids)
-        fileActionRoutingState.batchRenameRoute = BatchFileActionRouteBuilder.batchRenameRoute(
+        fileActionCoordinator.routingState.batchRenameRoute = BatchFileActionRouteBuilder.batchRenameRoute(
             source: source,
             context: context
         )
     }
 
     func commandPaletteBatchAddTagsRoute() -> BatchAddTagsRoute {
-        let context = batchActionRouteContext(selectedFileIDs)
+        let context = batchActionRouteContext(selectionModel.fileIDs)
         return BatchFileActionRouteBuilder.commandPaletteBatchAddTagsRoute(context: context)
     }
 
     func commandPaletteBatchChangeCategoryRoute() -> BatchChangeCategoryRoute {
-        let context = batchActionRouteContext(selectedFileIDs)
+        let context = batchActionRouteContext(selectionModel.fileIDs)
         return BatchFileActionRouteBuilder.commandPaletteBatchChangeCategoryRoute(context: context)
     }
 
     func commandPaletteBatchDeleteRoute() -> BatchDeleteRoute {
-        let context = batchActionRouteContext(selectedFileIDs)
+        let context = batchActionRouteContext(selectionModel.fileIDs)
         return BatchFileActionRouteBuilder.commandPaletteBatchDeleteRoute(context: context)
     }
 
     func commandPaletteBatchRenameRoute() -> BatchRenameRoute {
-        let context = batchActionRouteContext(selectedFileIDs)
+        let context = batchActionRouteContext(selectionModel.fileIDs)
         return BatchFileActionRouteBuilder.commandPaletteBatchRenameRoute(context: context)
     }
 
@@ -143,7 +148,7 @@ extension MainRepositoryContentView {
 
     func applyBatchDeleteResult(_ report: BatchDeleteReportSnapshot) {
         Task {
-            selectedFileIDs.subtract(report.affectedFileIDs)
+            selectionModel.fileIDs.subtract(report.affectedFileIDs)
             await fileListModel.retryCurrentCategory()
             await fileListModel.retrySelectedFileDetail()
             fileListModel.statusBanner = .batchDeleted(count: report.successfulDeleteCount)
@@ -167,16 +172,17 @@ extension MainRepositoryContentView {
         route: BatchChangeCategoryRoute
     ) {
         guard handoff.targetPageID == "classifier-rule-editor" else { return }
-        fileActionRoutingState.batchChangeCategoryRoute = nil
+        fileActionCoordinator.routingState.batchChangeCategoryRoute = nil
         let context = BatchChangeCategoryReturnContext(route: route, handoff: handoff)
         fileListModel.openClassifierRuleEditorForBatchCategory(context: context)
     }
 
     func cancelClassifierRuleEditorFromBatchCategory(_ context: BatchChangeCategoryReturnContext) {
-        fileActionRoutingState.batchChangeCategoryRoute = BatchChangeCategoryClassifierReturn.cancelledRoute(
-            context: context
-        )
-        fileListModel.clearPendingSearchDestination()
+        fileActionCoordinator.routingState.batchChangeCategoryRoute = BatchChangeCategoryClassifierReturn
+            .cancelledRoute(
+                context: context
+            )
+        searchModel.clearPendingSearchDestination()
     }
 
     func acceptClassifierRuleEditorCategory(
@@ -188,14 +194,14 @@ extension MainRepositoryContentView {
             context: context
         )
         else { return }
-        fileActionRoutingState.batchChangeCategoryRoute = route
-        fileListModel.clearPendingSearchDestination()
+        fileActionCoordinator.routingState.batchChangeCategoryRoute = route
+        searchModel.clearPendingSearchDestination()
     }
 
     func batchActionRouteContext(_ ids: Set<Int64>) -> MainFileBatchActionRouteContext {
         MainFileBatchActionRouteContext(
             selectedFileIDs: ids,
-            visibleFiles: visibleFiles,
+            visibleFiles: mainListPresentation.visibleFiles,
             isReadOnly: fileListModel.isReadOnly,
             isLoading: fileListModel.isLoading,
             writeLockedFileIDs: fileListModel.writeLockedFileIDs

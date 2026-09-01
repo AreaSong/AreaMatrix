@@ -1,6 +1,6 @@
 import Foundation
 
-extension MainFileListModel {
+extension DetailTagModel {
     func loadTagFilterRegistry(activeFileID: Int64?) async {
         guard let activeFileID else {
             clearTagFilterRegistry()
@@ -10,7 +10,7 @@ extension MainFileListModel {
     }
 
     func retryTagFilterRegistry() async {
-        switch tagFilterRegistryState {
+        switch filterRegistryState {
         case let .failed(fileID, _, _), let .loaded(fileID, _), let .loading(fileID, _):
             await loadTagFilterRegistry(fileID: fileID)
         case .idle:
@@ -19,24 +19,24 @@ extension MainFileListModel {
     }
 
     func clearTagFilterRegistry() {
-        tagFilterRegistryGeneration += 1
-        tagFilterRegistryState = .idle
+        filterRegistryGeneration += 1
+        filterRegistryState = .idle
     }
 
     private func loadTagFilterRegistry(fileID: Int64) async {
-        tagFilterRegistryGeneration += 1
-        let generation = tagFilterRegistryGeneration
-        let previous = tagFilterRegistryState.tagSet
-        tagFilterRegistryState = .loading(fileID: fileID, previous: previous)
+        filterRegistryGeneration += 1
+        let generation = filterRegistryGeneration
+        let previous = filterRegistryState.tagSet
+        filterRegistryState = .loading(fileID: fileID, previous: previous)
 
         do {
             let tagSet = try await tagStore.listTags(repoPath: repoPath, fileID: fileID)
-            guard generation == tagFilterRegistryGeneration else { return }
-            tagFilterRegistryState = .loaded(fileID: fileID, tagSet)
+            guard generation == filterRegistryGeneration else { return }
+            filterRegistryState = .loaded(fileID: fileID, tagSet)
         } catch {
             let mappedError = await mapCoreError(error)
-            guard generation == tagFilterRegistryGeneration else { return }
-            tagFilterRegistryState = .failed(fileID: fileID, mappedError, previous: previous)
+            guard generation == filterRegistryGeneration else { return }
+            filterRegistryState = .failed(fileID: fileID, mappedError, previous: previous)
         }
     }
 }

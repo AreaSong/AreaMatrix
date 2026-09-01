@@ -1,3 +1,4 @@
+import AreaMatrixFeatureSettings
 import Combine
 import Foundation
 
@@ -8,7 +9,10 @@ final class ClassifierSettingsModel: ObservableObject {
     @Published private(set) var savedConfig: AppRepoConfigSnapshot?
     @Published private(set) var saveError: ClassifierSettingsSaveError?
     @Published private(set) var fileActionError: ClassifierSettingsFileActionError?
-    @Published var previewState = ClassifierSettingsPreviewState()
+    @Published var previewState = ClassifierSettingsPreviewState<
+        ClassifyResultSnapshot,
+        ClassifierSettingsPreviewError
+    >()
     @Published private(set) var isSaving = false
     @Published private(set) var validationState: ClassifierSettingsValidationState = .idle
     @Published var classifierRuleEditor = ClassifierRuleEditorModelState()

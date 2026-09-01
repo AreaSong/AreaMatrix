@@ -1,3 +1,4 @@
+import AreaMatrixFeatureAI
 import Foundation
 
 protocol CoreMetadataRepairing: Sendable {
@@ -163,16 +164,53 @@ private func getCoreLocalModelFolder(
 
 extension LocalModelStatusState {
     init(coreSnapshot: LocalModelStatusSnapshot) {
-        modelID = coreSnapshot.modelId
-        storageLocation = coreSnapshot.storageLocation
-        availability = LocalModelAvailabilityState(coreAvailability: coreSnapshot.availability)
-        version = coreSnapshot.version
-        sizeBytes = coreSnapshot.sizeBytes
-        lastError = coreSnapshot.lastError
-        recommendedAction = LocalModelRecommendedActionState(coreAction: coreSnapshot.recommendedAction)
-        lastCheckedAt = coreSnapshot.lastCheckedAt
-        diagnosticsSummary = coreSnapshot.diagnosticsSummary
-        featureStatuses = coreSnapshot.featureStatuses.map(LocalModelFeatureStatusState.init(coreStatus:))
+        self.init(
+            modelID: coreSnapshot.modelId,
+            storageLocation: coreSnapshot.storageLocation,
+            availability: LocalModelAvailabilityState(coreAvailability: coreSnapshot.availability),
+            version: coreSnapshot.version,
+            sizeBytes: coreSnapshot.sizeBytes,
+            lastError: coreSnapshot.lastError,
+            recommendedAction: LocalModelRecommendedActionState(coreAction: coreSnapshot.recommendedAction),
+            lastCheckedAt: coreSnapshot.lastCheckedAt,
+            diagnosticsSummary: coreSnapshot.diagnosticsSummary,
+            featureStatuses: coreSnapshot.featureStatuses.map(LocalModelFeatureStatusState.init(coreStatus:))
+        )
+    }
+}
+
+extension LocalModelAvailabilityState {
+    // swiftlint:disable:next cyclomatic_complexity
+    init(coreAvailability: LocalModelAvailability) {
+        switch coreAvailability {
+        case .unknown: self = .unknown
+        case .ready: self = .ready
+        case .notInstalled: self = .notInstalled
+        case .pathUnreadable: self = .pathUnreadable
+        case .versionIncompatible: self = .versionIncompatible
+        case .checking: self = .checking
+        case .verifying: self = .verifying
+        case .loading: self = .loading
+        case .corrupted: self = .corrupted
+        case .runtimeFailed: self = .runtimeFailed
+        case .error: self = .error
+        }
+    }
+}
+
+extension LocalModelRecommendedActionState {
+    init(coreAction: LocalModelRecommendedAction) {
+        switch coreAction {
+        case .none: self = .none
+        case .checkStatus: self = .checkStatus
+        case .retryStatusCheck: self = .retryStatusCheck
+        case .openInstallHelp: self = .openInstallHelp
+        case .openModelLocation: self = .openModelLocation
+        case .runHealthCheck: self = .runHealthCheck
+        case .repairMetadata: self = .repairMetadata
+        case .openDiagnostics: self = .openDiagnostics
+        case .useNonAiFallback: self = .useNonAiFallback
+        }
     }
 }
 
@@ -194,9 +232,11 @@ extension LocalModelFolderRequest {
 
 private extension LocalModelFeatureStatusState {
     init(coreStatus: LocalModelFeatureStatus) {
-        feature = AISettingsFeatureKind(coreFeature: coreStatus.feature)
-        available = coreStatus.available
-        unavailableReason = coreStatus.unavailableReason
+        self.init(
+            feature: AISettingsFeatureKind(coreFeature: coreStatus.feature),
+            available: coreStatus.available,
+            unavailableReason: coreStatus.unavailableReason
+        )
     }
 }
 
@@ -253,35 +293,41 @@ private extension LocalModelRecommendedAction {
 
 private extension LocalModelFolderLocationState {
     init(coreLocation: LocalModelFolderLocation) {
-        modelID = coreLocation.modelId
-        folderPath = coreLocation.folderPath
-        exists = coreLocation.exists
-        readable = coreLocation.readable
-        openable = coreLocation.openable
-        unavailableReason = coreLocation.unavailableReason
+        self.init(
+            modelID: coreLocation.modelId,
+            folderPath: coreLocation.folderPath,
+            exists: coreLocation.exists,
+            readable: coreLocation.readable,
+            openable: coreLocation.openable,
+            unavailableReason: coreLocation.unavailableReason
+        )
     }
 }
 
 extension TagSuggestionApplyReportSnapshot {
     init(coreReport: TagSuggestionApplyReport) {
-        fileID = coreReport.fileId
-        requestedCount = coreReport.requestedCount
-        appliedCount = coreReport.appliedCount
-        skippedCount = coreReport.skippedCount
-        failedCount = coreReport.failedCount
-        itemResults = coreReport.itemResults.map(TagSuggestionApplyItemResultSnapshot.init(coreResult:))
-        tagSet = TagSetSnapshot(coreTagSet: coreReport.tagSet)
-        undoToken = coreReport.undoToken
-        refreshTargets = coreReport.refreshTargets
+        self.init(
+            fileID: coreReport.fileId,
+            requestedCount: coreReport.requestedCount,
+            appliedCount: coreReport.appliedCount,
+            skippedCount: coreReport.skippedCount,
+            failedCount: coreReport.failedCount,
+            itemResults: coreReport.itemResults.map(TagSuggestionApplyItemResultSnapshot.init(coreResult:)),
+            tagSet: TagSetSnapshot(coreTagSet: coreReport.tagSet),
+            undoToken: coreReport.undoToken,
+            refreshTargets: coreReport.refreshTargets
+        )
     }
 }
 
 private extension TagSuggestionApplyItemResultSnapshot {
     init(coreResult: TagSuggestionApplyItemResult) {
-        suggestionID = coreResult.suggestionId
-        slug = coreResult.slug
-        status = TagSuggestionApplyStatusSnapshot(coreStatus: coreResult.status)
-        error = coreResult.error
+        self.init(
+            suggestionID: coreResult.suggestionId,
+            slug: coreResult.slug,
+            status: TagSuggestionApplyStatusSnapshot(coreStatus: coreResult.status),
+            error: coreResult.error
+        )
     }
 }
 

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import shlex
+import signal
 import subprocess
 import time
 from typing import Any, Callable
@@ -669,8 +670,8 @@ def _append_validation_for_path(path: str, add: Callable[[str, str], None]) -> N
         add("./dev workflow doctor", "Versioned workflow structure and gate check.")
     if path.startswith("core/"):
         add("cd core && cargo fmt --all -- --check", "Rust formatting gate.")
-        add("cd core && cargo clippy --all-targets --all-features -- -D warnings", "Rust lint gate.")
-        add("cd core && cargo test --workspace", "Rust workspace tests.")
+        add("cd core && cargo clippy --locked --all-targets --all-features -- -D warnings", "Rust lint gate.")
+        add("cd core && cargo test --locked --workspace", "Rust workspace tests.")
     if path.startswith("apps/macos/"):
         add("./dev check localization", "macOS String Catalog and runtime L10n contract.")
         add("xcodebuild -project apps/macos/AreaMatrix.xcodeproj -scheme AreaMatrix -destination 'platform=macOS,arch=arm64' build CODE_SIGNING_ALLOWED=NO", "macOS build gate.")
@@ -1839,16 +1840,43 @@ def _execute_validation_command(root: Path, command: str, timeout_seconds: int) 
             "note": reason,
         }
     try:
-        proc = subprocess.run(
-            _command_argv(command),
-            cwd=root,
+        argv, relative_cwd = _command_spec(command)
+    except (ValueError, OSError) as exc:
+        duration = round(time.monotonic() - started, 3)
+        return {
+            "command": command,
+            "result": "BLOCKED",
+            "exit_code": None,
+            "duration_seconds": duration,
+            "stdout_tail": "",
+            "stderr_tail": str(exc),
+            "note": "validation command could not be parsed safely",
+        }
+    try:
+        proc = subprocess.Popen(
+            argv,
+            cwd=root / relative_cwd,
             env=_command_env(command),
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            timeout=timeout_seconds,
-            check=False,
+            **_validation_process_options(),
         )
+        try:
+            stdout, stderr = proc.communicate(timeout=timeout_seconds)
+        except subprocess.TimeoutExpired as exc:
+            _terminate_validation_process_tree(proc)
+            stdout, stderr = proc.communicate()
+            duration = round(time.monotonic() - started, 3)
+            return {
+                "command": command,
+                "result": "BLOCKED",
+                "exit_code": None,
+                "duration_seconds": duration,
+                "stdout_tail": _tail(_merge_timeout_output(exc.stdout, stdout)),
+                "stderr_tail": _tail(_merge_timeout_output(exc.stderr, stderr)),
+                "note": f"timed out after {timeout_seconds}s; terminated validation process tree",
+            }
     except FileNotFoundError as exc:
         duration = round(time.monotonic() - started, 3)
         return {
@@ -1860,35 +1888,91 @@ def _execute_validation_command(root: Path, command: str, timeout_seconds: int) 
             "stderr_tail": str(exc),
             "note": "validation executable not found",
         }
-    except subprocess.TimeoutExpired as exc:
-        duration = round(time.monotonic() - started, 3)
-        return {
-            "command": command,
-            "result": "BLOCKED",
-            "exit_code": None,
-            "duration_seconds": duration,
-            "stdout_tail": _tail(exc.stdout or ""),
-            "stderr_tail": _tail(exc.stderr or ""),
-            "note": f"timed out after {timeout_seconds}s",
-        }
     duration = round(time.monotonic() - started, 3)
     return {
         "command": command,
         "result": "PASS" if proc.returncode == 0 else "FAIL",
         "exit_code": proc.returncode,
         "duration_seconds": duration,
-        "stdout_tail": _tail(proc.stdout),
-        "stderr_tail": _tail(proc.stderr),
+        "stdout_tail": _tail(stdout),
+        "stderr_tail": _tail(stderr),
         "note": "",
     }
 
 
+def _validation_process_options() -> dict[str, Any]:
+    if os.name == "nt":
+        return {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP}
+    return {"start_new_session": True}
+
+
+def _terminate_validation_process_tree(proc: subprocess.Popen[str]) -> None:
+    if os.name == "nt":
+        try:
+            subprocess.run(
+                ["taskkill", "/PID", str(proc.pid), "/T", "/F"],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError:
+            proc.kill()
+        return
+
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    except PermissionError:
+        proc.kill()
+        return
+
+    try:
+        proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        pass
+
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+    except PermissionError:
+        proc.kill()
+
+
+def _merge_timeout_output(initial: object, final: str | None) -> str:
+    initial_text = _output_text(initial)
+    if not final:
+        return initial_text
+    if not initial_text or final.startswith(initial_text):
+        return final
+    return initial_text + final
+
+
+def _output_text(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return value.decode(errors="replace")
+    return str(value)
+
+
 def _is_allowed_validation_command(command: str) -> tuple[bool, str]:
-    blocked_chars = (";", "\n", "||", "|", ">", "<", "`", "$(", "${")
+    # Validation commands are data, not shell programs.  The only compound
+    # form accepted is the fixed `cd core && cargo ...` shape, which is
+    # executed with an explicit working directory below.
+    blocked_chars = (";", "\n", "\r", "|", ">", "<", "`", "$", "(", ")")
+    if "&&" in command:
+        if not command.startswith("cd core && cargo ") or command.count("&") != 2:
+            return False, "blocked shell command chain in validation command"
+    elif "&" in command:
+        return False, "blocked shell metacharacter in validation command"
     if any(token in command for token in blocked_chars):
         return False, "blocked shell metacharacter in validation command"
-    if "&&" in command and not (command.startswith("cd core && cargo ") and command.count("&&") == 1):
-        return False, "blocked shell command chain in validation command"
+    try:
+        shlex.split(command)
+    except ValueError:
+        return False, "validation command contains malformed shell quoting"
     allowed_prefixes = (
         "PYTHONDONTWRITEBYTECODE=1 python3 -m compileall ",
         "PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile ",
@@ -1907,7 +1991,10 @@ def _is_allowed_validation_command(command: str) -> tuple[bool, str]:
 
 
 def _is_allowed_dev_validation_command(command: str) -> tuple[bool, str]:
-    argv = shlex.split(command)
+    try:
+        argv = shlex.split(command)
+    except ValueError:
+        return False, "validation command contains malformed shell quoting"
     allowed = False
     if len(argv) >= 3 and argv[:2] == ["./dev", "check"]:
         allowed = True
@@ -1928,12 +2015,17 @@ def _command_env(command: str) -> dict[str, str]:
 
 
 def _command_argv(command: str) -> list[str]:
+    argv, _ = _command_spec(command)
+    return argv
+
+
+def _command_spec(command: str) -> tuple[list[str], Path]:
     text = command
     if text.startswith("PYTHONDONTWRITEBYTECODE=1 "):
         text = text[len("PYTHONDONTWRITEBYTECODE=1 ") :]
     if text.startswith("cd core && "):
-        return ["bash", "-lc", text]
-    return shlex.split(text)
+        return shlex.split(text[len("cd core && ") :]), Path("core")
+    return shlex.split(text), Path(".")
 
 
 def _tail(text: str, *, limit: int = 4000) -> str:

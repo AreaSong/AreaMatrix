@@ -170,9 +170,9 @@ fn release_checklist_records_distribution_preflight_blocker_without_release_clai
     assert_contains(BUILD, "状态、审计和产物探针只用于汇总或读取证据");
     assert_contains(
         CI_GOVERNANCE,
-        "发布状态、证据审计、签名、公证、DMG 和外部测试属于发布门禁",
+        "发布状态、证据审计、签名、公证、DMG、artifact-specific 供应链材料和外部测试属于发布门禁",
     );
-    assert_contains(CI_GOVERNANCE, "不是普通 PR 的 CI 结果");
+    assert_contains(CI_GOVERNANCE, "不是普通 PR\n的 CI 结果");
     assert_contains(
         CHECKLIST,
         "no valid Developer ID Application signing identity found",

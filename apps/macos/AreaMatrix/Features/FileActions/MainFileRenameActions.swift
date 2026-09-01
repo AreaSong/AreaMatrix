@@ -1,14 +1,13 @@
 import Foundation
 
-extension MainFileListModel {
+extension FileActionCoordinator {
     @discardableResult
-    func submitRename(fileID: Int64, newName: String) async -> Bool {
-        guard pendingActionDestination == .rename(fileID: fileID),
+    func submitRename(fileID: Int64, newName: String) async -> FileActionRenameOutcome? {
+        guard destination == .rename(fileID: fileID),
               !renameState.isRenaming,
-              canPerformWriteAction(fileID: fileID) else { return false }
+              !Task.isCancelled else { return nil }
 
         let returnTargetCategory = renameState.changeCategoryReturnTarget(for: fileID)
-        let selectionGeneration = detailGeneration
         renameState = renameState.renamingState(fileID: fileID, targetCategory: returnTargetCategory)
         do {
             let renamedFile = try await fileRenamer.renameFile(
@@ -16,47 +15,28 @@ extension MainFileListModel {
                 fileID: fileID,
                 newName: newName
             )
-            applyRenamedFile(renamedFile, selectionGeneration: selectionGeneration)
+            guard destination == .rename(fileID: fileID) else { return nil }
             renameState = .idle
             if let returnTargetCategory {
                 changeCategoryState = .idle
-                pendingActionDestination = .changeCategory(
+                destination = .changeCategory(
                     fileID: renamedFile.id,
                     initialTargetCategory: returnTargetCategory
                 )
             } else {
-                pendingActionDestination = nil
+                destination = nil
             }
-            statusBanner = .renamedPreservedSelection(fileID: renamedFile.id)
-            if selection.singleFileID == renamedFile.id {
-                await loadChangeLog(fileID: renamedFile.id)
-                if case let .loaded(loadedFileID, _) = detailLogState, loadedFileID == renamedFile.id {
-                    detailTabRequest = .automatic(.log)
-                }
-            }
-            return true
+            return FileActionRenameOutcome(file: renamedFile, returnTargetCategory: returnTargetCategory)
         } catch {
             let mapping = await mapCoreError(error)
-            guard pendingActionDestination == .rename(fileID: fileID) else { return false }
+            guard destination == .rename(fileID: fileID) else { return nil }
             renameState = renameState.failedState(
                 fileID: fileID,
                 targetCategory: returnTargetCategory,
                 mapping: mapping
             )
-            return false
+            return nil
         }
-    }
-
-    private func applyRenamedFile(_ renamedFile: FileEntrySnapshot, selectionGeneration: Int) {
-        files = files.map { file in
-            file.id == renamedFile.id ? renamedFile : file
-        }
-        guard detailGeneration == selectionGeneration,
-              selection.singleFileID == renamedFile.id else { return }
-        selectedFileDetail = renamedFile
-        selectedFileNoteWriteBlock = noteWriteBlock(for: renamedFile)
-        detailErrorMapping = nil
-        isDetailLoading = false
     }
 }
 

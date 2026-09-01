@@ -125,7 +125,7 @@ enum FilesImportError: Error, Equatable, Sendable {
         if let filesError = error as? FilesImportError {
             return filesError
         }
-        return .unavailable(error.localizedDescription)
+        return .unavailable("Files import is unavailable.")
     }
 }
 

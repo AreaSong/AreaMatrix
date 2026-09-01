@@ -1,0 +1,1786 @@
+{
+  "allowed_statuses": [
+    "PENDING",
+    "IN_PROGRESS",
+    "PASS",
+    "FINDING",
+    "NOT_APPLICABLE",
+    "BLOCKED"
+  ],
+  "audit_id": "dependency-supply-chain-audit-20260822",
+  "conservation_rule": "repository_file_total = PASS + FINDING + NOT_APPLICABLE + BLOCKED；PENDING/IN_PROGRESS 必须为 0 才可宣称完成",
+  "counts": {
+    "binary": 152,
+    "excluded_runtime_untracked": 105,
+    "other": 0,
+    "repository_file_total": 5090,
+    "symlink": 11,
+    "text": 4927,
+    "text_line_total": 1512516,
+    "tracked": 5052,
+    "untracked_nonignored": 38
+  },
+  "dirty_worktree_at_freeze": [
+    {
+      "path": ".github/workflows/core-ci.yml",
+      "status": " M"
+    },
+    {
+      "path": ".github/workflows/governance-ci.yml",
+      "status": " M"
+    },
+    {
+      "path": ".github/workflows/macos-ci.yml",
+      "status": " M"
+    },
+    {
+      "path": ".github/workflows/release-evidence.yml",
+      "status": " M"
+    },
+    {
+      "path": ".github/workflows/remote-governance.yml",
+      "status": " M"
+    },
+    {
+      "path": ".gitignore",
+      "status": " M"
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "status": " M"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "status": " M"
+    },
+    {
+      "path": "LICENSE",
+      "status": " M"
+    },
+    {
+      "path": "README.md",
+      "status": " M"
+    },
+    {
+      "path": "README.zh-CN.md",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Conflicts/SyncConflictEntryCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Conflicts/SyncConflictEntryCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Detail/MobileFileDetailCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Detail/MobileFileDetailCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Detail/MobileFileDetailModel.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Help/PlatformDifferencesCapabilitiesCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Help/PlatformDifferencesCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/CameraImportCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/CameraImportCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/FilesImportCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/FilesImportCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportExtensionScene.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportModel.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportQueue.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportQueueConsumer.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportView.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Library/MobileLibraryCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Library/MobileLibraryCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel+RepositoryConfirmation.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Onboarding/ConnectRepositoryModel.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Onboarding/MobileCloudStorageCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Onboarding/MobileRepositoryCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Onboarding/RepositoryAccessService.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Recovery/MissingFileRecoveryCoreBridge.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Recovery/MissingFileRecoveryCoreFFI.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Settings/RepositorySettingsView.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrixShareExtension/ShareImportViewController.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrixTests/RepositorySettingsPageIntegrationTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/ios/AreaMatrixTests/ShareImportModelTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/AreaMatrix.Linux.csproj",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopImport.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Core/NativeCoreInterop.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Core/NativeCoreLibrary.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Features/Import/DesktopImportCoreBridge.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryCoreBridge.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Features/Onboarding/LinuxRepositoryModels.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Features/System/LinuxWatcherDiagnostics.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrixTests/ChooseRepository/LinuxNativeCoreBridgeSmokeTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrixTests/ChooseRepository/TestAssert.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrixTests/Help/PlatformDifferencesTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrixTests/Program.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/linux/AreaMatrixTests/Settings/RepositorySettingsViewModelTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/App/AreaMatrixDeveloperImportFixtureServices.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/App/RepositoryIgnoreRulesManager.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Bridge/CoreICloudConflictListing.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Bridge/UniFFI/area_matrix.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Bridge/UniFFI/area_matrixFFI.h",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportBatchConflictSection.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportBatchCopyFooterSection.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportBatchCopyImportContinuation.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportBatchCopyImportExecution.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportBatchCopyImportModel.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportBatchCopyImportSession.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportBatchProgressState.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportEntrySheetView.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Import/ImportResultActions.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Onboarding/ValidatePathChecklistSection.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Onboarding/WelcomeStepView.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/RepositoryLifecycle/MainRepoErrorActions.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/Settings/RepositoryOverviewRegenerationModel.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalResolution.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Features/SyncConflicts/ICloudConflictMinimalValidation.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Localizations/Localizable.xcstrings",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/PlatformServices/ImportBatchSessionPlatformServices.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixAmbientBackground.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixClassificationDiorama.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixOverlays.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixProtectionDiorama.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixSceneComponents.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixTimelineDiorama.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixWorkflowDiorama.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/ImportBatchCopyImportModelTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/ImportBatchDuplicateResolutionTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/ImportBatchSessionTestDoubleSupport.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/ImportProgressInterruptedSessionTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/LocalFileURLOpenerTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeAssemblyTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeSchedulingTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeTestSupport.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SceneMotionComponents.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedActionComponents.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedAssetComponents.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedBrandAssetComponents.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedButtonComponents.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedFeatureCardComponents.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedMotionComponents.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedTextEffects.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/Packages/AreaMatrixModules/Tests/AreaMatrixUIFoundationTests/SharedButtonComponentsTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/XcodeGen/project.yml",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/AreaMatrix.Windows.csproj",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.Contract.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.DesktopImport.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Core/AreaMatrixNativeCoreClient.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Core/NativeCoreInterop.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Core/NativeCoreLibrary.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Core/UniFfiReader.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Conflicts/SyncConflictEntryViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Import/DesktopImportCoreBridge.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Replace.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Results.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/RescanConfirmViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WatcherStatusPlatformActions.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WatcherStatusViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.Snapshot.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WindowsWatcherDiagnostics.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryView.xaml",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeDialog.xaml.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Onboarding/RepositoryAdoptConfirmDialog.xaml.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Onboarding/RepositoryInitConfirmDialog.xaml.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Onboarding/WindowsRepositoryCoreBridge.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Recovery/MissingFileRecoveryDialog.xaml.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Recovery/MissingFileRecoveryViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/MainWindow.xaml.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/ChooseRepository/ChooseRepositoryViewModelTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/ChooseRepository/ChooseRepositoryViewSmokeTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/ChooseRepository/OneDriveNoticeViewSmokeTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/ChooseRepository/RepositoryAdoptConfirmViewSmokeTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/ChooseRepository/RepositoryInitConfirmViewSmokeTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/DesktopMainQuery/DesktopMainQuerySmokeTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/DesktopMainQuery/DesktopMainQueryViewModelTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/Help/PlatformDifferencesTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/Program.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/Settings/RepositorySettingsViewModelTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/WatcherStatus/WatcherStatusViewModelTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "assets/brand/README.md",
+      "status": " M"
+    },
+    {
+      "path": "assets/brand/brand-manifest.json",
+      "status": " M"
+    },
+    {
+      "path": "assets/brand/wordmark-outlines.json",
+      "status": " M"
+    },
+    {
+      "path": "assets/prototypes/landing/index.html",
+      "status": " M"
+    },
+    {
+      "path": "assets/prototypes/workspace/index.html",
+      "status": " M"
+    },
+    {
+      "path": "core/Cargo.lock",
+      "status": " M"
+    },
+    {
+      "path": "core/Cargo.toml",
+      "status": " M"
+    },
+    {
+      "path": "core/area_matrix.udl",
+      "status": " M"
+    },
+    {
+      "path": "core/benches/core_hot_paths.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/build.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_call_log.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_classification_suggestion/context.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_classification_suggestion/executor.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_classification_suggestion/implementation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_privacy_rules.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_summary/context.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_summary/executor.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_summary/implementation/draft.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_summary/implementation/generation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_summary/implementation/privacy.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_tags_suggestion/context.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_tags_suggestion/executor.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/ai_tags_suggestion/implementation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/api/conflicts.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/batch_category/apply.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/batch_category/fs_move.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/batch_rename/apply.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/db/command_index.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/db/icloud_conflicts.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/domain/icloud.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/external_runtime.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/icloud_conflicts.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/icloud_conflicts/paths.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/icloud_conflicts/preview.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/icloud_conflicts/resolve.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/icloud_conflicts/types.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/lib.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/observability/validation_text.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/overview/atomic_write.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/overview/mod.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/recovery.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/repair.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/repo_init.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/search/facets.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/semantic_search.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/semantic_search/executor.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/semantic_search/matches.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/storage/mod.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/storage/replacement_trash.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/storage/safe_move.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/sync/mod.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/src/sync_conflict_detect/implementation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/ai_classification_suggestion_failure_recovery.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/ai_classification_suggestion_implementation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/ai_classification_suggestion_validation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/ai_summary_validation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/ai_tags_suggestion_failure_recovery.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/ai_tags_suggestion_implementation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/camera_import_failure_recovery.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/camera_import_validation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/files_import_failure_recovery.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/icloud_conflict_visual_contract_api.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/icloud_conflict_visual_failure_recovery.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/icloud_conflict_visual_implementation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/icloud_conflict_visual_validation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/release_evidence_checklist.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/remote_provider_config_failure_recovery.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/resolve_name_conflict_integration_verify.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/rust_file_size_governance.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/share_extension_import_failure_recovery.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/share_extension_import_validation.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/support/ai_classification_suggestion_common.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/support/ai_summary_common.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/support/ai_tags_suggestion_common.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/support/ai_tags_suggestion_failure.rs",
+      "status": " M"
+    },
+    {
+      "path": "core/tests/support/semantic_search_runtime.rs",
+      "status": " M"
+    },
+    {
+      "path": "docs/api/classifier-yaml.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/api/core-api.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/architecture/core-internal-architecture.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/architecture/migration.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/architecture/tech-stack.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/build.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/ci-governance.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/coding-standards.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/dependency-policy.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/error-recovery-matrix.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/release.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/setup.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/testing.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/development/troubleshooting.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/governance/governance-register.yaml",
+      "status": " M"
+    },
+    {
+      "path": "docs/modules/semantic-search.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/product/current-implementation-inventory.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/user-guide/getting-started.md",
+      "status": " M"
+    },
+    {
+      "path": "docs/ux/brand-assets.md",
+      "status": " M"
+    },
+    {
+      "path": "scripts/brand/export_assets.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/brand/generate_wordmark_outlines.swift",
+      "status": " M"
+    },
+    {
+      "path": "scripts/brand/requirements.txt",
+      "status": " M"
+    },
+    {
+      "path": "scripts/brand/validate_assets.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/build.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/checks.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/codex_os_automation.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/core_sdk.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/core_sdk_artifact.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/developer.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/macos.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/promotion.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/release.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_build_tools.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_codex_os.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_core_sdk.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_macos_runner.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_release_tools.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_workflow_hardening.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_workflow_permissions.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/task_loop/runner.py",
+      "status": " M"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/blocked-evidence.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/build_coverage.rb",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/coverage.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/final-report.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/findings.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/governance-controls.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/inventory.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/recovery-evidence.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/release-evidence.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/remote-evidence.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/residual-reconciliation.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/review-notes.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/scope.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/task-loop-evidence.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/ci-governance-release-recovery-audit-20260820/workflow-matrix.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/blocked-evidence.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/bridge-contracts.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/build_ledger.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/coverage.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/final-report.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/findings.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/inventory.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/platform-matrix.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/review-notes.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/runtime-evidence.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/scope.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/cross-platform-e2e-audit-20260820/workflow-matrix.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/_inventory.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/_synthesize.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/coverage.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/dependency-ledger.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/final-report.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/findings.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/inventory.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/ledger.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/license-ledger.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/review-notes.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260820/scope.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/_freeze_scope.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/_synthesize_current.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/coverage.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/dependency-ledger.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/final-report.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/findings.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/inventory.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/license-ledger.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/review-notes.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260822/scope.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-audit-20260830/_freeze_scope.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-remediation-20260820/baseline-sha256.txt",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-remediation-20260820/baseline.txt",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/dependency-supply-chain-remediation-20260820/preexisting-modified.txt",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/api-contracts.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/bridge-symbols.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/build-ledger.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/close_ledger.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/coverage.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/enrich-inventory.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/final-report.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/findings.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/generated-artifacts.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/inventory.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/record_asset_provenance.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/record_review.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/review-decisions.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/review-notes.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/scope.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/source-map.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/docs-api-bridge-drift-audit-20260820/wording-audit.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/cancellation-retry-ledger.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/concurrency-map.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/coverage.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/error-contracts.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/final-report.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/finalize_audit.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/findings.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/initialize.py",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/inventory.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/lifecycle-ledger.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/review-notes.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/error-concurrency-lifecycle-audit-20260820/scope.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/assets-final-semantic.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/core-agent-coverage.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/coverage.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/final-report.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/finding-014.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/finding-015-macos.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/finding-015.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/finding-016.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/finding-017.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/finding-018.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/finding-019.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/findings.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/inventory.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/ledger.rb",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/main-core-agents-review.jsonl",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/main-root-semantic.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/review-notes.md",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/scope.json",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/scripts-main-semantic-continuation.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/scripts-main-semantic.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-coverage-2.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-coverage.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-next5-reviewed.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/runtime/performance-reliability-audit-20260820/workflow-agent-coverage.tsv",
+      "status": "??"
+    },
+    {
+      "path": ".codex/skills/frontend-design",
+      "status": "??"
+    },
+    {
+      "path": ".github/workflows/release-supply-chain.yml",
+      "status": "??"
+    },
+    {
+      "path": "THIRD_PARTY_NOTICES.md",
+      "status": "??"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportExtensionLifecycle.swift",
+      "status": "??"
+    },
+    {
+      "path": "apps/ios/AreaMatrix/Features/Import/ShareImportRepositoryAccess.swift",
+      "status": "??"
+    },
+    {
+      "path": "apps/ios/AreaMatrixTests/ShareImportModelTestSupport.swift",
+      "status": "??"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/Core/NativeCoreLibrary.Loading.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/linux/AreaMatrix/native-core.manifest.json",
+      "status": "??"
+    },
+    {
+      "path": "apps/linux/AreaMatrixTests/ChooseRepository/LinuxNativeCoreContractGoldenVectorTests.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/linux/AreaMatrixTests/ChooseRepository/LinuxNativeCoreLibrarySecurityTests.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/macos/AreaMatrix/Bridge/UniFFI/libarea_matrix_core.a.provenance.json",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Core/NativeCoreLibrary.Loading.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.RepositoryLoad.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/MainWindow.RouteTransitions.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/native-core.manifest.json",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/packages.lock.json",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/Architecture/NativeCoreContractGoldenVectorTests.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/Architecture/NativeCoreLibrarySecurityTests.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/Architecture/ViewModelSynchronizationContextTests.cs",
+      "status": "??"
+    },
+    {
+      "path": "apps/windows/NuGet.config",
+      "status": "??"
+    },
+    {
+      "path": "assets/brand/provenance.json",
+      "status": "??"
+    },
+    {
+      "path": "core/src/batch_journal.rs",
+      "status": "??"
+    },
+    {
+      "path": "core/src/external_runtime_tests.rs",
+      "status": "??"
+    },
+    {
+      "path": "core/src/icloud_conflicts/token.rs",
+      "status": "??"
+    },
+    {
+      "path": "core/tests/batch_journal_recovery.rs",
+      "status": "??"
+    },
+    {
+      "path": "core/tests/support/ai_persisted_privacy.rs",
+      "status": "??"
+    },
+    {
+      "path": "core/tests/support/external_runtime_harness.rs",
+      "status": "??"
+    },
+    {
+      "path": "licenses/CC-BY-4.0-Contributor-Covenant.txt",
+      "status": "??"
+    },
+    {
+      "path": "licenses/MIT-CMU-Pillow.txt",
+      "status": "??"
+    },
+    {
+      "path": "licenses/MPL-2.0-Mozilla-Inclusion.txt",
+      "status": "??"
+    },
+    {
+      "path": "licenses/OFL-1.1-Inter.txt",
+      "status": "??"
+    },
+    {
+      "path": "rust-toolchain.toml",
+      "status": "??"
+    },
+    {
+      "path": "scripts/brand/image_safety.py",
+      "status": "??"
+    },
+    {
+      "path": "scripts/brand/test_validate_assets.py",
+      "status": "??"
+    },
+    {
+      "path": "scripts/dev_tools/supply_chain.py",
+      "status": "??"
+    },
+    {
+      "path": "scripts/dev_tools/test_core_sdk_artifact.py",
+      "status": "??"
+    },
+    {
+      "path": "scripts/dev_tools/test_core_sdk_support.py",
+      "status": "??"
+    },
+    {
+      "path": "scripts/dev_tools/test_supply_chain.py",
+      "status": "??"
+    }
+  ],
+  "excluded_paths": [
+    {
+      "basis": "Git 内部数据库，不是仓库提交内容",
+      "pattern": ".git/**"
+    },
+    {
+      "basis": "未跟踪的审计/运行时生成证据；避免当前审计递归纳入自身输出。所有 tracked .codex/runtime/** 文件仍逐项纳入范围",
+      "count": 105,
+      "paths": [
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/blocked-evidence.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/build_coverage.rb",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/coverage.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/final-report.md",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/findings.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/governance-controls.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/inventory.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/recovery-evidence.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/release-evidence.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/remote-evidence.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/residual-reconciliation.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/review-notes.md",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/scope.json",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/task-loop-evidence.jsonl",
+        ".codex/runtime/ci-governance-release-recovery-audit-20260820/workflow-matrix.jsonl",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/blocked-evidence.jsonl",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/bridge-contracts.jsonl",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/build_ledger.py",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/coverage.jsonl",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/final-report.md",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/findings.jsonl",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/inventory.jsonl",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/platform-matrix.jsonl",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/review-notes.md",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/runtime-evidence.jsonl",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/scope.json",
+        ".codex/runtime/cross-platform-e2e-audit-20260820/workflow-matrix.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/_inventory.py",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/_synthesize.py",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/coverage.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/dependency-ledger.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/final-report.md",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/findings.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/inventory.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/ledger.py",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/license-ledger.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/review-notes.md",
+        ".codex/runtime/dependency-supply-chain-audit-20260820/scope.json",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/_freeze_scope.py",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/_synthesize_current.py",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/coverage.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/dependency-ledger.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/final-report.md",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/findings.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/inventory.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/license-ledger.jsonl",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/review-notes.md",
+        ".codex/runtime/dependency-supply-chain-audit-20260822/scope.json",
+        ".codex/runtime/dependency-supply-chain-audit-20260830/_freeze_scope.py",
+        ".codex/runtime/dependency-supply-chain-remediation-20260820/baseline-sha256.txt",
+        ".codex/runtime/dependency-supply-chain-remediation-20260820/baseline.txt",
+        ".codex/runtime/dependency-supply-chain-remediation-20260820/preexisting-modified.txt",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/api-contracts.jsonl",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/bridge-symbols.jsonl",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/build-ledger.py",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/close_ledger.py",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/coverage.jsonl",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/enrich-inventory.py",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/final-report.md",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/findings.jsonl",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/generated-artifacts.jsonl",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/inventory.jsonl",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/record_asset_provenance.py",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/record_review.py",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/review-decisions.jsonl",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/review-notes.md",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/scope.json",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/source-map.jsonl",
+        ".codex/runtime/docs-api-bridge-drift-audit-20260820/wording-audit.jsonl",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/cancellation-retry-ledger.jsonl",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/concurrency-map.jsonl",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/coverage.jsonl",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/error-contracts.jsonl",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/final-report.md",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/finalize_audit.py",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/findings.jsonl",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/initialize.py",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/inventory.jsonl",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/lifecycle-ledger.jsonl",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/review-notes.md",
+        ".codex/runtime/error-concurrency-lifecycle-audit-20260820/scope.json",
+        ".codex/runtime/performance-reliability-audit-20260820/assets-final-semantic.tsv",
+        ".codex/runtime/performance-reliability-audit-20260820/core-agent-coverage.tsv",
+        ".codex/runtime/performance-reliability-audit-20260820/coverage.jsonl",
+        ".codex/runtime/performance-reliability-audit-20260820/final-report.md",
+        ".codex/runtime/performance-reliability-audit-20260820/finding-014.json",
+        ".codex/runtime/performance-reliability-audit-20260820/finding-015-macos.json",
+        ".codex/runtime/performance-reliability-audit-20260820/finding-015.json",
+        ".codex/runtime/performance-reliability-audit-20260820/finding-016.json",
+        ".codex/runtime/performance-reliability-audit-20260820/finding-017.json",
+        ".codex/runtime/performance-reliability-audit-20260820/finding-018.json",
+        ".codex/runtime/performance-reliability-audit-20260820/finding-019.json",
+        ".codex/runtime/performance-reliability-audit-20260820/findings.jsonl",
+        ".codex/runtime/performance-reliability-audit-20260820/inventory.jsonl",
+        ".codex/runtime/performance-reliability-audit-20260820/ledger.rb",
+        ".codex/runtime/performance-reliability-audit-20260820/main-core-agents-review.jsonl",
+        ".codex/runtime/performance-reliability-audit-20260820/main-root-semantic.tsv",
+        ".codex/runtime/performance-reliability-audit-20260820/review-notes.md",
+        ".codex/runtime/performance-reliability-audit-20260820/scope.json",
+        ".codex/runtime/performance-reliability-audit-20260820/scripts-main-semantic-continuation.tsv",
+        ".codex/runtime/performance-reliability-audit-20260820/scripts-main-semantic.tsv",
+        ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-coverage-2.tsv",
+        ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-coverage.tsv",
+        ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-next5-reviewed.tsv",
+        ".codex/runtime/performance-reliability-audit-20260820/workflow-agent-coverage.tsv"
+      ],
+      "pattern": "untracked .codex/runtime/**"
+    },
+    {
+      "basis": "构建缓存、私有环境和生成目录，未作为仓库提交内容冻结",
+      "pattern": "Git ignored workspace files"
+    }
+  ],
+  "generated_at": "2026-08-30T06:11:35+00:00",
+  "git_branch": "codex/long-term-governance-bridge-contracts",
+  "git_commit": "cf3647378d64885e8e6a44a2a5b60d8926668982",
+  "inventory_sha256": "9d6a9805401dea1ea754b16d5c65b30f96ae375f273913534dc2029f80710db3",
+  "repository_root": "/Users/as/Ai-Project/project/AreaMatrix",
+  "schema_version": 2,
+  "scope_definition": "全部 tracked 文件（包括 tracked .codex/runtime/**）+ 冻结时全部非忽略 untracked 文件；仅未跟踪的 .codex/runtime/** 运行时/审计输出为避免递归而排除"
+}

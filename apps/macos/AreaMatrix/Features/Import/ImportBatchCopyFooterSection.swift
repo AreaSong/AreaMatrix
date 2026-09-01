@@ -46,9 +46,6 @@ struct ImportBatchCopyFooterSection: View {
     private func importBatch() async {
         prepareImport()
         importProgressControlState.reset()
-        if let initialProgress = initialProgressSnapshot() {
-            onImportProgress(initialProgress)
-        }
         var lastProgress: ImportBatchProgressSnapshot?
         let outcome = await batchImportModel.importReadyFiles(
             selectedDestination: batchPreviewModel.selectedDestination,
@@ -60,6 +57,24 @@ struct ImportBatchCopyFooterSection: View {
         }
 
         guard let outcome else { return }
+        handleImportOutcome(outcome, lastProgress: lastProgress)
+    }
+
+    @MainActor
+    private func handleImportOutcome(
+        _ outcome: ImportBatchImportResult,
+        lastProgress: ImportBatchProgressSnapshot?
+    ) {
+        if let sessionFailure = outcome.sessionPersistenceFailure,
+           let progress = lastProgress {
+            onImportFailed(
+                progress,
+                batchImportModel.sessionFailureMapping(sessionFailure),
+                nil,
+                .unavailable
+            )
+            return
+        }
         if outcome.didStopAfterCurrentFile {
             onImportResults(
                 outcome.progressSnapshot(currentPath: batchImportModel.currentImportPath ?? request.sheetTitle)
@@ -103,20 +118,6 @@ struct ImportBatchCopyFooterSection: View {
             batchPreviewModel.rows,
             request: request,
             selectedDestination: batchPreviewModel.selectedDestination
-        )
-    }
-
-    private func initialProgressSnapshot() -> ImportBatchProgressSnapshot? {
-        guard batchImportModel.importDisabledReason == nil else { return nil }
-        let total = batchImportModel.importableRows.count
-        guard total > 0 else { return nil }
-        return ImportBatchProgressSnapshot(
-            completed: 0,
-            failed: 0,
-            total: total,
-            remaining: total,
-            currentPath: batchImportModel.currentImportPath ?? request.sheetTitle,
-            items: batchImportModel.progressItems()
         )
     }
 }

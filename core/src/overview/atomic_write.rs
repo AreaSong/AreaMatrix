@@ -62,7 +62,12 @@ impl FileSnapshot {
         match &self.state {
             SnapshotState::Missing => remove_file_if_present(&self.path),
             SnapshotState::File(bytes) => {
-                let _restore_result = fs::write(&self.path, bytes);
+                let safe = fs::symlink_metadata(&self.path)
+                    .map(|metadata| metadata.is_file() && !metadata.file_type().is_symlink())
+                    .unwrap_or(false);
+                if safe {
+                    let _restore_result = fs::write(&self.path, bytes);
+                }
             }
             SnapshotState::Other => {}
         }

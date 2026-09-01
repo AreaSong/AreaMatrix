@@ -1,4 +1,60 @@
+import Combine
 import Foundation
+
+@MainActor
+final class CommandPaletteModel: ObservableObject {
+    @Published var query = ""
+    @Published var state = CommandPaletteLoadState.idle
+    @Published var focusRoutingState = CommandPaletteFocusRoutingState()
+    @Published var importConflictBatchRelayState = ImportConflictBatchRelayState()
+
+    private let repoPath: String
+    private let commandIndexer: any CoreCommandIndexing
+    private let errorMapper: any CoreErrorMapping
+
+    init(
+        repoPath: String,
+        commandIndexer: any CoreCommandIndexing,
+        errorMapper: any CoreErrorMapping
+    ) {
+        self.repoPath = repoPath
+        self.commandIndexer = commandIndexer
+        self.errorMapper = errorMapper
+    }
+
+    var snapshot: CommandPaletteSnapshot? {
+        state.snapshot
+    }
+
+    func load(query: String, selectedFileIDs: Set<Int64>, currentPath: String?) async {
+        let context = CommandIndexRequestSnapshot.commandPalette(
+            query: query,
+            selectedFileIDs: selectedFileIDs,
+            currentPath: currentPath
+        )
+        let availableCommands = state.snapshot
+        state = .loading(context)
+        do {
+            let index = try await commandIndexer.listCommandTargets(repoPath: repoPath, context: context)
+            state = .loaded(CommandPaletteSnapshot(coreIndex: index))
+        } catch {
+            let mappedError = await errorMapper.mapError(error)
+            state = .failed(
+                context,
+                availableCommands ?? .commandRegistryRecovery(query: context.query),
+                mappedError
+            )
+        }
+    }
+
+    func clear() {
+        state = .idle
+    }
+
+    func showNoRepositoryCommands() {
+        state = .loaded(.noRepositoryCommands())
+    }
+}
 
 enum CommandPaletteLoadState: Equatable {
     case idle
@@ -309,37 +365,5 @@ extension CommandPaletteSnapshot {
                 targets: coreIndex.fileCandidates
             )
         ]
-    }
-}
-
-@MainActor
-extension MainFileListModel {
-    func loadCommandIndex(
-        query: String,
-        selectedFileIDs: Set<Int64>,
-        currentPath: String?
-    ) async {
-        let context = CommandIndexRequestSnapshot.commandPalette(
-            query: query,
-            selectedFileIDs: selectedFileIDs,
-            currentPath: currentPath
-        )
-        let availableCommands = commandPaletteState.snapshot
-        commandPaletteState = .loading(context)
-        do {
-            let index = try await commandIndexer.listCommandTargets(repoPath: repoPath, context: context)
-            commandPaletteState = .loaded(CommandPaletteSnapshot(coreIndex: index))
-        } catch {
-            let mappedError = await mapCoreError(error)
-            commandPaletteState = .failed(
-                context,
-                availableCommands ?? .commandRegistryRecovery(query: context.query),
-                mappedError
-            )
-        }
-    }
-
-    func clearCommandPaletteState() {
-        commandPaletteState = .idle
     }
 }

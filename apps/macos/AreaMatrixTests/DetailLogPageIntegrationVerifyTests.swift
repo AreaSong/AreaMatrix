@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureLibrary
 import XCTest
 
 final class DetailLogPageIntegrationVerifyTests: XCTestCase {

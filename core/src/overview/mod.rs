@@ -495,8 +495,29 @@ fn write_atomic_replace(path: &Path, content: &str) -> CoreResult<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(map_io_error)?;
     }
-    let tmp = path.with_extension("md.tmp");
-    fs::write(&tmp, content).map_err(map_io_error)?;
+    if let Ok(metadata) = fs::symlink_metadata(path) {
+        if metadata.file_type().is_symlink() || !metadata.is_file() {
+            return Err(CoreError::conflict("overview target is unsafe"));
+        }
+    }
+    let tmp = path.with_file_name(format!(
+        ".{}.{}.tmp",
+        path.file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("overview"),
+        uuid::Uuid::new_v4()
+    ));
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&tmp)
+        .map_err(map_io_error)?;
+    let write_result = file
+        .write_all(content.as_bytes())
+        .map_err(map_io_error)
+        .and_then(|()| file.sync_all().map_err(map_io_error));
+    drop(file);
+    write_result?;
     match fs::rename(&tmp, path) {
         Ok(()) => Ok(()),
         Err(error) => {

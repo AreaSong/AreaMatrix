@@ -33,10 +33,12 @@
 
 `PlatformServices/` 是目标落点；既有平台服务仍可能暂时留在 `App/` 或 `Models/`。触达相关代码时按风险和验证能力渐进迁移。
 
-`AreaMatrixUIFoundation` 是稳定、无业务语义 UI 基础组件的 Swift Package。当前已承载主题与动效 token，以及
+`AreaMatrixUIFoundation` 是稳定、无业务语义 UI 基础组件的 Swift Package。当前已承载通用
+`AsyncLoadState`、主题与动效 token，以及
 `NeutralCapsuleChip`、`NeutralSummaryPanel`、`ReasonStatusCard`、`TintedCapsuleBadge` 和状态 banner
 组件，还有 `AreaMatrixGlassCardModifier`、`AreaMatrixPathBox`、`AreaMatrixStepHeader`、
 `AreaMatrixGlassContentPanelModifier`、`AreaMatrixWorkspaceRegionShellModifier`、
+`AreaMatrixActionSheetContainer`、`AreaMatrixUnavailableActionContext`、
 `AreaMatrixCapsuleButton`、`AreaMatrixGhostButton`、`AreaMatrixPrimaryGlowButton`、
 `AreaMatrixLinkActionLabel`、`AreaMatrixPrimaryActionLabel`、`AreaMatrixPrimaryButtonStyle`、
 `AreaMatrixSecondaryButtonStyle`、`AreaMatrixCrossfadeAssetImage`、`AreaMatrixFeatureCardSpec`、
@@ -49,7 +51,7 @@
 至少两个真实调用方，再进入该 package，并为 package 本身补充合同测试。
 
 `AreaMatrixPlatformKit` 是稳定、无业务语义的平台能力 Package。当前承载 HTTPS 外链校验与打开合同、
-本地文件 URL 的资源快照、Finder 打开/定位能力和统一错误类型；App target 只保留兼容 typealias 与
+本地文件 URL 的资源快照、Finder 打开/定位能力、窗口 chrome observer 和统一错误类型；App target 只保留兼容 typealias 与
 repository-specific facade，不能重新实现这些平台副作用。新增平台能力必须先定义可注入合同，再由
 App 组合层提供默认实现，并为 Package 本身补充合同测试。
 
@@ -89,10 +91,29 @@ inventory，新增业务 View / State / Action 不得回流这些目录。
 当前 12 个 Feature 目录由 `MacOSFeatureOwnershipGovernanceTests` 精确登记职责、风险边界和验证重点。
 新增 Feature 目录必须先补 owner inventory；跨 feature 公共能力仍需至少两个真实调用方后再抽取。
 
+五个业务域已有真实 SwiftPM product / target，并由 App target 直接 import 和链接：
+
+| Target | 组合的 Feature owner | 当前 Package 边界 |
+|---|---|---|
+| `AreaMatrixFeatureLibrary` | MainList、Detail、Search、CommandPalette | manifest、搜索/选择/笔记等值合同 |
+| `AreaMatrixFeatureIngestion` | Import、Onboarding、RepositoryLifecycle | manifest、导入扫描与 repository session 值合同 |
+| `AreaMatrixFeatureOperation` | FileActions、SyncConflicts | manifest、批量操作与冲突值合同 |
+| `AreaMatrixFeatureSettings` | Settings | manifest、设置值合同 |
+| `AreaMatrixFeatureAI` | AI | manifest、AI 状态值合同、分类建议快照、远程 provider 非 secret 状态与禁用请求合同 |
+
+这些 Target 不是空壳，但也不代表 Feature 实现已经全部物理迁移。对应 owner 的 View、Model、Action 和
+Bridge adapter 仍有 330 个 Swift 文件保留在 App target，五个 Feature Package target 当前承载 31 个生产
+Swift 文件；`MainSelectionModel`、MainRepository 搜索输入、MainList 筛选、分页、非本地化列表投影和文件展示派生算法已由 Library Package 物理持有，App 与测试 Target
+直接链接并 import 所需
+Feature product，不再依赖 App-owned 转发 shim。后续迁移仍必须按 facade / value contract 切断
+跨 Feature extension 和 App-only 依赖后逐组进行，不能机械移动高风险文件。`MacOSArchitectureDebtGovernanceTests`
+要求五个 Target 不互相依赖，并验证 App 确实 import 每个 product。
+
 ### Feature manifest 与依赖图
 
-每个 Feature 在自身目录提供 `FeatureManifestProvider`，App 只负责按启动组合顺序收集这些 manifest；App
-不得重新声明 Feature 的 owner、职责或风险元数据。`AreaMatrixCoreContracts.FeatureManifestGraph` 是
+五个模块组在各自 Package target 提供 `FeatureManifest` 源事实；Diagnostics 暂时保留 App-owned provider。
+App 只负责按启动组合顺序收集这些 manifest，不得重新声明 Feature 的 owner、职责或风险元数据。
+`AreaMatrixCoreContracts.FeatureManifestGraph` 是
 manifest 依赖图的共享合同，统一检查重复 ID、空元数据、重复依赖、未知依赖和循环依赖。App registry 的
 治理测试与 Swift Package 合同测试都调用同一校验器，新增模块不能通过手工维护的中央 switch 绕过这些门禁。
 
@@ -101,7 +122,9 @@ manifest 依赖图的共享合同，统一检查重复 ID、空元数据、重�
 边界，不替代高风险写操作的 `RepositoryWriteCoordinator`、文件安全合同或 Core API。
 
 `AreaMatrixCoreBridgeContract` 与 `AreaMatrixCoreBridgeRuntime` 是已接入 Xcode target 的 Swift Package
-边界：前者持有稳定的 `CoreBridgeBoundary`、能力协议合同和 diagnostics snapshot 合同，后者负责运行时状态、可用性和 boundary inventory 协调。
+边界：前者持有稳定的 `CoreBridgeBoundary`、能力协议合同、diagnostics snapshot、change-log、classification
+、search facet、AI call-log、tag value、tag suggestion、repository lifecycle 与 undo/redo 合同，后者负责运行时状态、可用性和
+boundary inventory 协调。
 `AreaMatrixCoreContracts` 同时承载稳定的 feature manifest、平台能力 snapshot、绑定合同 snapshot 和扩展注册合同；它不依赖
 AppKit、L10n 或 UniFFI。`CoreBridge` actor、Core/UniFFI 转换和生成绑定仍集中在 `AreaMatrix/Bridge/`，
 因为它们依赖 tracked binding；Bridge 只负责把生成 DTO 转成 package snapshot，并在 App-owned 扩展中提供
@@ -109,9 +132,57 @@ AppKit、L10n 或 UniFFI。`CoreBridge` actor、Core/UniFFI 转换和生成绑�
 实例由 `App/CoreBridgeRuntimeAssembly.swift` 组合；后续适配迁移继续以这些 Package 和 Bridge 边界测试为锚点，
 不改变用户文件和 Core API 语义。
 
+#### App-owned Bridge 保留清单
+
+跨 Feature 的稳定 capability contract 已进入 `AreaMatrixCoreBridgeContract`；下列适配器仍留在 App target，
+因为它们携带 Feature 专属的本地化投影、SQLite recovery、凭据生命周期、事务式概览或用户文件写入语义。
+清单由 `MacOSCoreBridgePackageGovernanceTests.testRetainedAppOwnedBridgeAdaptersHaveExplicitExitConditions`
+执行校验；每一项都必须有 owner、保留理由和可验证的退出条件。退出条件满足前，不将这些适配器拆成只为目录数量服务的微型 Package。
+
+| 适配器 | Owner | 保留理由 | 退出条件 |
+|---|---|---|---|
+| `CoreAIPrivacySnapshots.swift`、`CoreRemoteProviderConfiguring.swift` | AI | 隐私、provider scope、credential lifecycle 和 fallback 语义属于 AI 边界 | 出现第二个真实消费者后再抽取非 secret value contract |
+| `CoreAISummaryMetadataReading.swift`、`CoreNoteReadingWriting.swift` | AI / Detail | SQLite summary recovery、note IO、revision 和隐私语义不可混为通用读写 | 独立 note / summary 消费者及对应 read-only / revision 门禁成立 |
+| `CoreClassifierRuleEditing.swift`、`CoreClassifierRuleSavingAndImpactPreviewing.swift` | Settings / FileActions | 本地化草稿、preview、确认和恢复动作共同构成 classifier 写入边界 | 第二个生产调用方共享合同且保留写安全测试 |
+| `CoreExternalChangesSyncing.swift` | MainList | FSEvents 归一化直接驱动 MainList refresh policy | 独立 Feature 消费同一事件合同 |
+| `CoreFileDeleting.swift`、`CoreFileListing.swift`、`CoreFileRenaming.swift` | FileActions / MainList / Detail | 删除、索引移除、缺失恢复和重命名的用户文件与 undo 语义不同 | 每个语义有独立共享调用方，且不合并高风险行为 |
+| `CoreImporting.swift`、`CoreImportConflictBatching.swift` | Import | source URL、duplicate policy、trace、冲突批处理属于导入事务 | batch / folder 之外出现第二个导入 owner 且事务门禁可复用 |
+| `CoreICloudConflictListing.swift`、`CoreSyncConflictDetecting.swift`、`CoreSyncConflictResolving.swift` | SyncConflicts | iCloud placeholder、不确定性和真实用户文件写入是高风险冲突流程 | 第二个冲突消费者、真实 placeholder 证据和独立 review 均成立 |
+| `CoreMetadataRepairing.swift`、`CoreOverviewRegenerating.swift` | RepositoryLifecycle | DB repair、staging、commit、rollback 和恢复顺序必须可见 | 另一恢复 Feature 共享同一安全合同并通过完整门禁 |
+| `CoreObservabilityBridge.swift` | Observability | callback sink、进程级 tracing 和 generated call 的生命周期耦合 | callback boundary 有独立消费者后再抽取 snapshot |
+
+该清单不是永久豁免：新增 App-owned Bridge 适配器必须先补测试清单和退出条件；删除或迁移适配器时，必须同步
+Package contract、Bridge boundary、文档和验证证据。
+
 主资料库列表使用 `MainListFeatureDependencies` 作为单一显式依赖范围，由 App 组合层创建并传入
 `MainFileListModel`；生产模型不再通过 `.live` 默认值解析 Core 或平台服务。测试便利构造只存在于测试
 support 中，并将 fixture 覆盖项重新组装为同一个依赖范围，避免测试调用方式成为生产隐式装配的后门。
+
+`RepositorySession` 由 App 在打开资料库后创建，持有稳定 repository identity 和可更新的 opening snapshot，
+并为 Feature operation 派生带 revision、只读状态和 write-lock 集合的 `RepositoryOperationContext`。
+不同资料库的 opening 不能刷新到同一 session。`MainRepositoryContentView` 与 `MainFileListModel` 接收同一
+session；每次操作开始时从 session 获取不可变 context，既冻结该次操作的 revision，又确保后续操作使用
+刷新后的 revision、只读状态与 write-lock。列表 model 的 diagnostics lifecycle 已拆给
+`MainListDiagnosticsModel`，列表 loading / pagination 状态由 Library Package 的 `MainListLoadingState` 持有；
+主内容 view 的 sidebar selection 由窗口局部 `MainSidebarSelectionModel` 持有。drop overlay、
+Import relay 和 note draft routing 也由对应 Feature owner 持有。后续继续按这一方式拆 route、task 和 action，
+而不是创建新的全局 store。
+
+Command Palette 的 query、load state、Core command index 请求和错误映射由独立 `CommandPaletteModel`
+持有。`MainRepositoryContentAssembly` 显式提供构造工厂，`MainRepositoryContentView` 以 `@StateObject`
+持有其身份；`MainFileListModel` 不得持有该 model、转发其状态，也不得继续注入 `CoreCommandIndexing`。
+MainList 只保留进入搜索态和 smart-list 执行所需的搜索路由合同。
+
+搜索框的 query、范围、模式、排序和筛选输入由 Library Package 的 `MainRepositorySearchInputModel` 持有；搜索
+query、facet、smart list、semantic fallback、隐私门禁、分页和索引构建任务由独立 `SearchModel`
+持有。它通过 `SearchResultApplication` 将 loading、结果文件、失败和清空事件交给 MainList 应用，不直接
+持有列表选择或详情状态；`MainRepositoryContentView` 独立观察同一个 model。MainList 的 Search facade
+已经删除，生产代码与测试都直接调用 `SearchModel`；MainList 只通过 `SearchResultApplication` 接收 loading、
+结果文件、失败与清空事件，不得重新持有搜索 generation、Core 查询协议或语义搜索任务。
+
+Detail tag 的筛选 registry 状态和 generation 由 `DetailTagModel` 持有，Search 筛选 UI 直接观察该 model。
+普通 tag 写入、建议应用和 AI tag 隐私流程仍按 Detail 专项逐步迁移，不能为了清单数字合并其写入、undo、
+change-log 或隐私语义。
 
 Settings 页面由 `SettingsFeatureDependencies` 接收 Core 与平台能力；Diagnostics 页面另外使用
 `DiagnosticsFeatureDependencies` 接收诊断包预览和导出处理器。生产 Settings route 必须显式传入这两个范围，
@@ -157,10 +228,10 @@ Swift 调用 Rust Core 的手写入口是 `Bridge/`。
 
 ## 默认 Core 服务装配
 
-macOS 默认 Core 服务由 `App/AppCoreServices.swift` 集中装配。Feature model 或 view
+macOS 默认 Core 服务由 `App/AppCoreServices.swift` 的实例容器集中装配。Feature model 或 view
 通过协议注入接收默认能力，测试代码继续显式注入 test double。
 
-- 新增低风险 Core 默认能力优先进入 `AppCoreServices`，避免各 feature 自行构造
+- 新增低风险 Core 默认能力优先进入 `AppCoreServices` 实例，避免各 feature 自行构造
   `CoreBridge()`。
 - 初始化、导入、DB 修复、同步冲突、iCloud conflict、AI 隐私 / 远程 provider
   等高风险专项路径允许受控保留直接 `CoreBridge()` 默认构造。
@@ -293,6 +364,33 @@ classification、tags、summary 的 local / remote runtime，以及 semantic sea
 - 受控迁移区的文件、owner 和退出条件由 `MacOSMigrationZoneGovernanceTests` 维护。
 - 触达平台副作用时收敛到 `PlatformServices/`，或在治理测试中保留明确的风险归属与退出条件。
 - 共享 state、action、routing 或 validation 支撑至少应有两个真实调用方，不按迁移排期预先抽象。
+- `BridgeReverseInventoryGovernanceTests` 反向登记每个 App-owned Bridge protocol、owner 和退出条件；
+  新协议不能在 Bridge 中静默出现。Startup Recovery、Core version 与 existing repository metadata 的
+  值合同和 capability 已迁入 `AreaMatrixCoreBridgeContract`；本地模型只读 capability 与完整状态图已迁入
+  `AreaMatrixFeatureAI`；普通搜索、语义搜索的纯值图以及查询、Smart List capability 已迁入
+  `AreaMatrixCoreBridgeContract`。当前 Bridge 反向清单仍有 42 个协议，另有
+  Feature-owned 高风险例外 `ICloudConflictResolving`；后者退出必须按 iCloud 与用户文件写入门禁单独确认和验证。
+- `MacOSArchitectureDebtGovernanceTests` 将 `MainRepositoryContentView` 限制为 20 文件（包含主声明）/ 21 个 extension，
+  将 `MainFileListModel` 限制为 7 文件 / 8 个 extension，将 `SearchModel` 限制为 4 文件 / 5 个 extension；
+  跨 Feature extension 清单当前为空，新增回流必须失败；源码扫描按五个物理 Package 组归一化，并将 17 条现存跨 Target 依赖边锁定为
+  精确 shrinking inventory，新增边会失败，消除具体类型引用后必须删除对应边。这些预算只能收缩。
+- Feature 物理迁移门禁当前将 App-owned Feature 源文件限制为最多 330 个，并要求五个 Feature Package
+  至少持有 31 个生产源文件；Settings Package 已持有分类预览与通用 validation 状态机，Library Package
+  已持有 MainList 筛选、分页、加载状态、非本地化列表投影、文件展示派生和窗口局部 sidebar selection owner 及其独立测试，AI scope 与
+  remote provider 的 request、result、draft 和 typed validation
+  reason 以及本地模型 availability、recommended action、cached/status/folder 状态图已归属
+  `AreaMatrixFeatureAI`；Batch Rename 的规则、预览与结果项值合同已归属
+  `AreaMatrixFeatureOperation`。本地化展示、UniFFI 映射和引用 App 文件快照的聚合报告仍留在 App 边界。已迁移合同不得通过
+  App typealias 或重复定义回流。这两个计数只是单调迁移预算，
+  不代表五组 Feature 已完成拆分。
+- 进程级共享对象只允许停留在明确的 App composition 或平台运行时边界。页面动画、Feature operation
+  coordinator 等局部状态不得通过 `static var` / `shared` 隐式跨窗口传播。`AppCoreServices` 已改为实例化
+  composition container，生产代码中的静态 Core service locator 数量为零；`AppDependencyContainer.live`
+  是工厂而不是共享实例，并将同一个 `AppCoreServices` 实例传给顶层与 Feature scopes。底层
+  `CoreBridgeRuntime` 和 `RepositoryWriteCoordinator` 仍保持进程级共享，分别保证 FFI runtime 生命周期和
+  跨窗口资料库写串行化，但 Feature / View 只能通过显式依赖获得它们。
+- `AreaMatrixUIFoundation.AsyncPhaseState` 只统一无 payload 的 idle/loading/loaded/failed 状态。携带 previous
+  value、fileID、策略、恢复动作或用户文件写入语义的状态机继续由所属 Feature 定义，不得机械折叠。
 
 ## 文件规模治理
 

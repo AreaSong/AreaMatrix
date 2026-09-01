@@ -1,6 +1,6 @@
 use area_matrix_core::{
-    preview_conflict_versions, resolve_icloud_conflict, CoreError, CoreResult,
-    ICloudConflictPreviewReport, ICloudConflictPreviewStatus, ICloudConflictResolution,
+    preview_conflict_versions, resolve_icloud_conflict as core_resolve_icloud_conflict, CoreError,
+    CoreResult, ICloudConflictPreviewReport, ICloudConflictPreviewStatus, ICloudConflictResolution,
     ICloudConflictResolutionOption, ICloudConflictResolveReport, ICloudConflictStatus,
     ICloudConflictVersionMetadata, ICloudConflictVersionRole,
 };
@@ -40,12 +40,17 @@ fn text_between<'a>(haystack: &'a str, start: &str, end: &str) -> &'a str {
 fn icloud_conflict_visual_contract_exposes_signatures_inputs_outputs_and_errors() {
     fn assert_preview(_: fn(String, String) -> CoreResult<ICloudConflictPreviewReport>) {}
     fn assert_resolve(
-        _: fn(String, String, ICloudConflictResolution) -> CoreResult<ICloudConflictResolveReport>,
+        _: fn(
+            String,
+            String,
+            ICloudConflictResolution,
+            String,
+        ) -> CoreResult<ICloudConflictResolveReport>,
     ) {
     }
 
     assert_preview(preview_conflict_versions);
-    assert_resolve(resolve_icloud_conflict);
+    assert_resolve(core_resolve_icloud_conflict);
 
     let version = ICloudConflictVersionMetadata {
         version_id: "original".to_owned(),
@@ -66,6 +71,7 @@ fn icloud_conflict_visual_contract_exposes_signatures_inputs_outputs_and_errors(
     };
     let preview = ICloudConflictPreviewReport {
         conflict_id: "docs/report.pdf::conflicted-copy".to_owned(),
+        preview_token: "icloud-preview-v1:test".to_owned(),
         versions: vec![version],
         default_resolution: ICloudConflictResolution::KeepBoth,
         resolution_options: vec![option],
@@ -131,10 +137,11 @@ fn icloud_conflict_visual_contract_has_no_fake_success_before_implementation() {
         Err(CoreError::Db { .. })
     ));
     assert!(matches!(
-        resolve_icloud_conflict(
+        core_resolve_icloud_conflict(
             uninitialized_repo_path,
             "docs/report.pdf::conflicted-copy".to_owned(),
-            ICloudConflictResolution::KeepBoth
+            ICloudConflictResolution::KeepBoth,
+            String::new(),
         ),
         Err(CoreError::Db { .. })
     ));
@@ -147,6 +154,7 @@ fn icloud_conflict_visual_contract_docs_api_udl_and_control_map_stay_aligned() {
         "string repo_path, string conflict_id",
         "ICloudConflictResolveReport resolve_icloud_conflict(",
         "ICloudConflictResolution resolution",
+        "string preview_token",
         "dictionary ICloudConflictVersionMetadata",
         "ICloudConflictVersionRole role;",
         "ICloudConflictPreviewStatus preview_status;",
@@ -170,9 +178,9 @@ fn icloud_conflict_visual_contract_docs_api_udl_and_control_map_stay_aligned() {
 
     for fragment in [
         "| `preview_conflict_versions(repo, conflict_id)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |",
-        "| `resolve_icloud_conflict(repo, conflict_id, resolution)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |",
+        "| `resolve_icloud_conflict(repo, conflict_id, resolution, preview_token)` | conflict | √ | ICloudPlaceholder / PermissionDenied / Conflict / Io / Db |",
         "### `preview_conflict_versions(repoPath, conflictId) throws -> ICloudConflictPreviewReport`",
-        "### `resolve_icloud_conflict(repoPath, conflictId, resolution) throws -> ICloudConflictResolveReport`",
+        "### `resolve_icloud_conflict(repoPath, conflictId, resolution, previewToken) throws -> ICloudConflictResolveReport`",
         "`default_resolution`：必须为 `KeepBoth`",
         "`KeepBoth`：保留所有版本，只把冲突状态写为 resolved / acknowledged。",
         "`KeepOriginal`：保留原始版本，将 conflicted copy 移到系统 Trash。",

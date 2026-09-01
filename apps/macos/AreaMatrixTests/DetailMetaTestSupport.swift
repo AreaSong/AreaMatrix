@@ -1,6 +1,7 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureLibrary
 
-extension [DetailMetaMetadataRow] {
+extension [DetailMetadataRow] {
     func value(for label: String) -> String? {
         first { $0.label == label }?.value
     }

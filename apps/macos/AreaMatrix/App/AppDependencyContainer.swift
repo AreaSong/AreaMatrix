@@ -1,4 +1,5 @@
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureIngestion
 import Foundation
 
 /// Application composition root for feature dependencies.
@@ -83,57 +84,72 @@ struct AppDependencyContainer {
     let platform: Platform
     let feature: AppFeatureDependencyContainer
 
-    static let live = AppDependencyContainer(
-        onboarding: Onboarding(
-            pathValidator: AppCoreServices.repositoryPathValidator,
-            initializedPathValidator: AppCoreServices.initializedRepositoryPathValidator,
-            repositoryInitializer: AppCoreServices.repositoryInitializer,
-            emptyRepositoryOpener: AppCoreServices.emptyRepositoryOpener,
-            importProgressImporter: AppCoreServices.importProgressImporter,
-            importResultChangeLister: AppCoreServices.changeLogLister,
-            startupRecoverer: AppCoreServices.startupRecoverer,
-            externalChangesSyncer: AppCoreServices.externalChangesSyncer,
-            repositoryWriteCoordinator: AppCoreServices.repositoryWriteCoordinator,
-            scanSessionReader: AppCoreServices.scanSessionReader,
-            diagnosticsCollector: AppCoreServices.diagnosticsCollector,
-            errorMapper: AppCoreServices.errorMapper,
+    static func live(coreServices: AppCoreServices) -> Self {
+        Self(
+            onboarding: makeOnboarding(coreServices: coreServices),
+            mainList: makeMainList(coreServices: coreServices),
+            platform: makePlatform(),
+            feature: .live(coreServices: coreServices)
+        )
+    }
+
+    private static func makeOnboarding(coreServices: AppCoreServices) -> Onboarding {
+        Onboarding(
+            pathValidator: coreServices.repositoryPathValidator,
+            initializedPathValidator: coreServices.initializedRepositoryPathValidator,
+            repositoryInitializer: coreServices.repositoryInitializer,
+            emptyRepositoryOpener: coreServices.emptyRepositoryOpener,
+            importProgressImporter: coreServices.importProgressImporter,
+            importResultChangeLister: coreServices.changeLogLister,
+            startupRecoverer: coreServices.startupRecoverer,
+            externalChangesSyncer: coreServices.externalChangesSyncer,
+            repositoryWriteCoordinator: coreServices.repositoryWriteCoordinator,
+            scanSessionReader: coreServices.scanSessionReader,
+            diagnosticsCollector: coreServices.diagnosticsCollector,
+            errorMapper: coreServices.errorMapper,
             actionLogger: AppLogger.shared,
             systemCapabilityChecker: AppPlatformServices.systemCapabilityChecker,
             importProgressControlState: ImportProgressControlState()
-        ),
-        mainList: MainList(
-            treeLister: AppCoreServices.treeLister,
-            savedSearchStore: AppCoreServices.savedSearchStore,
-            fileLister: AppCoreServices.fileLister,
-            fileDetailer: AppCoreServices.fileDetailer,
-            missingFileRecoverer: AppCoreServices.missingFileRecoverer,
-            searchQuerying: AppCoreServices.searchQuerying,
-            semanticSearching: AppCoreServices.semanticSearching,
-            semanticFallbackReader: AppCoreServices.semanticFallbackReader,
-            searchFiltering: AppCoreServices.searchFiltering,
-            commandIndexer: AppCoreServices.commandIndexer,
-            fileRenamer: AppCoreServices.fileRenamer,
-            fileDeleter: AppCoreServices.fileDeleter,
-            fileCategoryMover: AppCoreServices.fileCategoryMover,
-            categoryPredictor: AppCoreServices.categoryPredictor,
-            batchDeleter: AppCoreServices.batchDeleter,
-            batchCategoryChanger: AppCoreServices.batchCategoryChanger,
-            batchRenamer: AppCoreServices.batchRenamer,
-            syncConflictDetector: AppCoreServices.syncConflictDetector,
-            iCloudConflictResolver: AppCoreServices.iCloudConflictResolver,
-            tagStore: AppCoreServices.tagStore,
-            aiSettingsLoader: AppCoreServices.aiSettingsLoader,
-            aiTagSuggestionStore: AppCoreServices.aiTagSuggestionStore,
-            aiPrivacyRules: AppCoreServices.aiPrivacyRules,
-            undoActionStore: AppCoreServices.undoActionStore,
-            redoActionStore: AppCoreServices.redoActionStore,
-            changeLogLister: AppCoreServices.changeLogLister,
-            externalChangesSyncer: AppCoreServices.externalChangesSyncer,
-            noteStore: AppCoreServices.noteStore,
-            errorMapper: AppCoreServices.errorMapper,
-            diagnosticsCollector: AppCoreServices.diagnosticsCollector
-        ),
-        platform: Platform(
+        )
+    }
+
+    private static func makeMainList(coreServices: AppCoreServices) -> MainList {
+        MainList(
+            treeLister: coreServices.treeLister,
+            savedSearchStore: coreServices.savedSearchStore,
+            fileLister: coreServices.fileLister,
+            fileDetailer: coreServices.fileDetailer,
+            missingFileRecoverer: coreServices.missingFileRecoverer,
+            searchQuerying: coreServices.searchQuerying,
+            semanticSearching: coreServices.semanticSearching,
+            semanticFallbackReader: coreServices.semanticFallbackReader,
+            searchFiltering: coreServices.searchFiltering,
+            commandIndexer: coreServices.commandIndexer,
+            fileRenamer: coreServices.fileRenamer,
+            fileDeleter: coreServices.fileDeleter,
+            fileCategoryMover: coreServices.fileCategoryMover,
+            categoryPredictor: coreServices.categoryPredictor,
+            batchDeleter: coreServices.batchDeleter,
+            batchCategoryChanger: coreServices.batchCategoryChanger,
+            batchRenamer: coreServices.batchRenamer,
+            syncConflictDetector: coreServices.syncConflictDetector,
+            iCloudConflictResolver: coreServices.iCloudConflictResolver,
+            tagStore: coreServices.tagStore,
+            aiSettingsLoader: coreServices.aiSettingsLoader,
+            aiTagSuggestionStore: coreServices.aiTagSuggestionStore,
+            aiPrivacyRules: coreServices.aiPrivacyRules,
+            undoActionStore: coreServices.undoActionStore,
+            redoActionStore: coreServices.redoActionStore,
+            changeLogLister: coreServices.changeLogLister,
+            externalChangesSyncer: coreServices.externalChangesSyncer,
+            noteStore: coreServices.noteStore,
+            errorMapper: coreServices.errorMapper,
+            diagnosticsCollector: coreServices.diagnosticsCollector
+        )
+    }
+
+    private static func makePlatform() -> Platform {
+        Platform(
             settingsReader: AppPlatformServices.settingsReader,
             settingsWriter: AppPlatformServices.settingsWriter,
             existingRepositoryMetadataReader: AppPlatformServices.existingRepositoryMetadataReader,
@@ -151,7 +167,6 @@ struct AppDependencyContainer {
             windowCloser: AppPlatformServices.windowCloser,
             interactionFeedback: AppPlatformServices.interactionFeedback,
             inFlightFileChangeTracker: InFlightFileChangeTracker.shared
-        ),
-        feature: .live
-    )
+        )
+    }
 }

@@ -29,7 +29,7 @@
 | 变更层 | 当前执行内容 |
 |---|---|
 | developer tools | Python developer-tool regression suite |
-| Rust Core | `validation` lane single-flight lock 内执行 `cargo test --workspace` |
+| Rust Core | `validation` lane single-flight lock 内执行 `cargo test --locked --workspace` |
 | macOS client | localization contract + 复用持久 DerivedData 的 `./dev test macos` |
 | iOS client | `swift build --package-path apps/ios`，不误跑 macOS XCTest |
 | docs / governance | `./dev check docs` + `./dev check governance` |
@@ -46,8 +46,8 @@ changed-path 选择当成 release 或 merge evidence。
 ```bash
 cd core
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features --workspace
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-features --workspace
 ```
 
 Core 测试位于：
@@ -140,7 +140,7 @@ Core 专项至少覆盖：subscriber 单次安装、配置更新、source redact
 - 独立 Diagnostics Tab、三种持久化模式与 disabled、租约、en / zh-Hans、Trace Console，以及日志失败不改变
   import FS/DB/用户文件结果。
 
-功能门禁使用 `./dev test macos`；Core 观测测试随 `cargo test --all-features --workspace` 执行。性能门禁显式运行：
+功能门禁使用 `./dev test macos`；Core 观测测试随 `cargo test --locked --all-features --workspace` 执行。性能门禁显式运行：
 
 ```bash
 ./dev test macos --only-testing AreaMatrixTests/ObservabilityPerformanceTests
@@ -239,8 +239,8 @@ Core CI 使用：
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features --workspace
+cargo clippy --locked --all-targets --all-features -- -D warnings
+cargo test --locked --all-features --workspace
 cargo llvm-cov --workspace --lcov --output-path lcov.info --fail-under-lines 70
 ```
 

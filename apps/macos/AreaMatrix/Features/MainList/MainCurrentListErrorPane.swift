@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import SwiftUI
 
 struct MainListErrorRecoveryActions {
@@ -81,7 +82,7 @@ struct MainExternalSyncErrorBanner: View {
                     .accessibilityIdentifier("external-sync-open-repair")
             }
             Button(L10n.string("Collect Diagnostics...")) {
-                fileListModel.requestCurrentListDiagnostics()
+                fileListModel.currentListDiagnostics.requestCollection()
             }
             .disabled(isCollectingDiagnostics)
             .accessibilityIdentifier("external-sync-collect-diagnostics")
@@ -98,7 +99,7 @@ struct MainExternalSyncErrorBanner: View {
     }
 
     private var isCollectingDiagnostics: Bool {
-        if case .collecting = fileListModel.diagnosticsState { return true }
+        if case .collecting = fileListModel.currentListDiagnostics.state { return true }
         return false
     }
 
@@ -115,7 +116,7 @@ struct MainExternalSyncErrorBanner: View {
 
     @ViewBuilder
     private var diagnosticsStatus: some View {
-        switch fileListModel.diagnosticsState {
+        switch fileListModel.currentListDiagnostics.state {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
@@ -159,7 +160,7 @@ struct MainCurrentListErrorPane: View {
         HStack {
             Button(L10n.string("Retry"), action: retry)
             Button(L10n.string("Collect Diagnostics...")) {
-                fileListModel.requestCurrentListDiagnostics()
+                fileListModel.currentListDiagnostics.requestCollection()
             }
             .disabled(isCollectingDiagnostics)
             DisclosureGroup(L10n.string("Technical Details")) {
@@ -171,7 +172,7 @@ struct MainCurrentListErrorPane: View {
     }
 
     private var isCollectingDiagnostics: Bool {
-        if case .collecting = fileListModel.diagnosticsState {
+        if case .collecting = fileListModel.currentListDiagnostics.state {
             return true
         }
         return false
@@ -179,7 +180,7 @@ struct MainCurrentListErrorPane: View {
 
     @ViewBuilder
     private var diagnosticsStatus: some View {
-        switch fileListModel.diagnosticsState {
+        switch fileListModel.currentListDiagnostics.state {
         case .idle, .confirmingPrivacy:
             EmptyView()
         case .collecting:
@@ -215,27 +216,5 @@ struct MainCurrentListErrorPane: View {
         } else {
             recoveryActions.retryFallback()
         }
-    }
-}
-
-extension MainRepositoryContentView {
-    @ViewBuilder
-    var externalSyncErrorBanner: some View {
-        if let error = fileListModel.externalSyncErrorMapping {
-            MainExternalSyncErrorBanner(
-                error: error,
-                fileListModel: fileListModel,
-                recoveryActions: mainListErrorRecoveryActions
-            )
-        }
-    }
-
-    func currentListErrorPane(_ error: CoreErrorMappingSnapshot) -> some View {
-        MainCurrentListErrorPane(
-            error: error,
-            state: state,
-            fileListModel: fileListModel,
-            recoveryActions: mainListErrorRecoveryActions
-        )
     }
 }

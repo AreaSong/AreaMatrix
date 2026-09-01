@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import shutil
 import tempfile
 import unittest
 from datetime import datetime
@@ -399,6 +400,51 @@ class ReleaseToolsTest(unittest.TestCase):
 
         self.assertEqual(result.status, "PASS")
         self.assertIn("AC_PASSWORD", result.detail)
+
+    def test_notary_profile_rejects_shell_metacharacters_before_command(self) -> None:
+        with (
+            patch("scripts.dev_tools.release.require_command") as require_command,
+            patch("scripts.dev_tools.release._run_capture") as run_capture,
+        ):
+            result = release.check_notary_profile("AC_PASSWORD; touch /tmp/pwned")
+
+        self.assertEqual(result.status, "BLOCKED")
+        self.assertIn("shell metacharacters", result.detail)
+        require_command.assert_not_called()
+        run_capture.assert_not_called()
+
+    def test_install_does_not_delete_preexisting_pid_siblings(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            applications = root / "Applications"
+            applications.mkdir()
+            source = root / "readiness" / "AreaMatrix.app"
+            (source / "Contents").mkdir(parents=True)
+            (source / "Contents/marker").write_text("new", encoding="utf-8")
+            old_temp = applications / f".AreaMatrix.app.readiness-{__import__('os').getpid()}"
+            old_backup = applications / f".AreaMatrix.app.previous-{__import__('os').getpid()}"
+            old_temp.mkdir()
+            old_backup.mkdir()
+            (old_temp / "sentinel").write_text("keep-temp", encoding="utf-8")
+            (old_backup / "sentinel").write_text("keep-backup", encoding="utf-8")
+
+            def fake_capture(argv: list[object]):
+                shutil.copytree(Path(argv[1]), Path(argv[2]))
+                return type("Completed", (), {"returncode": 0, "stdout": ""})()
+
+            with (
+                patch("scripts.dev_tools.release.require_command"),
+                patch("scripts.dev_tools.release._quit_area_matrix_for_install"),
+                patch("scripts.dev_tools.release._run_capture", side_effect=fake_capture),
+            ):
+                installed = release._install_app_bundle(source, applications)
+
+            self.assertEqual(installed, applications / "AreaMatrix.app")
+            self.assertEqual((installed / "Contents/marker").read_text(encoding="utf-8"), "new")
+            self.assertEqual((old_temp / "sentinel").read_text(encoding="utf-8"), "keep-temp")
+            self.assertEqual((old_backup / "sentinel").read_text(encoding="utf-8"), "keep-backup")
+            self.assertEqual(list(applications.glob(".AreaMatrix.app.readiness-*")), [old_temp])
+            self.assertEqual(list(applications.glob(".AreaMatrix.app.previous-*")), [old_backup])
 
     def test_release_preflight_returns_blocked_when_any_check_fails(self) -> None:
         checks = [
@@ -1496,6 +1542,15 @@ class ReleaseToolsTest(unittest.TestCase):
         self.assertIn("Developer ID Application identity", yaml_block)
         self.assertIn("notarytool keychain profile", yaml_block)
         self.assertIn("formal v0.1.0 release readiness", yaml_block)
+
+    def test_release_workflow_keeps_dispatch_profile_out_of_shell_interpolation(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        workflow = (root / ".github/workflows/release-evidence.yml").read_text(encoding="utf-8")
+
+        self.assertIn("NOTARY_PROFILE: ${{ inputs.notary_profile }}", workflow)
+        self.assertIn('case "$NOTARY_PROFILE" in', workflow)
+        self.assertIn('--notary-profile "$NOTARY_PROFILE"', workflow)
+        self.assertNotIn('--notary-profile "${{ inputs.notary_profile }}"', workflow)
 
     def test_release_preflight_result_pass_has_no_blockers(self) -> None:
         checks = [

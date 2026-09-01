@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureIngestion
 
 struct NoopWelcomeHelpOpener: WelcomeHelpOpening {
     func openWelcomeHelp() throws {}

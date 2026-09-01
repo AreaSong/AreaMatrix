@@ -1,5 +1,7 @@
 #[path = "support/ai_tags_suggestion_common.rs"]
 mod common;
+#[path = "support/ai_persisted_privacy.rs"]
+mod persisted_privacy;
 
 use std::{fs, path::Path};
 
@@ -13,6 +15,7 @@ use area_matrix_core::{
     RepoInitOptions, StorageMode,
 };
 use common::{AiTagsRuntime, RuntimeSuggestion};
+use persisted_privacy::install_blocking_rule;
 use pretty_assertions::assert_eq;
 use rusqlite::{params, Connection};
 
@@ -270,10 +273,14 @@ fn ai_tags_suggestion_privacy_skip_does_not_invoke_runtime() {
     let file_id = import_fixture(repo.path(), "private-note.txt", "private content");
     enable_local_tags(repo.path());
     let runtime = AiTagsRuntime::probe();
-    let mut blocked = request(file_id);
-    blocked.privacy_policy_ref = Some("block-private-folder".to_owned());
+    install_blocking_rule(
+        repo.path(),
+        "rule:block-private-folder",
+        area_matrix_core::AiPrivacyRuleKind::Keyword,
+        "private-note",
+    );
 
-    let report = suggest_tags_with_ai(repo_path, blocked).expect("privacy skip report");
+    let report = suggest_tags_with_ai(repo_path, request(file_id)).expect("privacy skip report");
 
     assert_eq!(report.status, AiTagSuggestionReportStatus::Skipped);
     assert_eq!(

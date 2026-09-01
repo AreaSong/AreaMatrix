@@ -1,3 +1,4 @@
+import AreaMatrixFeatureIngestion
 import Foundation
 
 /// Read-only file facts needed by import previews and conflict checks.
@@ -16,18 +17,6 @@ enum ImportEntrySource: Equatable {
     case dropZone
     case dockOpenFile
     case importConflictBatch(CommandPaletteLinkedPageRoute?)
-}
-
-enum ImportEntryDestination: Equatable {
-    case autoClassify
-    case category(String)
-    case repositoryRoot
-}
-
-enum ImportEntryKind: Equatable {
-    case singleFile
-    case multipleItems(Int)
-    case folder
 }
 
 struct ImportEntryRequest: Equatable, Identifiable {
@@ -120,21 +109,6 @@ struct ImportEntryRequest: Equatable, Identifiable {
 }
 
 extension ImportEntryKind {
-    static func resolved(
-        for urls: [URL],
-        isDirectory: (URL) -> Bool
-    ) -> ImportEntryKind {
-        if urls.contains(where: isDirectory) {
-            return .folder
-        }
-
-        if urls.count == 1 {
-            return .singleFile
-        }
-
-        return .multipleItems(urls.count)
-    }
-
     var dropHoverTitle: String {
         switch self {
         case .folder:

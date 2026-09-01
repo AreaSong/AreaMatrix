@@ -41,14 +41,17 @@ public sealed partial class MissingFileRecoveryDialog : UserControl
         }
     }
 
-    public async Task OpenRouteAsync(MissingFileRecoveryRoute route)
+    public async Task OpenRouteAsync(
+        MissingFileRecoveryRoute route,
+        CancellationToken cancellationToken = default)
     {
         if (ViewModel is null)
         {
             return;
         }
 
-        await ViewModel.OpenAsync(route.RepoPath, route.FileId);
+        await ViewModel.OpenAsync(route.RepoPath, route.FileId, cancellationToken);
+        cancellationToken.ThrowIfCancellationRequested();
         RefreshState();
     }
 

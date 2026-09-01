@@ -88,6 +88,36 @@ fallback；该结果不能替代正式分发的 clean-Mac 首启证据。
 
 性能相关改动应在 PR/评审记录中附显式 benchmark 输出，而不是假设普通 CI 已执行性能门禁。
 
+## 开发反馈基线
+
+本地开发反馈使用固定 DerivedData 和已命中的 CoreSDK 测量。参考环境为 Mac16,8、macOS 26.4.1、
+Xcode 26.4.1；样本应在相同环境和工作树条件下比较。
+
+| 路径 | 样本 | P50 | P95 | 证据边界 |
+|---|---:|---:|---:|---|
+| 本地 Swift Build | 20 / 20 | 1.857 s | 1.924 s | `macos-build-for-testing-warm`，固定 DerivedData、CoreSDK 命中且不启动 Cargo |
+| 本地 XCTest | 20 / 20 | 2.199 s | 2.220 s | `macos-architecture-test-without-building-warm`，复用同一测试构建产物 |
+| Xcode Canvas 恢复 | 20 / 20 | 4.630 s | 5.942 s | `xcode-canvas-ui-catalog-live-refresh`，刷新后 UI Catalog 三个 Preview 可交互 |
+| 远端 CI | 0 / 20 | 未建立 | 未建立 | 尚无同 runner、event 和 cache policy 的可读取成功样本 |
+
+`./dev metrics build --json` 另外汇总 CoreSDK cache hit/miss 和 Cargo lane lock wait。构建、测试和 Canvas
+基线必须分别记录，不能用 command 启动耗时替代 Canvas 实际可交互时间。
+
+真实反馈样本使用
+`./dev metrics feedback --record <canvas|build|test|ci> --cohort <stable-cohort> --duration <seconds> --note <context>`
+记录，`canvas`、`build`、`test`、`ci` 先分路径，再按同一命令、缓存状态、runner/event policy 的 cohort
+分别汇总；只有单个非 legacy cohort 至少有 20 个成功样本时，`baseline_ready` 才为 true。缺少 cohort 的旧记录
+归入 `legacy-mixed`，无论数量多少都不能成为正式基线。Canvas duration 必须来自 Xcode Preview 实际恢复可交互的可读观测；
+当前 UI Catalog cohort 已满足 20 个成功样本，每个样本都确认 Preview 条目存在且没有 `Canvas paused` 状态。
+当前 Build 与定向 Test 已分别达到 20 个同质成功样本，构成本机 warm 反馈基线；`legacy-mixed` 中原有的
+warm/clean、定向/全量混合记录仍只保留为历史观测，不能参与正式基线。全量测试与 CI 仍必须各自建立
+独立 cohort，比较时不得混用。
+
+CI workflow 已保留 CoreSDK、Cargo lane 和 macOS test 的标准化 duration 输出，并把 macOS build + 分层测试
+记录为 `github-macos14-xcode-build-and-layered-tests` cohort，上传 `macos-ci-feedback` artifact。仓库内尚无至少
+20 次同类成功远端运行的可读取样本，因此没有建立远端 CI P50/P95。首次 CI 基线必须来自同一 runner image、
+同类 event 和相同 cache policy 的真实成功 run；本地耗时不能冒充 CI 基线。
+
 ## 基线纪律
 
 - 使用相同硬件、OS、power mode 和构建配置比较结果。

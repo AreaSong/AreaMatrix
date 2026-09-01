@@ -401,7 +401,7 @@ fn assert_existing_test_layers_are_present() {
         "share_extension_import_failure_recovery_empty_deferred_state_has_no_core_side_effects",
         "share_extension_import_failure_recovery_invalid_inputs_are_explicit_and_non_mutating",
         "share_extension_import_failure_recovery_permission_denied_maps_and_keeps_payload",
-        "share_extension_import_failure_recovery_io_error_from_staging_root_has_no_half_product",
+        "share_extension_import_failure_recovery_staging_path_conflict_has_no_half_product",
         "share_extension_import_failure_recovery_db_error_rolls_back_and_can_retry",
         "share_extension_import_failure_recovery_error_mapping_is_structured_and_side_effect_free",
     ] {

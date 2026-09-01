@@ -1,17 +1,27 @@
+import AreaMatrixCoreBridgeContract
 import Foundation
 
-protocol CoreSearchQuerying: CoreSmartListRunning, Sendable {
-    func searchFiles(repoPath: String, request: SearchQueryRequestSnapshot) async throws -> SearchResultPageSnapshot
-}
+typealias CoreSearchQuerying = AreaMatrixCoreBridgeContract.CoreSearchQuerying
+typealias CoreSmartListRunning = AreaMatrixCoreBridgeContract.CoreSmartListRunning
+typealias SearchSortSnapshot = AreaMatrixCoreBridgeContract.SearchSortSnapshot
+typealias SearchIndexStatusSnapshot = AreaMatrixCoreBridgeContract.SearchIndexStatusSnapshot
+typealias SearchModeSnapshot = AreaMatrixCoreBridgeContract.SearchModeSnapshot
+typealias SearchQueryRequestSnapshot = AreaMatrixCoreBridgeContract.SearchQueryRequestSnapshot
+typealias SearchQueryPageContext = AreaMatrixCoreBridgeContract.SearchQueryPageContext
+typealias SearchMatchSnapshot = AreaMatrixCoreBridgeContract.SearchMatchSnapshot
+typealias SearchFileResultSnapshot = AreaMatrixCoreBridgeContract.SearchFileResultSnapshot
+typealias SearchQueryDiagnosticSnapshot = AreaMatrixCoreBridgeContract.SearchQueryDiagnosticSnapshot
+typealias SearchResultPageSnapshot = AreaMatrixCoreBridgeContract.SearchResultPageSnapshot
+typealias SemanticSearchResultPageSnapshot = AreaMatrixCoreBridgeContract.SemanticSearchResultPageSnapshot
+typealias SemanticSearchMatchSnapshot = AreaMatrixCoreBridgeContract.SemanticSearchMatchSnapshot
+typealias SemanticNormalSearchMatchSnapshot = AreaMatrixCoreBridgeContract.SemanticNormalSearchMatchSnapshot
+typealias SemanticIndexBuildReportSnapshot = AreaMatrixCoreBridgeContract.SemanticIndexBuildReportSnapshot
+typealias SemanticIndexStatusSnapshot = AreaMatrixCoreBridgeContract.SemanticIndexStatusSnapshot
+typealias SemanticSearchRouteSnapshot = AreaMatrixCoreBridgeContract.SemanticSearchRouteSnapshot
+typealias SemanticSearchInputFieldSnapshot = AreaMatrixCoreBridgeContract.SemanticSearchInputFieldSnapshot
+typealias SemanticSearchFallbackReasonSnapshot = AreaMatrixCoreBridgeContract.SemanticSearchFallbackReasonSnapshot
 
-enum SearchScopeSnapshot: String, CaseIterable, Equatable, Identifiable {
-    case all
-    case current
-
-    var id: String {
-        rawValue
-    }
-
+extension SearchScopeSnapshot {
     var displayName: String {
         switch self {
         case .all:
@@ -31,16 +41,7 @@ enum SearchScopeSnapshot: String, CaseIterable, Equatable, Identifiable {
     }
 }
 
-enum SearchSortSnapshot: String, CaseIterable, Equatable, Identifiable {
-    case relevance
-    case newestImported
-    case newestModified
-    case nameAsc
-
-    var id: String {
-        rawValue
-    }
-
+extension SearchSortSnapshot {
     var displayName: String {
         switch self {
         case .relevance:
@@ -55,20 +56,7 @@ enum SearchSortSnapshot: String, CaseIterable, Equatable, Identifiable {
     }
 }
 
-enum SearchIndexStatusSnapshot: Equatable {
-    case ready
-    case indexing
-    case unavailable
-}
-
-enum SearchModeSnapshot: String, CaseIterable, Equatable, Identifiable {
-    case normal
-    case semantic
-
-    var id: String {
-        rawValue
-    }
-
+extension SearchModeSnapshot {
     var displayName: String {
         switch self {
         case .normal:
@@ -79,39 +67,7 @@ enum SearchModeSnapshot: String, CaseIterable, Equatable, Identifiable {
     }
 }
 
-struct SearchQueryRequestSnapshot: Equatable {
-    var query: String
-    var scope: SearchScopeSnapshot
-    var currentPath: String?
-    var category: String?
-    var filters: SearchFilterStateSnapshot
-    var sort: SearchSortSnapshot
-    var limit: Int64
-    var offset: Int64
-    var mode: SearchModeSnapshot
-
-    init(
-        query: String,
-        scope: SearchScopeSnapshot,
-        currentPath: String?,
-        category: String?,
-        filters: SearchFilterStateSnapshot,
-        sort: SearchSortSnapshot,
-        limit: Int64,
-        offset: Int64,
-        mode: SearchModeSnapshot = .normal
-    ) {
-        self.query = query
-        self.scope = scope
-        self.currentPath = currentPath
-        self.category = category
-        self.filters = filters
-        self.sort = sort
-        self.limit = limit
-        self.offset = offset
-        self.mode = mode
-    }
-
+extension SearchQueryRequestSnapshot {
     static func pageFeature(
         query: String,
         scope: SearchScopeSnapshot,
@@ -120,15 +76,15 @@ struct SearchQueryRequestSnapshot: Equatable {
         filters: SearchFilterStateSnapshot,
         mode: SearchModeSnapshot = .normal
     ) -> SearchQueryRequestSnapshot {
-        SearchQueryRequestSnapshot(
+        SearchQueryRequestSnapshot.pageFeature(
             query: query,
             scope: scope,
-            currentPath: scope == .current ? sidebarRow.pathFilterPrefix : nil,
-            category: scope == .current ? sidebarRow.categoryForFileList : nil,
-            filters: filters,
             sort: sort,
-            limit: 50,
-            offset: 0,
+            context: SearchQueryPageContext(
+                currentPath: sidebarRow.pathFilterPrefix,
+                category: sidebarRow.categoryForFileList,
+                filters: filters
+            ),
             mode: mode
         )
     }
@@ -147,47 +103,7 @@ struct SearchQueryRequestSnapshot: Equatable {
     }
 }
 
-struct SearchMatchSnapshot: Equatable {
-    var fieldDisplayName: String
-    var kindDisplayName: String
-    var snippet: String
-}
-
-struct SearchFileResultSnapshot: Equatable, Identifiable {
-    var file: FileEntrySnapshot
-    var score: Float
-    var matches: [SearchMatchSnapshot]
-    var noteSnippet: String?
-
-    var id: Int64 {
-        file.id
-    }
-}
-
-struct SearchQueryDiagnosticSnapshot: Equatable {
-    var kindDisplayName: String
-    var severityDisplayName: String
-    var message: String
-    var token: String?
-    var start: Int64?
-    var end: Int64?
-    var suggestion: String?
-    private var isErrorSeverity: Bool
-
-    init(
-        kindDisplayName: String = "unknown", severityDisplayName: String, message: String, token: String? = nil,
-        start: Int64? = nil, end: Int64? = nil, suggestion: String? = nil, isErrorSeverity: Bool = false
-    ) {
-        self.kindDisplayName = kindDisplayName; self.severityDisplayName = severityDisplayName
-        self.message = message; self.token = token; self.start = start
-        self.end = end; self.suggestion = suggestion
-        self.isErrorSeverity = isErrorSeverity
-    }
-
-    var isError: Bool {
-        isErrorSeverity
-    }
-
+extension SearchQueryDiagnosticSnapshot {
     var problemAccessibilityHint: String {
         [
             token.map { L10n.format("search.diagnostic.token", $0) },
@@ -199,19 +115,6 @@ struct SearchQueryDiagnosticSnapshot: Equatable {
         ]
         .compactMap { $0 }
         .joined(separator: ". ")
-    }
-}
-
-struct SearchResultPageSnapshot: Equatable {
-    var query: String
-    var totalCount: Int64
-    var results: [SearchFileResultSnapshot]
-    var diagnostics: [SearchQueryDiagnosticSnapshot]
-    var indexStatus: SearchIndexStatusSnapshot
-    var semanticPage: SemanticSearchResultPageSnapshot?
-
-    var hasDiagnosticError: Bool {
-        diagnostics.contains(where: \.isError)
     }
 }
 
@@ -285,28 +188,34 @@ extension SearchSort {
 
 extension SearchFileResultSnapshot {
     init(coreResult: SearchFileResult, file: FileEntrySnapshot) {
-        self.file = file
-        score = coreResult.score
-        matches = coreResult.matches.map(SearchMatchSnapshot.init(coreMatch:))
-        noteSnippet = coreResult.noteSnippet
+        self.init(
+            file: file,
+            score: coreResult.score,
+            matches: coreResult.matches.map(SearchMatchSnapshot.init(coreMatch:)),
+            noteSnippet: coreResult.noteSnippet
+        )
     }
 }
 
 extension SearchMatchSnapshot {
     init(coreMatch: SearchMatch) {
-        fieldDisplayName = coreMatch.field.displayName
-        kindDisplayName = coreMatch.kind.displayName
-        snippet = coreMatch.snippet
+        self.init(
+            fieldDisplayName: coreMatch.field.displayName,
+            kindDisplayName: coreMatch.kind.displayName,
+            snippet: coreMatch.snippet
+        )
     }
 }
 
 extension SearchResultPageSnapshot {
     init(corePage: SearchResultPage, results: [SearchFileResultSnapshot]) {
-        query = corePage.query
-        totalCount = corePage.totalCount
-        self.results = results
-        diagnostics = corePage.diagnostics.map(SearchQueryDiagnosticSnapshot.init(coreDiagnostic:))
-        indexStatus = SearchIndexStatusSnapshot(coreStatus: corePage.indexStatus)
+        self.init(
+            query: corePage.query,
+            totalCount: corePage.totalCount,
+            results: results,
+            diagnostics: corePage.diagnostics.map(SearchQueryDiagnosticSnapshot.init(coreDiagnostic:)),
+            indexStatus: SearchIndexStatusSnapshot(coreStatus: corePage.indexStatus)
+        )
     }
 }
 

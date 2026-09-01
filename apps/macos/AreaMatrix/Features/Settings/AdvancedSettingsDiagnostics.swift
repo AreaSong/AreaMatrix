@@ -19,10 +19,6 @@ struct SettingsDiagnosticsGeneration {
     }
 }
 
-protocol CoreVersionReading: Sendable {
-    func coreVersion() async throws -> String
-}
-
 protocol AppVersionReading: Sendable {
     func appVersion() -> String
 }

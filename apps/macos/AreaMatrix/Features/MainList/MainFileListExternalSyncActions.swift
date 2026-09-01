@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import Foundation
 
 private struct MainSelectedExternalRemovalRefresh {
@@ -238,7 +239,9 @@ extension MainFileListModel {
         selectedFileDetail = refresh.snapshot
         selectedFileNoteWriteBlock = refresh.snapshot.flatMap { noteWriteBlock(for: $0) }
         detailErrorMapping = CoreErrorMappingSnapshot.missingFromExternalChange(fileID: selectedFileID)
-        isDetailLoading = false; detailTagEditorState = .notLoaded; detailTagSuggestionState = .idle
+        isDetailLoading = false
+        detailTagModel.editorState = .notLoaded
+        detailTagModel.suggestionState = .idle
         statusBanner = .removedSelectedFile(fileID: selectedFileID)
         detailExternalCreateSyncState = .synced(fileID: selectedFileID, event: event, refresh.result)
         await refreshChangeLogForSyncedFile(selectedFileID)
@@ -357,11 +360,11 @@ extension MainFileListModel {
     }
 
     private func reloadFilesForExternalSync() async throws -> [FileEntrySnapshot]? {
-        guard !searchState.isActive else { return nil }
+        guard !searchModel.searchState.isActive else { return nil }
         loadGeneration += 1
         let generation = loadGeneration
         let category = currentCategory
-        let reloadLimit = max(Self.fileListPageSize, nextFilePageOffset)
+        let reloadLimit = MainListPagination(initialCount: Int(nextFilePageOffset)).reloadLimit()
         var filter = FileFilterSnapshot.currentCategory(category)
         filter.limit = reloadLimit
         filter.offset = 0
@@ -373,7 +376,9 @@ extension MainFileListModel {
             )
             guard canApplyExternalListReload(generation: generation, category: category) else { return nil }
             files = loadedFiles
-            nextFilePageOffset = Int64(loadedFiles.count); hasMore = loadedFiles.count == Int(reloadLimit)
+            var pagination = MainListPagination(initialCount: 0)
+            pagination.replace(itemCount: loadedFiles.count, requestedLimit: reloadLimit)
+            nextFilePageOffset = pagination.nextOffset; hasMore = pagination.hasMore
             isLoadingMore = false
             loadMoreErrorMapping = nil
             errorMapping = nil
@@ -390,7 +395,7 @@ extension MainFileListModel {
     }
 
     private func canApplyExternalListReload(generation: Int, category: String?) -> Bool {
-        generation == loadGeneration && currentCategory == category && !searchState.isActive
+        generation == loadGeneration && currentCategory == category && !searchModel.searchState.isActive
     }
 
     private func canApplyExternalSelectionUpdate(fileID: Int64, generation: Int) -> Bool {

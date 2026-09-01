@@ -29,9 +29,9 @@ extension MainRepositoryContentView {
             onRefreshSelection: { Task { await fileListModel.retrySelectedFileDetail() } },
             onRefreshChangeLog: { Task { await fileListModel.loadSelectedFileChangeLog() } },
             onRefreshCurrentList: { Task { await fileListModel.retryCurrentCategory() } },
-            onOpenHistory: { fileActionRoutingState.undoHistoryRequest = $0 },
-            undoState: $fileActionRoutingState.batchTagUndoState,
-            actionLogRefreshFailure: $fileActionRoutingState.actionLogRefreshFailure
+            onOpenHistory: { fileActionCoordinator.routingState.undoHistoryRequest = $0 },
+            undoState: $fileActionCoordinator.routingState.batchTagUndoState,
+            actionLogRefreshFailure: $fileActionCoordinator.routingState.actionLogRefreshFailure
         )
     }
 
@@ -43,7 +43,7 @@ extension MainRepositoryContentView {
             undoStore: fileListModel.undoActionStore,
             redoStore: fileListModel.redoActionStore,
             errorMapper: fileListModel.errorMapper,
-            onClose: { fileActionRoutingState.undoHistoryRequest = nil },
+            onClose: { fileActionCoordinator.routingState.undoHistoryRequest = nil },
             onUndoCompleted: handleUndoHistoryResult,
             onRedoCompleted: handleRedoHistoryResult
         )
@@ -58,41 +58,41 @@ extension MainRepositoryContentView {
     }
 
     func updateBatchTagUndoState(_ state: BatchTagUndoState) {
-        fileActionRoutingState.batchTagUndoState = state
-        fileActionRoutingState.actionLogRefreshFailure = nil
+        fileActionCoordinator.routingState.batchTagUndoState = state
+        fileActionCoordinator.routingState.actionLogRefreshFailure = nil
     }
 
     @MainActor
     func refreshLatestUndoToast() {
         Task {
-            fileActionRoutingState.batchTagUndoState = await BatchTagUndoAction.refreshLatestToastState(
+            fileActionCoordinator.routingState.batchTagUndoState = await BatchTagUndoAction.refreshLatestToastState(
                 repoPath: opening.config.repoPath,
                 undoStore: fileListModel.undoActionStore,
                 errorMapper: fileListModel.errorMapper
             )
-            fileActionRoutingState.actionLogRefreshFailure = nil
+            fileActionCoordinator.routingState.actionLogRefreshFailure = nil
         }
     }
 
     func openUndoHistoryFromToolbar() {
-        fileActionRoutingState.undoHistoryRequest = UndoToastHistoryRequest(
+        fileActionCoordinator.routingState.undoHistoryRequest = UndoToastHistoryRequest(
             source: .viewHistory,
-            state: fileActionRoutingState.batchTagUndoState,
-            actionLogRefreshFailure: fileActionRoutingState.actionLogRefreshFailure
+            state: fileActionCoordinator.routingState.batchTagUndoState,
+            actionLogRefreshFailure: fileActionCoordinator.routingState.actionLogRefreshFailure
         )
     }
 
     func openUndoHistoryFromMenu() {
-        fileActionRoutingState.undoHistoryRequest = UndoHistoryActionLog.menuRequest(
-            state: fileActionRoutingState.batchTagUndoState,
-            failure: fileActionRoutingState.actionLogRefreshFailure
+        fileActionCoordinator.routingState.undoHistoryRequest = UndoHistoryActionLog.menuRequest(
+            state: fileActionCoordinator.routingState.batchTagUndoState,
+            failure: fileActionCoordinator.routingState.actionLogRefreshFailure
         )
     }
 
     func openUndoHistoryFromShortcut() {
-        fileActionRoutingState.undoHistoryRequest = UndoHistoryActionLog.shortcutRequest(
-            state: fileActionRoutingState.batchTagUndoState,
-            failure: fileActionRoutingState.actionLogRefreshFailure
+        fileActionCoordinator.routingState.undoHistoryRequest = UndoHistoryActionLog.shortcutRequest(
+            state: fileActionCoordinator.routingState.batchTagUndoState,
+            failure: fileActionCoordinator.routingState.actionLogRefreshFailure
         )
     }
 
@@ -103,7 +103,7 @@ extension MainRepositoryContentView {
     @MainActor
     func executeLatestRedoAction(entryPoint: RedoLatestEntryPoint) async {
         if entryPoint == .commandPalette {
-            fileListModel.commandPaletteState = .loading(commandPaletteContext())
+            commandPaletteModel.state = .loading(commandPaletteContext())
         }
         let loaded = await UndoHistoryActionLog.load(
             repoPath: opening.config.repoPath,
@@ -147,17 +147,17 @@ extension MainRepositoryContentView {
         let mapping = mapping ?? RedoLatestEntryPoint.noRedoMapping
         switch entryPoint {
         case .commandPalette:
-            fileListModel.commandPaletteState = .failed(
+            commandPaletteModel.state = .failed(
                 commandPaletteContext(),
-                fileListModel.commandPaletteState.snapshot ?? .commandRegistryRecovery(
-                    query: fileListModel.commandPaletteQuery
+                commandPaletteModel.state.snapshot ?? .commandRegistryRecovery(
+                    query: commandPaletteModel.query
                 ),
                 mapping
             )
         case .keyboardShortcut:
-            fileActionRoutingState.actionLogRefreshFailure = mapping
-            fileActionRoutingState.undoHistoryRequest = UndoHistoryActionLog.redoShortcutRequest(
-                state: fileActionRoutingState.batchTagUndoState,
+            fileActionCoordinator.routingState.actionLogRefreshFailure = mapping
+            fileActionCoordinator.routingState.undoHistoryRequest = UndoHistoryActionLog.redoShortcutRequest(
+                state: fileActionCoordinator.routingState.batchTagUndoState,
                 failure: mapping
             )
         }

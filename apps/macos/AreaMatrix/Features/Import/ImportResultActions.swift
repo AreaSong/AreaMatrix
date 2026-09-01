@@ -14,10 +14,33 @@ extension OnboardingModel {
     func finishImportResult() {
         guard case let .importResult(state) = route else { return }
         if state.shouldClearInterruptedSessionOnDone {
-            Task {
-                await importBatchSessionStore.clearSession(repoPath: state.sourceOpening.config.repoPath)
+            Task { [weak self] in
+                guard let self else { return }
+                do {
+                    try await importBatchSessionStore.clearSession(repoPath: state.sourceOpening.config.repoPath)
+                } catch let error as ImportBatchSessionStoreError {
+                    await MainActor.run {
+                        guard case let .importResult(currentState) = self.route, currentState == state else { return }
+                        self.toastMessage = error.userMessage
+                    }
+                    return
+                } catch {
+                    await MainActor.run {
+                        guard case let .importResult(currentState) = self.route, currentState == state else { return }
+                        self.toastMessage = L10n.message("import.session.io")
+                    }
+                    return
+                }
+                await MainActor.run { self.completeImportResult(state) }
             }
+            return
         }
+        completeImportResult(state)
+    }
+
+    @MainActor
+    private func completeImportResult(_ state: ImportResultRouteState) {
+        guard case let .importResult(currentState) = route, currentState == state else { return }
         route = Self.mainRoute(for: state.sourceOpening)
         toastMessage = nil
         consumeQueuedDockImportIfPossible()

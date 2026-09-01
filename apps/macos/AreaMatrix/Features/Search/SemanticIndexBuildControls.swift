@@ -34,7 +34,7 @@ enum SemanticIndexBuildControlState: Equatable {
     }
 }
 
-extension MainFileListModel {
+extension SearchModel {
     func pauseSemanticIndexBuildForCurrentSearch() async {
         guard let request = searchState.request, request.mode == .semantic else { return }
         guard semanticIndexBuildState.isBuilding else { return }

@@ -2,6 +2,21 @@ namespace AreaMatrix.Linux.Tests.ChooseRepository;
 
 internal static class TestAssert
 {
+    public static async Task ThrowsAsync<TException>(Func<Task> action, string label)
+        where TException : Exception
+    {
+        try
+        {
+            await action();
+        }
+        catch (TException)
+        {
+            return;
+        }
+
+        throw new InvalidOperationException($"{label}: expected {typeof(TException).Name}.");
+    }
+
     public static void Equal<T>(T expected, T actual, string label)
     {
         if (!EqualityComparer<T>.Default.Equals(expected, actual))

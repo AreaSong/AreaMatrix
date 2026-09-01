@@ -8,9 +8,13 @@ struct AreaMatrixTimelineDiorama: View {
     @State private var typedMarkdownLines: [AreaMatrixTypedMarkdownLine] = []
     @State private var timerTask: Task<Void, Never>?
     @State private var typingTask: Task<Void, Never>?
+    @State private var animationStartTask: Task<Void, Never>?
+    @State private var animationGeneration = 0
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.areaMatrixSceneVisibility) private var sceneVisibility
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     private var markdownTypewriterLines: [(String, Color)] {
         [
@@ -36,40 +40,73 @@ struct AreaMatrixTimelineDiorama: View {
                 stopAnimations()
             }
         }
+        .onChange(of: reduceMotion) { _, _ in
+            if sceneVisibility.isVisible {
+                restartAnimations()
+            } else {
+                stopAnimations()
+            }
+        }
+        .onDisappear(perform: stopAnimations)
     }
 
     private func restartAnimations() {
+        stopAnimations()
         showNewName = false
         typedMarkdownLines = []
         isSpinning = false
         particleFlying = false
-        startCycle()
-        startTyping()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        guard sceneVisibility.isVisible else { return }
+        guard !reduceMotion else {
+            var transaction = Transaction()
+            transaction.animation = nil
+            withTransaction(transaction) {
+                showNewName = true
+                typedMarkdownLines = markdownTypewriterLines.map {
+                    AreaMatrixTypedMarkdownLine(text: $0.0, color: $0.1)
+                }
+            }
+            return
+        }
+        let generation = animationGeneration
+        startCycle(generation: generation)
+        startTyping(generation: generation)
+        animationStartTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(100))
+            guard !Task.isCancelled, isCurrent(generation) else { return }
             withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) { isSpinning = true }
             withAnimation(.easeInOut(duration: 2).repeatForever(autoreverses: false)) { particleFlying = true }
         }
     }
 
     private func stopAnimations() {
+        animationGeneration += 1
+        animationStartTask?.cancel()
         timerTask?.cancel()
         typingTask?.cancel()
-        isSpinning = false
-        particleFlying = false
+        animationStartTask = nil
+        timerTask = nil
+        typingTask = nil
+        var transaction = Transaction()
+        transaction.animation = nil
+        withTransaction(transaction) {
+            isSpinning = false
+            particleFlying = false
+        }
     }
 
-    private func startCycle() {
+    private func startCycle(generation: Int) {
         timerTask?.cancel()
-        timerTask = Task {
+        timerTask = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(2))
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled, isCurrent(generation) else { return }
                 withAnimation(.easeInOut(duration: 0.4)) { showNewName.toggle() }
             }
         }
     }
 
-    private func startTyping() {
+    private func startTyping(generation: Int) {
         typingTask?.cancel()
         typingTask = Task { @MainActor in
             while !Task.isCancelled {
@@ -78,16 +115,19 @@ struct AreaMatrixTimelineDiorama: View {
                 }
 
                 for source in markdownTypewriterLines {
-                    guard await typeLine(source) else { return }
+                    guard await typeLine(source, generation: generation) else { return }
                     try? await Task.sleep(for: .milliseconds(120))
+                    guard !Task.isCancelled, isCurrent(generation) else { return }
                 }
 
                 try? await Task.sleep(for: .seconds(1.4))
+                guard !Task.isCancelled, isCurrent(generation) else { return }
             }
         }
     }
 
-    private func typeLine(_ source: (String, Color)) async -> Bool {
+    private func typeLine(_ source: (String, Color), generation: Int) async -> Bool {
+        guard isCurrent(generation) else { return false }
         let line = AreaMatrixTypedMarkdownLine(text: "", color: source.1)
         withAnimation(.easeOut(duration: 0.25)) {
             typedMarkdownLines.append(line)
@@ -95,13 +135,28 @@ struct AreaMatrixTimelineDiorama: View {
 
         for character in source.0 {
             try? await Task.sleep(for: .milliseconds(34))
-            guard !Task.isCancelled else { return false }
+            guard !Task.isCancelled, isCurrent(generation) else { return false }
             if let index = typedMarkdownLines.firstIndex(where: { $0.id == line.id }) {
                 typedMarkdownLines[index].text.append(character)
             }
         }
 
         return true
+    }
+
+    private func isCurrent(_ generation: Int) -> Bool {
+        accessibilityPolicy.allowsDelayedAnimationCommit(
+            generation: generation,
+            currentGeneration: animationGeneration,
+            isVisible: sceneVisibility.isVisible
+        )
+    }
+
+    private var accessibilityPolicy: AreaMatrixAccessibilityMotionPolicy {
+        AreaMatrixAccessibilityMotionPolicy(
+            reduceMotion: reduceMotion,
+            reduceTransparency: reduceTransparency
+        )
     }
 
     private var finderWindow: some View {
@@ -134,7 +189,9 @@ struct AreaMatrixTimelineDiorama: View {
         .font(.system(size: 10, weight: .medium))
         .padding(8)
         .background(
-            showNewName ? AreaMatrixTheme.Colors.teal.opacity(0.2) : Color.clear,
+            showNewName
+                ? AreaMatrixTheme.Colors.teal.opacity(reduceTransparency ? 0.8 : 0.2)
+                : Color.clear,
             in: RoundedRectangle(cornerRadius: 4)
         )
     }
@@ -194,12 +251,21 @@ struct AreaMatrixTimelineDiorama: View {
             .shadow(color: color, radius: 8)
             .offset(x: particleFlying ? endX : startX)
             .opacity(particleFlying ? 0 : 1)
-            .animation(.easeInOut(duration: 2).repeatForever(autoreverses: false).delay(delay), value: particleFlying)
+            .animation(
+                reduceMotion || !particleFlying
+                    ? nil
+                    : .easeInOut(duration: 2).repeatForever(autoreverses: false).delay(delay),
+                value: particleFlying
+            )
     }
 
     private var bridgeCore: some View {
         Circle()
-            .fill(.ultraThinMaterial)
+            .fill(
+                reduceTransparency
+                    ? AnyShapeStyle(colorScheme == .dark ? Color.black : Color.white)
+                    : AnyShapeStyle(.ultraThinMaterial)
+            )
             .frame(width: 30, height: 30)
             .overlay(Circle().stroke(AreaMatrixTheme.Colors.coral.opacity(0.5)))
             .overlay(
@@ -218,7 +284,9 @@ struct AreaMatrixTimelineDiorama: View {
                 .foregroundColor(primaryColor)
                 .padding(.horizontal, highlighted ? 4 : 0)
                 .background(
-                    highlighted && showNewName ? primaryColor.opacity(0.3) : Color.clear,
+                    highlighted && showNewName
+                        ? primaryColor.opacity(reduceTransparency ? 0.9 : 0.3)
+                        : Color.clear,
                     in: RoundedRectangle(cornerRadius: 3)
                 )
                 .opacity(showNewName ? 1 : 0)

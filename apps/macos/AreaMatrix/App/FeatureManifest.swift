@@ -1,4 +1,9 @@
 import AreaMatrixCoreContracts
+import AreaMatrixFeatureAI
+import AreaMatrixFeatureIngestion
+import AreaMatrixFeatureLibrary
+import AreaMatrixFeatureOperation
+import AreaMatrixFeatureSettings
 
 /// Composition-only registry. Ownership and metadata live beside each feature;
 /// this type only defines application order and infrastructure entries.
@@ -10,20 +15,14 @@ enum FeatureManifestRegistry {
         "PlatformServices"
     ]
 
-    static let all: [FeatureManifest] = [
-        AIFeatureManifestProvider.manifest,
-        CommandPaletteFeatureManifestProvider.manifest,
-        DetailFeatureManifestProvider.manifest,
-        DiagnosticsFeatureManifestProvider.manifest,
-        FileActionsFeatureManifestProvider.manifest,
-        ImportFeatureManifestProvider.manifest,
-        MainListFeatureManifestProvider.manifest,
-        OnboardingFeatureManifestProvider.manifest,
-        RepositoryLifecycleManifestProvider.manifest,
-        SearchFeatureManifestProvider.manifest,
-        SettingsFeatureManifestProvider.manifest,
-        SyncConflictsFeatureManifestProvider.manifest
-    ]
+    static let all: [FeatureManifest] =
+        AIFeatureManifests.all +
+        LibraryFeatureManifests.all +
+        IngestionFeatureManifests.all +
+        OperationFeatureManifests.all +
+        SettingsFeatureManifests.all + [
+            DiagnosticsFeatureManifestProvider.manifest
+        ]
 
     static var byID: [String: FeatureManifest] {
         Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })

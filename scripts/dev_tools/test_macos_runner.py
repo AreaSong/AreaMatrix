@@ -346,6 +346,94 @@ class MacOSTestRunnerTest(unittest.TestCase):
         self.assertNotIn("-parallel-testing-enabled", invocations[0])
         self.assertIn("-parallel-testing-enabled", invocations[1])
 
+    def test_parallel_xcodebuild_does_not_retry_xcresult_test_failure(self) -> None:
+        project = self.tmp_path / "AreaMatrix.xcodeproj"
+        project.mkdir()
+        test_log = self.tmp_path / "xcodebuild-test.log"
+        build_log = self.tmp_path / "xcodebuild-build.log"
+        invocations: list[list[str]] = []
+
+        def fake_run_and_tee(argv, log_path, env=None):
+            del env
+            invocations.append(list(argv))
+            log_path.write_text("Testing started\n** TEST FAILED **\n", encoding="utf-8")
+            result_bundle = self.tmp_path / "Logs/Test/failed.xcresult"
+            result_bundle.mkdir(parents=True)
+            return 65
+
+        with (
+            patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee),
+            patch("scripts.dev_tools.macos._xcresult_test_failure_count", return_value=1),
+        ):
+            result = _run_macos_tests_inner(
+                self.tmp_path,
+                project,
+                "AreaMatrix",
+                "AreaMatrixTests.xctest",
+                "platform=macOS,arch=arm64",
+                self.tmp_path,
+                test_log,
+                build_log,
+                None,
+                [],
+            )
+
+        self.assertEqual(result, 65)
+        self.assertEqual(len(invocations), 1)
+
+    def test_coverage_runner_retries_exit_65_without_real_failure(self) -> None:
+        project = self.tmp_path / "AreaMatrix.xcodeproj"
+        project.mkdir()
+        test_log = self.tmp_path / "xcodebuild-functional.log"
+        build_log = self.tmp_path / "xcodebuild-build.log"
+        result_bundle = self.tmp_path / "TestResults.xcresult"
+        result_bundle.mkdir()
+        invocations: list[list[str]] = []
+
+        def fake_run_and_tee(argv, log_path, env=None):
+            del env
+            invocations.append(list(argv))
+            if len(invocations) == 1:
+                log_path.write_text(
+                    "Testing started\n"
+                    "Test Case '-[AreaMatrixTests.ExampleTests testExample]' passed\n",
+                    encoding="utf-8",
+                )
+                return 65
+            result_bundle.mkdir()
+            log_path.write_text(
+                "Executed 1 test, with 0 failures (0 unexpected)\n",
+                encoding="utf-8",
+            )
+            return 0
+
+        with (
+            patch("scripts.dev_tools.macos._run_and_tee", side_effect=fake_run_and_tee),
+            patch("scripts.dev_tools.macos._validate_localization_compiler_keys"),
+            patch("scripts.dev_tools.macos._run_swift_coverage_gate", return_value=0),
+        ):
+            result = _run_macos_tests_inner(
+                self.tmp_path,
+                project,
+                "AreaMatrix",
+                "AreaMatrixTests.xctest",
+                "platform=macOS,arch=arm64",
+                self.tmp_path,
+                test_log,
+                build_log,
+                result_bundle,
+                [],
+                disable_parallel_testing=True,
+                coverage_gate=True,
+                test_without_building=True,
+            )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(len(invocations), 2)
+        self.assertTrue((self.tmp_path / "TestResults.failed-attempt-1.xcresult").is_dir())
+        self.assertTrue(result_bundle.is_dir())
+        self.assertTrue(all("-parallel-testing-enabled" in invocation for invocation in invocations))
+
     def test_detects_xcode_system_content_failure(self) -> None:
         log_path = self.write_log(
             "\n".join(

@@ -1,46 +1,54 @@
+import AreaMatrixFeatureAI
 import Foundation
 
 extension RemoteProviderConfigState {
     init(coreSnapshot: RemoteProviderConfigSnapshot) {
-        providerConfigured = coreSnapshot.providerConfigured
-        providerVerified = coreSnapshot.providerVerified
-        remoteProviderEnabled = coreSnapshot.remoteProviderEnabled
-        provider = coreSnapshot.provider.map(RemoteProviderKindState.init(coreProvider:))
-        modelID = coreSnapshot.modelId
-        endpointURL = coreSnapshot.endpointUrl
-        credentialConfigured = coreSnapshot.credentialConfigured
-        featureScope = coreSnapshot.featureScope.map(AISettingsFeatureKind.init(coreFeature:))
-        updatedAt = coreSnapshot.updatedAt
-        disabledReason = coreSnapshot.disabledReason
+        self.init(
+            providerConfigured: coreSnapshot.providerConfigured,
+            providerVerified: coreSnapshot.providerVerified,
+            remoteProviderEnabled: coreSnapshot.remoteProviderEnabled,
+            provider: coreSnapshot.provider.map(RemoteProviderKindState.init(coreProvider:)),
+            modelID: coreSnapshot.modelId,
+            endpointURL: coreSnapshot.endpointUrl,
+            credentialConfigured: coreSnapshot.credentialConfigured,
+            featureScope: coreSnapshot.featureScope.map(AISettingsFeatureKind.init(coreFeature:)),
+            updatedAt: coreSnapshot.updatedAt,
+            disabledReason: coreSnapshot.disabledReason
+        )
     }
 }
 
 extension AIClassificationSuggestionState {
     init(coreSuggestion: AiCategorySuggestion) {
-        fileID = coreSuggestion.fileId
-        status = AIClassificationSuggestionStatusState(coreStatus: coreSuggestion.status)
-        currentCategory = coreSuggestion.currentCategory
-        suggestedCategory = coreSuggestion.suggestedCategory
-        confidence = coreSuggestion.confidence
-        reason = coreSuggestion.reason
-        route = coreSuggestion.route.map(AIClassificationSuggestionRouteState.init(coreRoute:))
-        usedContext = coreSuggestion.usedContext.map(AIClassificationSuggestionContextFieldState.init(coreField:))
-        skippedReason = coreSuggestion.skippedReason.map(AIClassificationSuggestionSkipReasonState.init(coreReason:))
-        privacyRuleID = coreSuggestion.privacyRuleId
-        callLogID = coreSuggestion.callLogId
-        requiresUserConfirmation = coreSuggestion.requiresUserConfirmation
+        self.init(
+            fileID: coreSuggestion.fileId,
+            status: AIClassificationSuggestionStatusState(coreStatus: coreSuggestion.status),
+            currentCategory: coreSuggestion.currentCategory,
+            suggestedCategory: coreSuggestion.suggestedCategory,
+            confidence: coreSuggestion.confidence,
+            reason: coreSuggestion.reason,
+            route: coreSuggestion.route.map(AIClassificationSuggestionRouteState.init(coreRoute:)),
+            usedContext: coreSuggestion.usedContext.map(AIClassificationSuggestionContextFieldState.init(coreField:)),
+            skippedReason: coreSuggestion.skippedReason
+                .map(AIClassificationSuggestionSkipReasonState.init(coreReason:)),
+            privacyRuleID: coreSuggestion.privacyRuleId,
+            callLogID: coreSuggestion.callLogId,
+            requiresUserConfirmation: coreSuggestion.requiresUserConfirmation
+        )
     }
 }
 
 extension RemoteProviderTestResultState {
     init(coreResult: RemoteProviderTestResult) {
-        provider = RemoteProviderKindState(coreProvider: coreResult.provider)
-        modelID = coreResult.modelId
-        endpointURL = coreResult.endpointUrl
-        status = RemoteProviderTestStatusState(coreStatus: coreResult.status)
-        providerVerified = coreResult.providerVerified
-        verificationToken = coreResult.verificationToken
-        sanitizedMessage = coreResult.sanitizedMessage
+        self.init(
+            provider: RemoteProviderKindState(coreProvider: coreResult.provider),
+            modelID: coreResult.modelId,
+            endpointURL: coreResult.endpointUrl,
+            status: RemoteProviderTestStatusState(coreStatus: coreResult.status),
+            providerVerified: coreResult.providerVerified,
+            verificationToken: coreResult.verificationToken,
+            sanitizedMessage: coreResult.sanitizedMessage
+        )
     }
 }
 

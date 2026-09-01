@@ -89,6 +89,8 @@ target 和 deployment target 计算内容指纹；命中 `.build/core-sdk/<finge
 ./dev build core-sdk
 ./dev build core-sdk --verify-only   # 只校验恢复后的 symlink、manifest 与 XCFramework slices
 ./dev build core-sdk --force         # 原子替换同一 fingerprint 的生成缓存，用于诊断
+./dev metrics build                  # 查看最近 CoreSDK 命中率与 Cargo 锁等待
+./dev metrics build --json           # 输出机器可读的构建反馈指标
 ./dev cache core-sdk prune --max-bytes 10737418240  # 预览 10 GiB LRU 清理计划
 ./dev cache core-sdk prune --max-bytes 10737418240 --apply
 ```
@@ -97,6 +99,12 @@ target 和 deployment target 计算内容指纹；命中 `.build/core-sdk/<finge
 生成的 `Package.swift` platform 声明，不能出现二进制与 Swift Package 最低系统版本不一致。
 CoreSDK 清理永不自动执行；默认只输出 LRU 计划，只有显式 `--apply` 才删除非活动 fingerprint，且始终保护
 `current` 指针和最近缓存。即使容量低于受保护缓存的大小，也只报告超限，不删除受保护 artifact。
+
+`./dev build core-sdk` 和 Cargo lane lock 会把最近一次结果以 JSONL 追加到本地 `.build/metrics/`（该目录不入库）。
+`./dev metrics build` 只读汇总这些记录，输出 CoreSDK warm/hit/miss 比率、CoreSDK 锁等待、Cargo lane
+竞争率和最大等待时间；每条记录包含时间、kind、operation、status、duration、fingerprint、toolchain 和
+architecture，最多保留 2000 条且不超过 30 天。指标写入失败不会阻断构建，损坏记录默认只告警；需要把损坏
+记录作为失败门禁时使用 `./dev metrics build --strict`。
 
 ---
 
@@ -109,7 +117,7 @@ CoreSDK 清理永不自动执行；默认只输出 LRU 计划，只有显式 `--
 name = "area_matrix_core"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.88"
 license = "PolyForm-Noncommercial-1.0.0"
 publish = false
 
@@ -121,27 +129,23 @@ name = "area_matrix_core"
 crate-type = ["rlib", "staticlib", "cdylib"]
 
 [dependencies]
-uniffi = { version = "0.28", features = ["build"] }
+uniffi = { version = "0.28", default-features = false }
 rusqlite = { version = "0.31", features = ["bundled", "chrono", "serde_json"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-serde_yaml = "0.9"
+serde_yaml = { package = "serde_yaml_ng", version = "0.10" }
 thiserror = "1"
 sha2 = "0.10"
 walkdir = "2"
 chrono = { version = "0.4", features = ["serde"] }
 tracing = "0.1"
-tracing-appender = "0.2.5"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 unicode-normalization = "0.1"
 regex = "1"
 uuid = { version = "1", features = ["v4"] }
 
-[target.'cfg(any(target_os = "macos", target_os = "windows", target_os = "linux", target_os = "freebsd"))'.dependencies]
-trash = "5"
-
 [build-dependencies]
-uniffi = { version = "0.28", features = ["build"] }
+uniffi = { version = "0.28", default-features = false, features = ["build"] }
 
 [dev-dependencies]
 tempfile = "3"
@@ -156,25 +160,14 @@ pretty_assertions = "1"
 
 ```rust
 fn main() {
-    println!("cargo:rustc-check-cfg=cfg(areamatrix_system_trash)");
-
-    let target_os = std::env::var("CARGO_CFG_TARGET_OS")
-        .expect("Cargo must provide CARGO_CFG_TARGET_OS to build scripts");
-    if matches!(
-        target_os.as_str(),
-        "macos" | "windows" | "linux" | "freebsd"
-    ) {
-        println!("cargo:rustc-cfg=areamatrix_system_trash");
-    }
-
     println!("cargo:rerun-if-changed=area_matrix.udl");
     println!("cargo:rerun-if-changed=uniffi.toml");
     uniffi::generate_scaffolding("./area_matrix.udl").expect("generate UniFFI scaffolding");
 }
 ```
 
-平台支持列表只在 Cargo 构建配置中解析并投影为 `areamatrix_system_trash`；storage 源码只消费该
-能力 cfg，不直接识别 macOS 或其他桌面操作系统。未启用该能力的平台返回明确的 unsupported 配置错误。
+`build.rs` 只负责 UDL scaffolding 生成；Trash 能力由 Core 的可恢复用户 Trash 路径统一实现，平台层仅负责
+报告能力矩阵，不再通过 Cargo cfg 或第三方 Trash crate 注入外部命令。
 
 ---
 
@@ -216,8 +209,10 @@ tracked iOS header 中的每个 `fn_func_*` ⊆ 生成物，且 `*CoreFFI.swift`
 iOS header，同时 `module.modulemap` 指向有效 header。iOS **不做** macOS 式全量字节 diff
 （iOS 只跟踪 curated subset，不跟踪完整 `area_matrix.swift`）。
 
-CI 在 Core build 后运行该命令，阻止 UDL、生成器输出与 Xcode 实际消费的 bindings 漂移。默认生成器固定为 `core/Cargo.lock` 中的 UniFFI 版本；
-只有显式设置 `UNIFFI_BINDGEN` 或 `AREAMATRIX_UNIFFI_BINDGEN` 时才覆盖该版本。
+CI 在 Core build 后运行该命令，阻止 UDL、生成器输出与 Xcode 实际消费的 bindings 漂移。默认生成器由
+`core/Cargo.lock` 中的 `uniffi_bindgen` 版本和本地 locked wrapper 提供。构建脚本拒绝
+`UNIFFI_BINDGEN` 与 `AREAMATRIX_UNIFFI_BINDGEN` 外部可执行文件覆盖；升级生成器必须先更新 lockfile，
+并让 wrapper 校验 registry archive checksum 与解包源码一致后再执行。
 
 ### Bridging Header 配置
 
@@ -274,6 +269,28 @@ xcodebuild -project apps/macos/AreaMatrix.xcodeproj \
 `sdk` lane；Xcode 的 CoreSDK Build Phase 与验证 lane 仍由各自脚本显式选择目标目录，不能通过临时环境变量
 把它们重新指向同一个 Cargo artifact 目录。Canvas 使用 Preview 覆盖层，普通 Swift-only 修改继续直接
 使用 Debug 增量构建。
+
+### XcodeGen 评估
+
+已完成隔离的 XcodeGen 2.46.0 parity PoC，规格文件位于
+`apps/macos/XcodeGen/project.yml`，不会替换生产 `.xcodeproj`。PoC 明确复刻了当前 App/Test target、五组
+Feature package products、CoreSDK Build Phase 的输入/输出/依赖文件、xcconfig、资源、桥接头和六份 test plan
+登记；生成工程的 `xcodebuild -list` 与生产工程都包含 `AreaMatrix`、`AreaMatrixTests` 两个业务 target。
+
+验证结果：生成工程的 `build-for-testing` 成功，证明源码 membership、SwiftPM products、CoreSDK XCFramework
+路径和增量脚本可以被 XcodeGen 表达；但直接执行 `test-without-building` 失败，原因是现有 `.xctestplan` 将
+测试 target 固定为手工工程的 PBX identifier（`0A0000000000000000000041`），而 XcodeGen 每次生成新的
+target identifier，导致测试计划找不到 test bundle。这个差异不是可以忽略的格式变化，而是会阻断真实 XCTest
+流程，因此当前结论仍是“保留手工工程，不切换生成器”。
+
+若要再次推进，必须先决定 test plan 的机器生成/identifier 重写合同，并在独立 PoC 中同时通过
+`build-for-testing` 与 `test-without-building`，再做 scheme、build settings、Build Phase 输入输出、包产品、
+签名配置和 clean build 的可重复 diff。XcodeGen 不能替代现有架构、membership 或测试计划门禁；其供应链
+（版本、MIT 许可证、构建方式）也必须纳入 dependency policy。
+
+Feature Package 治理期间已发生一次手工 PBX object ID 冲突，导致 Xcode 将工程判定为 damaged；唯一 ID 修复并
+通过 `xcodebuild -list` 与 App 构建后恢复。该事件计入工程维护成本证据，但在 test plan parity 未解决前，不能
+批准新增或切换 XcodeGen 依赖。
 
 ### 尺寸优化（CI 发布版）
 
@@ -436,7 +453,7 @@ Keychain 和平台副作用，Diagnostics、MainList 与 SyncConflicts 也隔离
 ./dev doctor build        # Cargo lanes、lock metadata、Xcode 增量输入输出和 CoreSDK 完整性
 ./dev test changed --list # 只显示当前工作树将触发的验证层
 ./dev check affected --list # 治理入口：只显示当前工作树将触发的验证层
-./dev test changed        # 执行对应 developer tools / Rust / macOS / iOS / docs-governance 门禁
+./dev test changed        # 执行对应 developer tools / Rust / macOS SwiftPM/XCTest / iOS / docs-governance 门禁
 ```
 
 ### 本地 Rust 验证
@@ -459,7 +476,7 @@ cargo test --manifest-path core/Cargo.toml --workspace --all-features
 CI 在 macos-14 runner 上执行：
 
 1. `cargo fmt --all -- --check`
-2. `cargo clippy --all-targets --all-features -- -D warnings`
+2. `cargo clippy --locked --all-targets --all-features -- -D warnings`
 3. `cargo test --all-features --workspace`
 4. `cargo llvm-cov --fail-under-lines 70`
 5. `./dev build core-sdk`，上传并在 Xcode job 复用同一 CoreSDK artifact
@@ -571,9 +588,8 @@ rm -f apps/macos/AreaMatrix/Bridge/Generated/libarea_matrix_core.a
 
 错误：`scaffolding generated by uniffi 0.28.x but bindgen is 0.27.x`。
 
-默认机制下生成器版本锁定为 `core/Cargo.lock` 中的 UniFFI 版本，不会漂移。出现该错误说明
-`UNIFFI_BINDGEN` / `AREAMATRIX_UNIFFI_BINDGEN` 指向了版本不匹配的 bindgen：取消该环境变量
-回到默认机制，或改为指向匹配版本，然后重跑 `./dev build core`。
+默认机制下生成器版本锁定为 `core/Cargo.lock` 中的 UniFFI 版本，不会漂移。构建脚本拒绝
+`UNIFFI_BINDGEN` / `AREAMATRIX_UNIFFI_BINDGEN` 外部覆盖：取消这些环境变量后重跑 `./dev build core`。
 
 ### Xcode 报 `module 'area_matrix' not found`
 

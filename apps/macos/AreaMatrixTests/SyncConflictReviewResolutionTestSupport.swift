@@ -1,4 +1,5 @@
 @testable import AreaMatrix
+import AreaMatrixFeatureLibrary
 import Foundation
 import XCTest
 
@@ -191,7 +192,7 @@ func makeMainRepositoryContentViewForTests(
     fileDetailer: any CoreFileDetailing,
     errorMapper: any CoreErrorMapping
 ) -> MainRepositoryContentView {
-    let dependencies = AppDependencyContainer.live
+    let dependencies = makeTestAppDependencyContainer()
     let supporting = makeMainRepositorySupportDependencies(
         dependencies: dependencies,
         errorMapper: errorMapper
@@ -208,10 +209,18 @@ func makeMainRepositoryContentViewForTests(
         settings: dependencies.feature.settings,
         syncConflicts: dependencies.feature.syncConflicts
     )
+    let session = opening.makeRepositorySession()
     return MainRepositoryContentView(
+        session: session,
         opening: opening,
         state: state,
-        assembly: .make(opening: opening, supporting: supporting, list: list, features: features),
+        assembly: .make(
+            session: session,
+            opening: opening,
+            supporting: supporting,
+            list: list,
+            features: features
+        ),
         commandRouter: .shared,
         onImport: {},
         onDropImport: { _, _ in }

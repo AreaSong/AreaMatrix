@@ -65,6 +65,7 @@ class PromotionTask:
     manifest_path: Path
     task_content: str
     manifest_section: str
+    verify_content: str = ""
 
 
 def int_field(value: Any) -> int | None:
@@ -233,6 +234,7 @@ def build_promotion_tasks(
                     manifest_path=manifest_path,
                     task_content=render_promoted_task_file(root, version, record, raw_task, live_label, semantic_id),
                     manifest_section=render_promoted_manifest_section(root, record, raw_task, live_label, deps),
+                    verify_content=render_promoted_verify_file(root, version, record, raw_task, live_label, semantic_id),
                 )
             )
             previous_label_in_feature = live_label
@@ -275,6 +277,7 @@ def render_promoted_task_file(
 ) -> str:
     docs = docs_map(record.feature)
     risk = risk_map(record.feature)
+    risk_level = str(risk.get("level", "Unspecified"))
     validations = [f"- {item}" for item in task_validation(task)] or ["- ./dev workflow doctor"]
     lines = [
         f"# {live_label} {semantic_id}",
@@ -304,6 +307,8 @@ def render_promoted_task_file(
         *[f"- `{target}`" for target in sync_targets(docs)],
         "",
         "## 风险边界",
+        "### Risk Level",
+        f"- {risk_level}",
         *[f"- {item}" for item in as_list(risk.get("boundaries"))],
         "",
         "## 完成标准",
@@ -313,6 +318,52 @@ def render_promoted_task_file(
         "",
         "## 验证",
         *validations,
+    ]
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def render_promoted_verify_file(
+    root: Path,
+    version: str,
+    record: FeatureRecord,
+    task: dict[str, Any],
+    live_label: str,
+    semantic_id: str,
+) -> str:
+    """Render a read-only acceptance prompt separate from implementation."""
+
+    docs = docs_map(record.feature)
+    risk = risk_map(record.feature)
+    risk_level = str(risk.get("level", "Unspecified"))
+    validations = [f"- {item}" for item in task_validation(task)] or ["- ./dev workflow doctor"]
+    lines = [
+        f"# Verify-ready Prompt: {live_label} {semantic_id}",
+        "",
+        f"你现在进入 AreaMatrix {version} 的单任务验收模式。",
+        "这次是验收，不是修复：禁止修改文件，禁止边验边改。",
+        "",
+        "## 验收对象",
+        f"- Semantic task: `{semantic_id}`",
+        f"- Source change: `{display_path(root, record.file)}`",
+        f"- Task: `{task.get('title', '')}`",
+        "### Risk Level",
+        f"- {risk_level}",
+        "",
+        "## 必须读取",
+        *[f"- `{doc}`" for doc in as_list(docs.get("source"))],
+        "",
+        "## 只读验收要求",
+        "- 只读取并核对 copy-ready 实现结果、Exact Docs、manifest 和验证证据。",
+        "- 不得实现、修复、重写或删除任何文件；发现问题只输出 FAIL 和阻塞项。",
+        "- 不得执行 copy-ready prompt 中的实现步骤。",
+        "- 风险边界必须逐条证明未被突破。",
+        "",
+        "## 验证",
+        *validations,
+        "",
+        "## 输出要求",
+        "- 通过时最后一行必须单独输出 VERIFY_RESULT: PASS。",
+        "- 不通过时最后一行必须单独输出 VERIFY_RESULT: FAIL，并列出阻塞项。",
     ]
     return "\n".join(lines).rstrip() + "\n"
 
@@ -452,6 +503,12 @@ def validate_apply(root: Path, version: str, tasks: Sequence[PromotionTask]) -> 
             errors.append(f"{task.semantic_id}: manifest section is empty")
         if not task.task_content.strip():
             errors.append(f"{task.semantic_id}: task content is empty")
+        if not task.verify_content.strip():
+            errors.append(f"{task.semantic_id}: verify-ready content is empty")
+        elif task.verify_content == task.task_content:
+            errors.append(f"{task.semantic_id}: copy-ready and verify-ready content must be distinct")
+        elif "禁止修改文件" not in task.verify_content or "VERIFY_RESULT:" not in task.verify_content:
+            errors.append(f"{task.semantic_id}: verify-ready prompt must declare read-only acceptance")
     return errors
 
 
@@ -536,7 +593,9 @@ def promotion_apply_artifacts(root: Path, version: str, tasks: Sequence[Promotio
     for task in tasks:
         artifacts.append(DraftArtifact(task.task_path, task.task_content))
         artifacts.append(DraftArtifact(task.copy_ready_path, task.task_content))
-        artifacts.append(DraftArtifact(task.verify_ready_path, task.task_content))
+        if not task.verify_content.strip():
+            raise ValueError(f"{task.semantic_id}: verify-ready content is required")
+        artifacts.append(DraftArtifact(task.verify_ready_path, task.verify_content))
         manifest_sections.setdefault(task.manifest_path, []).append(task.manifest_section)
     for path, sections in manifest_sections.items():
         header = f"# {path.stem}\n\n" if not path.exists() else path.read_text(encoding="utf-8").rstrip() + "\n\n"

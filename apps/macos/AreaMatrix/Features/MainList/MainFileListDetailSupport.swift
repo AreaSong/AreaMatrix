@@ -1,3 +1,4 @@
+import AreaMatrixFeatureLibrary
 import Foundation
 
 struct MainExternalSyncRefreshValidationError: Error, LocalizedError {

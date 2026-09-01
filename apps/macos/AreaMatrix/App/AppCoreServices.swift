@@ -1,271 +1,283 @@
 import AreaMatrixCoreBridgeContract
+import AreaMatrixFeatureAI
 import Foundation
 
-enum AppCoreServices {
-    static let repositoryWriteCoordinator = RepositoryWriteCoordinator.shared
-    static let overviewRegenerationCoordinator = OverviewRegenerationCoordinator()
+struct AppCoreServices {
+    let repositoryWriteCoordinator: RepositoryWriteCoordinator
+    let overviewRegenerationCoordinator: OverviewRegenerationCoordinator
+    private let bridge: CoreBridge
 
-    static var treeLister: any CoreRepositoryTreeListing {
+    init(
+        bridge: CoreBridge = CoreBridgeRuntime.shared,
+        repositoryWriteCoordinator: RepositoryWriteCoordinator = RepositoryWriteCoordinator(),
+        overviewRegenerationCoordinator: OverviewRegenerationCoordinator = OverviewRegenerationCoordinator()
+    ) {
+        self.bridge = bridge
+        self.repositoryWriteCoordinator = repositoryWriteCoordinator
+        self.overviewRegenerationCoordinator = overviewRegenerationCoordinator
+    }
+
+    var treeLister: any CoreRepositoryTreeListing {
         coreBridge()
     }
 
-    static var savedSearchStore: any CoreSavedSearchCRUD {
+    var savedSearchStore: any CoreSavedSearchCRUD {
         coreBridge()
     }
 
-    static var configurationLoader: any CoreConfigurationLoading {
+    var configurationLoader: any CoreConfigurationLoading {
         coreBridge()
     }
 
-    static var configurationUpdater: any CoreConfigurationUpdating {
+    var configurationUpdater: any CoreConfigurationUpdating {
         coreBridge()
     }
 
-    static var emptyRepositoryOpener: any CoreEmptyRepositoryOpening {
+    var emptyRepositoryOpener: any CoreEmptyRepositoryOpening {
         coreBridge()
     }
 
-    static var repositoryPathValidator: any CoreRepositoryPathValidating {
+    var repositoryPathValidator: any CoreRepositoryPathValidating {
         coreBridge()
     }
 
-    static var initializedRepositoryPathValidator: any CoreInitializedRepositoryPathValidating {
+    var initializedRepositoryPathValidator: any CoreInitializedRepositoryPathValidating {
         coreBridge()
     }
 
-    static var repositoryInitializer: any CoreRepositoryInitializing {
+    var repositoryInitializer: any CoreRepositoryInitializing {
         coreBridge()
     }
 
-    static var importProgressImporter: any CoreFileImporting {
+    var importProgressImporter: any CoreFileImporting {
         coreBridge()
     }
 
-    static var batchFileImporter: any CoreBatchCopyImporting {
+    var batchFileImporter: any CoreBatchCopyImporting {
         coreBridge()
     }
 
-    static var conflictBatcher: any CoreImportConflictBatching {
+    var conflictBatcher: any CoreImportConflictBatching {
         coreBridge()
     }
 
-    static var startupRecoverer: any CoreStartupRecovering {
+    var startupRecoverer: any CoreStartupRecovering {
         coreBridge()
     }
 
-    static var metadataRepairer: any CoreMetadataRepairing {
+    var metadataRepairer: any CoreMetadataRepairing {
         coreBridge()
     }
 
-    static var repositoryReindexer: any CoreRepositoryReindexing {
+    var repositoryReindexer: any CoreRepositoryReindexing {
         coreBridge()
     }
 
-    static var scanSessionReader: any CoreScanSessionReading {
+    var scanSessionReader: any CoreScanSessionReading {
         coreBridge()
     }
 
-    static var fileLister: any CoreFileListing {
+    var fileLister: any CoreFileListing {
         coreBridge()
     }
 
-    static var fileDetailer: any CoreFileDetailing {
+    var fileDetailer: any CoreFileDetailing {
         coreBridge()
     }
 
-    static var missingFileRecoverer: any CoreMissingFileRecovering {
+    var missingFileRecoverer: any CoreMissingFileRecovering {
         coreBridge()
     }
 
-    static var searchQuerying: any CoreSearchQuerying {
+    var searchQuerying: any CoreSearchQuerying {
         coreBridge()
     }
 
-    static var semanticSearching: any CoreSemanticSearching {
+    var semanticSearching: any CoreSemanticSearching {
         coreBridge()
     }
 
-    static var semanticFallbackReader: any CoreSemanticFallbackStatusReading {
+    var semanticFallbackReader: any CoreSemanticFallbackStatusReading {
         coreBridge()
     }
 
-    static var searchFiltering: any CoreSearchFiltering {
+    var searchFiltering: any CoreSearchFiltering {
         coreBridge()
     }
 
-    static var commandIndexer: any CoreCommandIndexing {
+    var commandIndexer: any CoreCommandIndexing {
         coreBridge()
     }
 
-    static var bindingContractInspector: any CoreBindingContractInspecting {
+    var bindingContractInspector: any CoreBindingContractInspecting {
         coreBridge()
     }
 
-    static var fileRenamer: any CoreFileRenaming {
+    var fileRenamer: any CoreFileRenaming {
         coreBridge()
     }
 
-    static var fileDeleter: any CoreFileDeleting {
+    var fileDeleter: any CoreFileDeleting {
         coreBridge()
     }
 
-    static var fileCategoryMover: any CoreFileCategoryMoving {
+    var fileCategoryMover: any CoreFileCategoryMoving {
         coreBridge()
     }
 
-    static var categoryPredictor: any CoreCategoryPredicting {
+    var categoryPredictor: any CoreCategoryPredicting {
         coreBridge()
     }
 
-    static var classifierRuleSaver: any CoreClassifierRuleSaving {
+    var classifierRuleSaver: any CoreClassifierRuleSaving {
         coreBridge()
     }
 
-    static var classifierImpactPreviewer: any CoreClassifierImpactPreviewing {
+    var classifierImpactPreviewer: any CoreClassifierImpactPreviewing {
         coreBridge()
     }
 
-    static var classifierRuleEditor: any CoreClassifierRuleEditing {
+    var classifierRuleEditor: any CoreClassifierRuleEditing {
         coreBridge()
     }
 
-    static var platformCapabilityLoader: any CorePlatformCapabilitiesLoading {
+    var platformCapabilityLoader: any CorePlatformCapabilitiesLoading {
         coreBridge()
     }
 
-    static var batchDeleter: any CoreBatchDeleting {
+    var batchDeleter: any CoreBatchDeleting {
         coreBridge()
     }
 
-    static var batchCategoryChanger: any CoreBatchCategoryChanging {
+    var batchCategoryChanger: any CoreBatchCategoryChanging {
         coreBridge()
     }
 
-    static var batchRenamer: any CoreBatchRenaming {
+    var batchRenamer: any CoreBatchRenaming {
         coreBridge()
     }
 
-    static var syncConflictDetector: any CoreSyncConflictDetecting {
+    var syncConflictDetector: any CoreSyncConflictDetecting {
         coreBridge()
     }
 
-    static var syncConflictResolver: any CoreSyncConflictResolving {
+    var syncConflictResolver: any CoreSyncConflictResolving {
         coreBridge()
     }
 
-    static var iCloudConflictLister: any CoreICloudConflictListing {
+    var iCloudConflictLister: any CoreICloudConflictListing {
         coreBridge()
     }
 
-    static var iCloudConflictReviewer: any CoreICloudConflictReviewing {
+    var iCloudConflictReviewer: any CoreICloudConflictReviewing {
         coreBridge()
     }
 
-    static var iCloudConflictResolver: any ICloudConflictResolving {
+    var iCloudConflictResolver: any ICloudConflictResolving {
         coreBridge()
     }
 
-    static var tagStore: any CoreTagCRUD {
+    var tagStore: any CoreTagCRUD {
         coreBridge()
     }
 
-    static var aiSettingsLoader: any CoreAISettingsLoading {
+    var aiSettingsLoader: any CoreAISettingsLoading {
         coreBridge()
     }
 
-    static var aiSettingsUpdater: any CoreAISettingsUpdating {
+    var aiSettingsUpdater: any CoreAISettingsUpdating {
         coreBridge()
     }
 
-    static var aiTagSuggestionStore: any CoreAITagSuggestionManaging {
+    var aiTagSuggestionStore: any CoreAITagSuggestionManaging {
         coreBridge()
     }
 
-    static var aiClassificationSuggester: any CoreAIClassificationSuggesting {
+    var aiClassificationSuggester: any CoreAIClassificationSuggesting {
         coreBridge()
     }
 
-    static var aiClassificationFallbackReader: any CoreAIClassificationFallbackStatusReading {
+    var aiClassificationFallbackReader: any CoreAIClassificationFallbackStatusReading {
         coreBridge()
     }
 
-    static var remoteProviderConfigurer: any CoreRemoteProviderConfiguring {
+    var remoteProviderConfigurer: any CoreRemoteProviderConfiguring {
         coreBridge()
     }
 
-    static var aiCallLogLister: any CoreAICallLogListing {
+    var aiCallLogLister: any CoreAICallLogListing {
         coreBridge()
     }
 
-    static var aiCallLogClearer: any CoreAICallLogClearing {
+    var aiCallLogClearer: any CoreAICallLogClearing {
         coreBridge()
     }
 
-    static var aiSummaryStore: any CoreAISummaryManaging {
+    var aiSummaryStore: any CoreAISummaryManaging {
         coreBridge()
     }
 
-    static var repositoryContentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting {
+    var repositoryContentLocaleSnapshotter: any RepositoryContentLocaleSnapshotting {
         coreBridge()
     }
 
-    static var overviewRegenerator: any CoreOverviewRegenerating {
+    var overviewRegenerator: any CoreOverviewRegenerating {
         coreBridge()
     }
 
-    static var localModelStatusReader: any CoreLocalModelStatusReading {
+    var localModelStatusReader: any CoreLocalModelStatusReading {
         coreBridge()
     }
 
-    static var aiPrivacyRules: any CoreAIPrivacyEvaluating {
+    var aiPrivacyRules: any CoreAIPrivacyEvaluating {
         coreBridge()
     }
 
-    static var aiPrivacyRulesManager: any CoreAIPrivacyRulesManaging {
+    var aiPrivacyRulesManager: any CoreAIPrivacyRulesManaging {
         coreBridge()
     }
 
-    static var undoActionStore: any CoreUndoActionLogging {
+    var undoActionStore: any CoreUndoActionLogging {
         coreBridge()
     }
 
-    static var redoActionStore: any CoreRedoActionLogging {
+    var redoActionStore: any CoreRedoActionLogging {
         coreBridge()
     }
 
-    static var changeLogLister: any CoreChangeLogListing {
+    var changeLogLister: any CoreChangeLogListing {
         coreBridge()
     }
 
-    static var externalChangesSyncer: any CoreExternalChangesSyncing {
+    var externalChangesSyncer: any CoreExternalChangesSyncing {
         coreBridge()
     }
 
-    static var coreVersionLoader: any CoreVersionLoading {
+    var coreVersionLoader: any CoreVersionLoading {
         coreBridge()
     }
 
-    static var coreVersionReader: any CoreVersionReading {
+    var coreVersionReader: any CoreVersionReading {
         coreBridge()
     }
 
-    static var noteStore: any CoreNoteReadingWriting {
+    var noteStore: any CoreNoteReadingWriting {
         coreBridge()
     }
 
-    static var errorMapper: any CoreErrorMapping {
+    var errorMapper: any CoreErrorMapping {
         coreBridge()
     }
 
-    static var diagnosticsCollector: any CoreDiagnosticsCollecting {
+    var diagnosticsCollector: any CoreDiagnosticsCollecting {
         coreBridge()
     }
 
-    static var observabilityController: any CoreObservabilityControlling {
+    var observabilityController: any CoreObservabilityControlling {
         coreBridge()
     }
 
-    private static func coreBridge() -> CoreBridge {
-        CoreBridgeRuntime.shared
+    private func coreBridge() -> CoreBridge {
+        bridge
     }
 }

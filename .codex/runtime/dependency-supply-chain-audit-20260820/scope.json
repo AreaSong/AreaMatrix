@@ -1,0 +1,685 @@
+{
+  "allowed_statuses": [
+    "PENDING",
+    "IN_PROGRESS",
+    "PASS",
+    "FINDING",
+    "NOT_APPLICABLE",
+    "BLOCKED"
+  ],
+  "audit_id": "dependency-supply-chain-audit-20260820",
+  "conservation_rule": "repository_file_total = PASS + FINDING + NOT_APPLICABLE + BLOCKED；PENDING/IN_PROGRESS 必须为 0 才可宣称完成",
+  "counts": {
+    "binary": 152,
+    "other": 0,
+    "repository_file_total": 5053,
+    "symlink": 10,
+    "text": 4891,
+    "text_line_total": 1498027,
+    "tracked": 5052,
+    "untracked_nonignored": 1
+  },
+  "dirty_worktree_at_start": [
+    {
+      "path": ".github/workflows/release-evidence.yml",
+      "status": " M"
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "status": " M"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "status": " M"
+    },
+    {
+      "path": "LICENSE",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeAssemblyTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeSchedulingTests.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeTestSupport.swift",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Conflicts/SyncConflictEntryViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Help/PlatformDifferencesViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Replace.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.Results.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Import/WindowsImportViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/RescanConfirmViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WatcherStatusPlatformActions.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Library/WatcherStatusViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Recovery/MissingFileRecoveryViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/Program.cs",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/WatcherStatus/WatcherStatusViewModelTests.cs",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/checks.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/codex_os_automation.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/macos.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/release.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_codex_os.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_macos_runner.py",
+      "status": " M"
+    },
+    {
+      "path": "scripts/dev_tools/test_release_tools.py",
+      "status": " M"
+    },
+    {
+      "path": "apps/windows/AreaMatrixTests/Architecture/ViewModelSynchronizationContextTests.cs",
+      "status": "??"
+    }
+  ],
+  "excluded_from_repository_file_total": [
+    {
+      "basis": "Git 内部数据库，不是仓库提交内容",
+      "pattern": ".git/**"
+    },
+    {
+      "basis": "本次审计自身输出，防止递归改变输入范围",
+      "pattern": ".codex/runtime/dependency-supply-chain-audit-20260820/**"
+    },
+    {
+      "basis": "本机构建、缓存、生成或私有工作状态；仓库内容按 tracked + 非忽略 untracked 冻结",
+      "pattern": "Git ignored workspace files"
+    }
+  ],
+  "final_scope_validation": {
+    "checked_at": "2026-08-19T22:11:49+00:00",
+    "drift": {
+      "apps/ios/AreaMatrix/Features/Import/ShareImportExtensionScene.swift": {
+        "current_sha256": "b746cf6d4b5091868e904fea7f6b96af5aba53c30574a45264c548cf0f18c1f4",
+        "current_type": "regular",
+        "expected_sha256": "a7bb74868fd1af484f7660d5efd0d7e71de11a651bd23e90804c38fabeadf145",
+        "expected_type": "regular"
+      },
+      "apps/ios/AreaMatrix/Features/Import/ShareImportModel.swift": {
+        "current_sha256": "2fd3befa0cd534602fac7e92e48b4d523d949b696ce6adf5f454f9cde3b9183e",
+        "current_type": "regular",
+        "expected_sha256": "7fef2bb9dcc8664fd548673ef1fadf0d58f30a7f7f20deb11952aafd8205867d",
+        "expected_type": "regular"
+      },
+      "apps/ios/AreaMatrix/Features/Import/ShareImportQueue.swift": {
+        "current_sha256": "89f148f4e75bc55947b340063177de744f5de21b7a6684f046714f365d975bdc",
+        "current_type": "regular",
+        "expected_sha256": "b35f787ff5fb9fd2ad0a7966819187e81990d0e86f5b3d974e928e416e622c23",
+        "expected_type": "regular"
+      },
+      "apps/ios/AreaMatrix/Features/Import/ShareImportView.swift": {
+        "current_sha256": "1873158a01eddd6f6a51935fdfa64cca6c4f91cbef033b3d6bbe80b909c2a657",
+        "current_type": "regular",
+        "expected_sha256": "58446b132d36cced1dbcad0c691d9dcc2d217d66dee5f84685ce6d85b52a3e7c",
+        "expected_type": "regular"
+      },
+      "apps/ios/AreaMatrix/Features/Settings/RepositorySettingsView.swift": {
+        "current_sha256": "849fcbf723e16033a528cd2a96a71dbb96c48061a1d9e8ccebfa0ab1005c2728",
+        "current_type": "regular",
+        "expected_sha256": "d89f479d9f8966e4844a7ca168a6b47cadf9ed0e9eb12a1760a6cb5d2588dc7a",
+        "expected_type": "regular"
+      },
+      "apps/ios/AreaMatrixShareExtension/ShareImportViewController.swift": {
+        "current_sha256": "8772c1cdbbd8abbdb19435ff3e121c08645ce78066efeed92f01387b579c78dc",
+        "current_type": "regular",
+        "expected_sha256": "736919bf035dd726f3d45c3bb9e8d13bc6841068346f0ea4886c49b770f745ee",
+        "expected_type": "regular"
+      },
+      "apps/ios/AreaMatrixTests/ShareImportModelTests.swift": {
+        "current_sha256": "5b6c039f6a154b2d30338eaa961427c342a7469e89b6da781efc97b7f512b526",
+        "current_type": "regular",
+        "expected_sha256": "4efd74667876269c3f22d9bb4ed5a1fb204649296319abb2cc691b6e4d4c9b9e",
+        "expected_type": "regular"
+      },
+      "apps/linux/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs": {
+        "current_sha256": "4861d81aad2ecb7b65b652f082f147e94be58219f953ea1ed05461be51541c3f",
+        "current_type": "regular",
+        "expected_sha256": "f8e1e26946d336c42cc46e29a65ad0db07df7ab4650e6c393ea21796cdf2811b",
+        "expected_type": "regular"
+      },
+      "apps/linux/AreaMatrix/Features/System/LinuxWatcherDiagnostics.cs": {
+        "current_sha256": "3175187abc05a21474aff7f8b7dfc071974bde97116c5c9960a3b5f7112721b2",
+        "current_type": "regular",
+        "expected_sha256": "fe3ff5d9e5e21115fddff70faf7b4863d09aa9fb1cce036803d61fbc4291ca1a",
+        "expected_type": "regular"
+      },
+      "apps/linux/AreaMatrixTests/Settings/RepositorySettingsViewModelTests.cs": {
+        "current_sha256": "1d125f2f2ebca4a8fd0f06b071943e75348502b94f92e59242d6d7d8308475fe",
+        "current_type": "regular",
+        "expected_sha256": "86762e1cffdcced5e0e4cdae03e012c11f1acd92aac92aef915b1e9b3b09395b",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/App/RepositoryIgnoreRulesManager.swift": {
+        "current_sha256": "549dfb3f7bd787148d2db8e8ecd94f8c2b4ddd6064204eaead00bcc7c22c51d3",
+        "current_type": "regular",
+        "expected_sha256": "850ca815c86be0c77c989f73eebfa897b84adc921e982847de5ca03067d5729a",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Features/Import/ImportBatchConflictSection.swift": {
+        "current_sha256": "2bb376b91eb8e2a817292c56636563aa283f76041e8d65f06e95324b8215777e",
+        "current_type": "regular",
+        "expected_sha256": "55cc0df2fc930f78a6400443cccdb52c2bcb615531d5f8471fe1facda8626382",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Features/Onboarding/ValidatePathChecklistSection.swift": {
+        "current_sha256": "43f3e531f34578e6afe4c693d3d3f388819716d7e3935bce2f7ca3241f64c4a8",
+        "current_type": "regular",
+        "expected_sha256": "922d407cb1e2892c3e1fcbd384ab0a6a10761c6367fa2e44e2a191ca81ee05da",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Features/Onboarding/WelcomeStepView.swift": {
+        "current_sha256": "b20ac7810435c913ce15989ac88dc6ae1fa5a71790c0e4bc54cdae658db629a5",
+        "current_type": "regular",
+        "expected_sha256": "672cecc2dfd8e840aed81ea6aeaee4e326b63c0b93ea4e14acf393b036c581ac",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/PlatformServices/ImportBatchSessionPlatformServices.swift": {
+        "current_sha256": "09048fd14af4937c0808de71fb32e739f7d818babb722bdeffe82e929b02c781",
+        "current_type": "regular",
+        "expected_sha256": "196665e2c650b3a5ffdb9745ff3e70cf7c0729828988d78483853b3b7f759ee4",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixAmbientBackground.swift": {
+        "current_sha256": "a12b9ea3921c994b41b0bafecf137603aae03275ead56ca9c7364a34a0ebe192",
+        "current_type": "regular",
+        "expected_sha256": "a377bf12adcc6a6213f9beacaec0066a73bb8802687526ebc35b1b395788029d",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixClassificationDiorama.swift": {
+        "current_sha256": "27edcd13202b5489fb39039ee4e7d9aef209966af4cee311e0f04f2eb9e30e74",
+        "current_type": "regular",
+        "expected_sha256": "86d33dac2f94195142f98f689ddc710ff2923a591da2090f320bad41ba72429a",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixOverlays.swift": {
+        "current_sha256": "ed11620036ad2b291edf095e1a9b18b5dff9dcdd7313cd2c53563957338e846a",
+        "current_type": "regular",
+        "expected_sha256": "67c4d8970a431863305798b9d37665d97ba28594d7b99770818d7aa36db358a0",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixProtectionDiorama.swift": {
+        "current_sha256": "b3d0d70d59d595699333424d3ac32c9566ae173b2f29ce1ea50ffcd536780736",
+        "current_type": "regular",
+        "expected_sha256": "eca75d88726302f336bf69d4dc7f3b7eb3621060c02412bd5a2d62ba350a2304",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixSceneComponents.swift": {
+        "current_sha256": "f68855e1b93e2e7bf8366e5cbeb3a60224319bbb5665f23c98da8693293e9383",
+        "current_type": "regular",
+        "expected_sha256": "111b4cc366bfbae365f0cf49d05416340400d2f9899acb660d0e06e2dd807ad2",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixTimelineDiorama.swift": {
+        "current_sha256": "f4f303e67055da19c2276ebfc7da06be766e0c32e0126e2a646828829072da86",
+        "current_type": "regular",
+        "expected_sha256": "8dd57251fc3ece3810618d992b6b1df088a619f91f495db021b201095eb8dbab",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrix/Views/DesignSystem/AreaMatrixWorkflowDiorama.swift": {
+        "current_sha256": "21dda7056fae5e627fef316ff411a5e527fcecfb6ab3035dae0aba84a3d05108",
+        "current_type": "regular",
+        "expected_sha256": "39c2997381b5373063bf24d196a5f42c190cf18f4a7236ba0fcd47ebbea4638c",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrixTests/ImportBatchDuplicateResolutionTests.swift": {
+        "current_sha256": "037cd859386ce755fc73ea3b3146ef5af1d2eef74c72dcad80d4a10da32d4f2f",
+        "current_type": "regular",
+        "expected_sha256": "88f476bfc127da17e3a92a0dd5ad6b386b98837185c1c3d3b2b6328785466536",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrixTests/ImportProgressInterruptedSessionTests.swift": {
+        "current_sha256": "328bc791ef9fd6cce5faed6f4038348529367e9923082746f8f96486c023bafb",
+        "current_type": "regular",
+        "expected_sha256": "412662c577141d265ff999d956396170b4e00c08e976e8cadea7c7bf5dfd88ec",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrixTests/LocalFileURLOpenerTests.swift": {
+        "current_sha256": "749fa083762943a5e9de370dda866fc832284c3740d9d8ca35c726108d122343",
+        "current_type": "regular",
+        "expected_sha256": "057bfbd700ce7fa51a075cde5d3f1cbcf90596576d60ef1d96a4707bb3ae24b0",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeSchedulingTests.swift": {
+        "current_sha256": "8f3eccdced2b7f6ac24d9efb5805f2ea3a00b08a2d29430d8facf646f13e572f",
+        "current_type": "regular",
+        "expected_sha256": "cb288eafe0829442b96172eb9ead77e443a74a54268fc6231d05d56db346d0bb",
+        "expected_type": "regular"
+      },
+      "apps/macos/AreaMatrixTests/Observability/ObservabilityRuntimeTestSupport.swift": {
+        "current_sha256": "d06a895a6412c475cd1e05c185eec95d0e47279536b8da3fc9363a35e6a4b440",
+        "current_type": "regular",
+        "expected_sha256": "59c4c92340a8b182836cab0c4ce0992591fe5e16394e164d1912b2a84ceb4825",
+        "expected_type": "regular"
+      },
+      "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SceneMotionComponents.swift": {
+        "current_sha256": "924cc38017cd98d943873ac12efb9dac693cf9afbc32d4a92d520c5296c09a48",
+        "current_type": "regular",
+        "expected_sha256": "70e6481dfbfb4d761cd4f695f626643826fa4adb46f9ac17d64c0ea471663c77",
+        "expected_type": "regular"
+      },
+      "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedActionComponents.swift": {
+        "current_sha256": "2e47bd18dfd58f392f0c82a51d6eca8bb1c9640cb0014a4d892181ac78d21991",
+        "current_type": "regular",
+        "expected_sha256": "963b5d1bf1201c8c2ce812a655a63337c04c8290886cf041b9a65233759c8fec",
+        "expected_type": "regular"
+      },
+      "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedFeatureCardComponents.swift": {
+        "current_sha256": "4e26452a1f416e5ef76ed6e516b361cb4ebdb0c65bff7e8e83d4e885c727a2ff",
+        "current_type": "regular",
+        "expected_sha256": "d8ceb94618d9ec4e3d7120be94e025d66397e2521169c9dd5901ad65835a8637",
+        "expected_type": "regular"
+      },
+      "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedMotionComponents.swift": {
+        "current_sha256": "d1233dd9cbfc2c563d516f3157edaac45a4d1ea7b96bc304ed8914167ecdb576",
+        "current_type": "regular",
+        "expected_sha256": "b6ba708ee030e7fb714a0a0840ea8b305bb0d71e9728b642df9e6769bc5f9307",
+        "expected_type": "regular"
+      },
+      "apps/macos/Packages/AreaMatrixModules/Sources/AreaMatrixUIFoundation/SharedTextEffects.swift": {
+        "current_sha256": "ac80d67ee744580de70200210ca13fecf191a61292d4910c3014a79cfbaa7112",
+        "current_type": "regular",
+        "expected_sha256": "bda3f52938ce0c2e99c7f2c7ac83ef2371b340c0cce9f08f8bf98366f08f82d8",
+        "expected_type": "regular"
+      },
+      "apps/macos/Packages/AreaMatrixModules/Tests/AreaMatrixUIFoundationTests/SharedButtonComponentsTests.swift": {
+        "current_sha256": "273235ce8a7b021819183e2401c8e06d382f8f77d3b44fb289d34b27461d3b6a",
+        "current_type": "regular",
+        "expected_sha256": "4fec073239cc02faf89b12957e6c6830799c979df943d73e5a4f6f6e5208f27b",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Library/WatcherStatusView.xaml.cs": {
+        "current_sha256": "98eb3cb83a4e909ecff29754b4c14c340c902477b2d7dd55ca9f76e7731faa3f",
+        "current_type": "regular",
+        "expected_sha256": "1be921a5aa3ac66c182f55b081379dc5e7de7b69cd20f8383f474ac0d6d32c9f",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Library/WindowsMainWindow.xaml.cs": {
+        "current_sha256": "4442858d5f9c08530278a8d2ceb5bab2dbdcd86b59d658e51aaa074ef5220216",
+        "current_type": "regular",
+        "expected_sha256": "85978eb7720af0723521d8c169774097f0167a2edaf52110dcd0a2c778cbc6ea",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.Snapshot.cs": {
+        "current_sha256": "c88b30bd620536b64aa32d7b2668eceb66b929f2a129cb0b73259dcdab7bc8b6",
+        "current_type": "regular",
+        "expected_sha256": "fa647f689c52a15054fde5b2785f0b57c95d4ccd52cd4d570e05a5656ccb35a3",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.cs": {
+        "current_sha256": "f3bd1174e62dffe6e77b13608ed8604ba5e78dc86ed648c2e09e12b6c4510122",
+        "current_type": "regular",
+        "expected_sha256": "559253e48508dffe2c21e05163f7d0fd411cc3c8b3320c45c6e88802240df5f0",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Library/WindowsWatcherDiagnostics.cs": {
+        "current_sha256": "51044bd6193117eea6a267cb01fc949efd2df6a9d731d0523b7c4bf69897a549",
+        "current_type": "regular",
+        "expected_sha256": "ff01ee4c730f77bf9b5ca21b650634edb9b5a20598acfe8c7adc01719ea91232",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Onboarding/ChooseRepositoryView.xaml": {
+        "current_sha256": "3d80ca878d03262a384acba847babc362ccc6d176ba3ec7481b22e70041dd736",
+        "current_type": "regular",
+        "expected_sha256": "3c4763de23521b576f362a64b92c77ffa94ede9348d82b4360111ec35aa214c8",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Onboarding/OneDriveNoticeDialog.xaml.cs": {
+        "current_sha256": "bc561eedd706412776c367ff050a17cf10cebb470d5fbe170ccd4caa43765ddd",
+        "current_type": "regular",
+        "expected_sha256": "f3f10adf0e905668bc788298578d4601dd85b6735fcf537bd0f131e901c028f1",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Onboarding/RepositoryAdoptConfirmDialog.xaml.cs": {
+        "current_sha256": "993d9bd8802926bb66c120d85d379cba32a8142ae84b17e17ac73f76b9d5dba2",
+        "current_type": "regular",
+        "expected_sha256": "6c8d94a203725b28c5c41217bfec0176c6987041d416b999c00173a31a5a88f7",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Onboarding/RepositoryInitConfirmDialog.xaml.cs": {
+        "current_sha256": "158da57b94bf9144ba162da05d74c852f666f782ae274efc0e92f3ce226628be",
+        "current_type": "regular",
+        "expected_sha256": "ecf3e1918f27a5b849100caeb6a28cae87ddebc112de1e7400580e138a3ec059",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Recovery/MissingFileRecoveryDialog.xaml.cs": {
+        "current_sha256": "4b0c73f653bca9a36b894af2e57abab25cc7c69af80ce418e541af53677caccd",
+        "current_type": "regular",
+        "expected_sha256": "d2c109a557e665eba8a6ac2b164c013b2513399f016c13fdd4fbd340a9154bbb",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/Features/Settings/RepositorySettingsViewModel.cs": {
+        "current_sha256": "c0410e586e0968be656b5acf34578ae1157ff8f2a341bba25413fbfb5e79431c",
+        "current_type": "regular",
+        "expected_sha256": "8be1bceef4109cf679223f992bd7348500ae7ddc6759cc15c64774abb2da165f",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrix/MainWindow.xaml.cs": {
+        "current_sha256": "ba9b9b7fc98a48b60946d0f221031dc823f34cc3f9e5eaec793d61a3a96da481",
+        "current_type": "regular",
+        "expected_sha256": "85eaaf7ba59dc0fdef35acd8cfc28d8596336a86d40e8e0257563729ba5829ee",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/Architecture/ViewModelSynchronizationContextTests.cs": {
+        "current_sha256": "1bae59f02d57f05d6a3e3b2df7cf3a6e194b9604b3d1f583120fe6ec0b399742",
+        "current_type": "regular",
+        "expected_sha256": "8c43cb4fbf271e0780d022c7b13d057823a874ab74120b248fab6ee7e90a2281",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/AreaMatrix.Windows.Tests.csproj": {
+        "current_sha256": "686261bd75cd5fe141398df37ae2da3c65f01bf3ba3eb7dae9ddcff9528bd130",
+        "current_type": "regular",
+        "expected_sha256": "334e60919a3f012d06b5f5ec22e3c0325378bda65f9d84190531f3c678314e5e",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/ChooseRepository/ChooseRepositoryViewSmokeTests.cs": {
+        "current_sha256": "1b923b0c7a98801117e9071f88ea8b9e492950c959b87390117a2bd673fce2d8",
+        "current_type": "regular",
+        "expected_sha256": "1d4c56670d99b322c5188922cdc1437340d633c5ec6985b661d8ad1eefac5780",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/ChooseRepository/OneDriveNoticeViewSmokeTests.cs": {
+        "current_sha256": "4317332733c3a68b716cbc79ef72933c1183ae10a759e59a962b8f9fee33335f",
+        "current_type": "regular",
+        "expected_sha256": "fd2ee1be2a94b3d7d337d4894ec37c5848509cc3d3d5336e8279380c28ab5f89",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/ChooseRepository/RepositoryAdoptConfirmViewSmokeTests.cs": {
+        "current_sha256": "660c531dc19de38dfae6f0c178712a72dac282e01c555be8bb3a69d899ac81d5",
+        "current_type": "regular",
+        "expected_sha256": "e373a09c3b8c925d7d908b5cfc8b05c0c9babeeea816a3ca72b34cef5c866838",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/ChooseRepository/RepositoryInitConfirmViewSmokeTests.cs": {
+        "current_sha256": "516ed2f649bae36812979a769bb4a633e225795bc86190a1b95791eeea31ddb6",
+        "current_type": "regular",
+        "expected_sha256": "92c10b5bb4d387937c0572a0dce38a167acf62d8d787177c7139c7de2df447e8",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/DesktopMainQuery/DesktopMainQuerySmokeTests.cs": {
+        "current_sha256": "e4396a9eadb73a6a795727ab3ed50454dda2ea4ed93dc3c3babe6965a383d4c2",
+        "current_type": "regular",
+        "expected_sha256": "b9edb85cefe8e9d2d38dd212aaf16d409291562e1f934fdc5c1758560df25ae9",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/DesktopMainQuery/DesktopMainQueryViewModelTests.cs": {
+        "current_sha256": "9a6a29b4bf3ddac6acdbe9cbe3371437fead6e87ea1015a4736cc71c55bc6298",
+        "current_type": "regular",
+        "expected_sha256": "389cd1f86b9b2ab1848b4dc7cdfc9a16cc5080b90743abcca0630ec5687a849d",
+        "expected_type": "regular"
+      },
+      "apps/windows/AreaMatrixTests/Settings/RepositorySettingsViewModelTests.cs": {
+        "current_sha256": "cd0f046a5c9d64dc7df43bc2b6fbf82047a586caedbc0fa04eb013351ab1eb56",
+        "current_type": "regular",
+        "expected_sha256": "59fd5caf4262548385fe381d26a9b3e7d322d177e10cdbf619ca1da211cf8722",
+        "expected_type": "regular"
+      },
+      "core/src/domain/icloud.rs": {
+        "current_sha256": "b36689411ede5b5a24ef66a8d82bd96820ef52929f95438174c0f251179690d8",
+        "current_type": "regular",
+        "expected_sha256": "f36a83700550176588990c83bd09848f2b9a2f02bf826dc3443cd45e400508ac",
+        "expected_type": "regular"
+      },
+      "core/src/icloud_conflicts.rs": {
+        "current_sha256": "581f3ea5c532cfd909e11713d8163c9efd34e352410cb1161d1cd5d076e8ecb2",
+        "current_type": "regular",
+        "expected_sha256": "c3007f5ddc6e562ace00b360c616f95a361fffc4b7a648ff45c3b257ef8f434e",
+        "expected_type": "regular"
+      },
+      "core/src/icloud_conflicts/paths.rs": {
+        "current_sha256": "ef47603a150b924d3fe342c32e18e9763464187f81deb36e446cecd9c3e86777",
+        "current_type": "regular",
+        "expected_sha256": "425aa8da0a4bd5a9b42847f1acdb6a938b17025a19fad8664276589a42e70b3e",
+        "expected_type": "regular"
+      },
+      "core/src/icloud_conflicts/preview.rs": {
+        "current_sha256": "ea787bd8517dc1a1df0cfb4801ad572a4a7aeae9571c7c425e883ccf66e8716d",
+        "current_type": "regular",
+        "expected_sha256": "ef3062b73db08d5f17358e824b8db164e6b9530656b73fe5db7861b9d43356d8",
+        "expected_type": "regular"
+      },
+      "core/src/icloud_conflicts/resolve.rs": {
+        "current_sha256": "c640368c7bf02cb16c8905ab9d6457249cf5c6160804a6f8fb5e91c651aba4cc",
+        "current_type": "regular",
+        "expected_sha256": "0eb27bd19c8a9572f711896dd1466f125cbd20499d0cab1a5f3d4410df8e0efa",
+        "expected_type": "regular"
+      },
+      "core/src/icloud_conflicts/types.rs": {
+        "current_sha256": "489cc2eb8c92b585deca6f188e4edd3e7f68038a80eaa54d5731a9e02273fd04",
+        "current_type": "regular",
+        "expected_sha256": "0cb221eca7bd8b434b3a3404bd078bedc23fe46e41015dc2bd4c966278d9a04b",
+        "expected_type": "regular"
+      },
+      "core/src/storage/mod.rs": {
+        "current_sha256": "9ef67745d85e04e741a36380d51f7d70a8fd8dc67b45585551b53777171078aa",
+        "current_type": "regular",
+        "expected_sha256": "b7ac8806a822038a52631401d92b8b2ac7938b529fe415a22f7dbb8bd461adaf",
+        "expected_type": "regular"
+      },
+      "core/src/storage/replacement_trash.rs": {
+        "current_sha256": "92f264df5d0569dd5410d2a4a9e6600492cac7167ab3cd65522c9ba1c7b05378",
+        "current_type": "regular",
+        "expected_sha256": "5e949ac80a7040fe9dac291854dfb89f416ebe0c4c3c08266d1eeb8d8551e46a",
+        "expected_type": "regular"
+      },
+      "core/src/storage/safe_move.rs": {
+        "current_sha256": "d0a5c1fda37aaf45a6546f84b1bd50fb3d551d25b0177bfe3845813d2536003b",
+        "current_type": "regular",
+        "expected_sha256": "625d3e519f3a9fd3b1138ee5413ec7bfcdde28ab0ce55bd319c20d787dcdd089",
+        "expected_type": "regular"
+      },
+      "scripts/dev_tools/codex_os_automation.py": {
+        "current_sha256": "edcaf00ca64627e28b012ca67bb009ba298094977a5e59f5791742b249def179",
+        "current_type": "regular",
+        "expected_sha256": "ecd32a8844ac83082ea9a7ff9de1c8780d27454982d40eb4eb2cf9135f4023d9",
+        "expected_type": "regular"
+      },
+      "scripts/dev_tools/promotion.py": {
+        "current_sha256": "8a12d5304cf054eb8a4f698581b56f88dbb16fd2130b3bb8f5c86e94390759c6",
+        "current_type": "regular",
+        "expected_sha256": "b367d6897d0bde0c85e18116c98d7461d5d811a736104ea7e8ef6537661d3106",
+        "expected_type": "regular"
+      },
+      "scripts/dev_tools/release.py": {
+        "current_sha256": "f1578150d3481fa8f821971d0d97d772f65a8de216611e5ec1151ae9a175baa6",
+        "current_type": "regular",
+        "expected_sha256": "e363d6da3b9a33267c291a37f85ebca39bd0075bf5b1065e450c2c47c4d82c3d",
+        "expected_type": "regular"
+      },
+      "scripts/dev_tools/test_release_tools.py": {
+        "current_sha256": "757baa90b2d67c6f978870bd5ed8c53f2cc9727ad42fa13906f0093ac58fc67b",
+        "current_type": "regular",
+        "expected_sha256": "59040debc8a36ec73cbb24c085e0e242f7098e87c06e515cb079b158ab3ea90d",
+        "expected_type": "regular"
+      },
+      "scripts/dev_tools/test_workflow_hardening.py": {
+        "current_sha256": "68befa8912b90b22d3c0e620457ddfa8b02d893d9c983099eee49bfe853aacc0",
+        "current_type": "regular",
+        "expected_sha256": "8979e9643891e88d951f1c351a289a184d75c467a1a59933651eefa90eabe3b8",
+        "expected_type": "regular"
+      },
+      "scripts/task_loop/runner.py": {
+        "current_sha256": "835bfa2192fbd80defb41990c0422cecd0c6213bfb66fc3ce9afe303020ee577",
+        "current_type": "regular",
+        "expected_sha256": "303d37d8cc57c06cc3069b757f270d1409a8098d01e6b0d3d686af12b60fbd38",
+        "expected_type": "regular"
+      }
+    },
+    "drift_count": 69,
+    "matching_file_count": 4984,
+    "post_freeze_non_runtime_count": 6,
+    "post_freeze_non_runtime_paths": [
+      "apps/ios/AreaMatrix/Features/Import/ShareImportExtensionLifecycle.swift",
+      "apps/ios/AreaMatrix/Features/Import/ShareImportRepositoryAccess.swift",
+      "apps/ios/AreaMatrixTests/ShareImportModelTestSupport.swift",
+      "apps/windows/AreaMatrix/Features/Library/WindowsMainWindowViewModel.RepositoryLoad.cs",
+      "apps/windows/AreaMatrix/MainWindow.RouteTransitions.cs",
+      "core/src/icloud_conflicts/token.rs"
+    ],
+    "post_freeze_runtime_evidence_count": 85,
+    "post_freeze_runtime_evidence_paths": [
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/blocked-evidence.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/build_coverage.rb",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/coverage.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/final-report.md",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/findings.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/governance-controls.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/inventory.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/recovery-evidence.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/release-evidence.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/remote-evidence.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/residual-reconciliation.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/review-notes.md",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/scope.json",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/task-loop-evidence.jsonl",
+      ".codex/runtime/ci-governance-release-recovery-audit-20260820/workflow-matrix.jsonl",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/blocked-evidence.jsonl",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/bridge-contracts.jsonl",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/build_ledger.py",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/coverage.jsonl",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/final-report.md",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/findings.jsonl",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/inventory.jsonl",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/platform-matrix.jsonl",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/review-notes.md",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/runtime-evidence.jsonl",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/scope.json",
+      ".codex/runtime/cross-platform-e2e-audit-20260820/workflow-matrix.jsonl",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/_inventory.py",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/_synthesize.py",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/coverage.jsonl",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/dependency-ledger.jsonl",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/final-report.md",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/findings.jsonl",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/inventory.jsonl",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/ledger.py",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/license-ledger.jsonl",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/review-notes.md",
+      ".codex/runtime/dependency-supply-chain-audit-20260820/scope.json",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/api-contracts.jsonl",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/bridge-symbols.jsonl",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/build-ledger.py",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/close_ledger.py",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/coverage.jsonl",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/enrich-inventory.py",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/final-report.md",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/findings.jsonl",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/generated-artifacts.jsonl",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/inventory.jsonl",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/record_asset_provenance.py",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/record_review.py",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/review-decisions.jsonl",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/review-notes.md",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/scope.json",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/source-map.jsonl",
+      ".codex/runtime/docs-api-bridge-drift-audit-20260820/wording-audit.jsonl",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/cancellation-retry-ledger.jsonl",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/concurrency-map.jsonl",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/coverage.jsonl",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/error-contracts.jsonl",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/final-report.md",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/finalize_audit.py",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/findings.jsonl",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/initialize.py",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/inventory.jsonl",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/lifecycle-ledger.jsonl",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/review-notes.md",
+      ".codex/runtime/error-concurrency-lifecycle-audit-20260820/scope.json",
+      ".codex/runtime/performance-reliability-audit-20260820/core-agent-coverage.tsv",
+      ".codex/runtime/performance-reliability-audit-20260820/coverage.jsonl",
+      ".codex/runtime/performance-reliability-audit-20260820/final-report.md",
+      ".codex/runtime/performance-reliability-audit-20260820/finding-014.json",
+      ".codex/runtime/performance-reliability-audit-20260820/finding-015.json",
+      ".codex/runtime/performance-reliability-audit-20260820/finding-016.json",
+      ".codex/runtime/performance-reliability-audit-20260820/finding-017.json",
+      ".codex/runtime/performance-reliability-audit-20260820/finding-018.json",
+      ".codex/runtime/performance-reliability-audit-20260820/findings.jsonl",
+      ".codex/runtime/performance-reliability-audit-20260820/inventory.jsonl",
+      ".codex/runtime/performance-reliability-audit-20260820/ledger.rb",
+      ".codex/runtime/performance-reliability-audit-20260820/main-root-semantic.tsv",
+      ".codex/runtime/performance-reliability-audit-20260820/review-notes.md",
+      ".codex/runtime/performance-reliability-audit-20260820/scope.json",
+      ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-coverage-2.tsv",
+      ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-coverage.tsv",
+      ".codex/runtime/performance-reliability-audit-20260820/swift-agent-semantic-next5-reviewed.tsv",
+      ".codex/runtime/performance-reliability-audit-20260820/workflow-agent-coverage.tsv"
+    ],
+    "scope_file_count": 5053
+  },
+  "generated_at": "2026-08-20T04:24:56+08:00",
+  "git_branch": "codex/long-term-governance-bridge-contracts",
+  "git_commit": "cf3647378d64885e8e6a44a2a5b60d8926668982",
+  "inventory_sha256": "4fb5d4cc72fbd92a41d2ef00446be4d4902fd3fa6efbddc152f8716912f8b14b",
+  "post_start_untracked_excluded": [
+    ".codex/runtime/performance-reliability-audit-20260820/coverage.jsonl",
+    ".codex/runtime/performance-reliability-audit-20260820/final-report.md",
+    ".codex/runtime/performance-reliability-audit-20260820/findings.jsonl",
+    ".codex/runtime/performance-reliability-audit-20260820/inventory.jsonl",
+    ".codex/runtime/performance-reliability-audit-20260820/ledger.rb",
+    ".codex/runtime/performance-reliability-audit-20260820/review-notes.md",
+    ".codex/runtime/performance-reliability-audit-20260820/scope.json"
+  ],
+  "repository_root": "/Users/as/Ai-Project/project/AreaMatrix",
+  "schema_version": 1,
+  "scope_definition": "当前提交全部 tracked 文件，加审计启动时全部 Git 非忽略 untracked 文件"
+}

@@ -1,5 +1,33 @@
 import SwiftUI
 
+/// Shared shell for compact modal actions.
+///
+/// The component owns only title typography, spacing, width and accessibility
+/// identity. Feature-specific state, validation and destructive-action semantics
+/// remain with the caller.
+public struct AreaMatrixActionSheetContainer<Content: View>: View {
+    public let title: String
+    public let pageID: String
+    private let content: Content
+
+    public init(title: String, pageID: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.pageID = pageID
+        self.content = content()
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(title)
+                .font(.headline)
+            content
+        }
+        .padding(22)
+        .frame(width: 420, alignment: .leading)
+        .accessibilityIdentifier("\(pageID)-file-action-sheet")
+    }
+}
+
 /// Glass surface used by centered pages and full-width feature content.
 ///
 /// The modifier only owns visual surface treatment. Width, padding and

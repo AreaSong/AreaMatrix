@@ -64,7 +64,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPageFailure)
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "invoice",
             scope: .current,
             sort: .relevance,
@@ -72,14 +72,17 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             filters: .empty,
             mode: .semantic
         )
-        await model.loadMoreSemanticMatches(.semantic)
+        await model.searchModel.loadMoreSemanticMatches(.semantic)
 
         await searcher.assertRequestOffsets([0, 1])
-        XCTAssertEqual(model.searchState.page?.semanticPage?.semanticMatches.map(\.result.file.id), [
+        XCTAssertEqual(model.searchModel.searchState.page?.semanticPage?.semanticMatches.map(\.result.file.id), [
             firstSemantic.id,
             nextSemantic.id
         ])
-        XCTAssertEqual(model.searchState.page?.semanticPage?.normalMatches.map(\.result.file.id), [normalFile.id])
+        XCTAssertEqual(
+            model.searchModel.searchState.page?.semanticPage?.normalMatches.map(\.result.file.id),
+            [normalFile.id]
+        )
     }
 
     @MainActor
@@ -101,7 +104,7 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             errorMapper: StaticCoreErrorMapper(mapping: .semanticSearchPageFailure)
         )
 
-        await model.runSearch(
+        await model.searchModel.runSearch(
             query: "contracts",
             scope: .current,
             sort: .relevance,
@@ -109,43 +112,46 @@ final class SemanticSearchPageIntegrationVerifyTests: XCTestCase {
             filters: .empty,
             mode: .semantic
         )
-        let buildTask = Task { await model.buildSemanticIndexForCurrentSearch() }
+        let buildTask = Task { await model.searchModel.buildSemanticIndexForCurrentSearch() }
         await searcher.waitForBuildStart()
 
-        XCTAssertTrue(model.semanticIndexBuildState.canPause)
-        XCTAssertTrue(model.semanticIndexBuildState.canCancel)
+        XCTAssertTrue(model.searchModel.semanticIndexBuildState.canPause)
+        XCTAssertTrue(model.searchModel.semanticIndexBuildState.canCancel)
 
-        await model.pauseSemanticIndexBuildForCurrentSearch()
-        guard case let .pauseFailed(_, pauseError) = model.semanticIndexControlState else {
+        await model.searchModel.pauseSemanticIndexBuildForCurrentSearch()
+        guard case let .pauseFailed(_, pauseError) = model.searchModel.semanticIndexControlState else {
             return XCTFail("Expected pause to expose the missing Core pause contract.")
         }
         XCTAssertEqual(pauseError.rawContext, "semantic-search pause index build missing Core API")
-        XCTAssertTrue(model.semanticIndexBuildState.isBuilding)
+        XCTAssertTrue(model.searchModel.semanticIndexBuildState.isBuilding)
 
-        model.requestCancelSemanticIndexBuildForCurrentSearch()
-        guard case .cancelConfirm = model.semanticIndexControlState else {
+        model.searchModel.requestCancelSemanticIndexBuildForCurrentSearch()
+        guard case .cancelConfirm = model.searchModel.semanticIndexControlState else {
             return XCTFail("Expected cancel confirmation state.")
         }
-        model.keepBuildingSemanticIndexForCurrentSearch()
-        XCTAssertEqual(model.semanticIndexControlState, .idle)
+        model.searchModel.keepBuildingSemanticIndexForCurrentSearch()
+        XCTAssertEqual(model.searchModel.semanticIndexControlState, .idle)
 
-        model.requestCancelSemanticIndexBuildForCurrentSearch()
-        await model.cancelSemanticIndexBuildForCurrentSearch()
+        model.searchModel.requestCancelSemanticIndexBuildForCurrentSearch()
+        await model.searchModel.cancelSemanticIndexBuildForCurrentSearch()
 
-        guard case .canceled = model.semanticIndexControlState else {
+        guard case .canceled = model.searchModel.semanticIndexControlState else {
             return XCTFail("Expected canceled state.")
         }
-        guard case .canceled = model.semanticIndexBuildState else {
+        guard case .canceled = model.searchModel.semanticIndexBuildState else {
             return XCTFail("Expected build state to be canceled.")
         }
-        XCTAssertTrue(model.semanticIndexBuildState.canRetryFailedItems)
-        XCTAssertEqual(model.searchState.page?.semanticPage?.fallbackMessage, "Semantic index build canceled.")
+        XCTAssertTrue(model.searchModel.semanticIndexBuildState.canRetryFailedItems)
+        XCTAssertEqual(
+            model.searchModel.searchState.page?.semanticPage?.fallbackMessage,
+            "Semantic index build canceled."
+        )
         await searcher.finishBuild()
         await buildTask.value
-        guard case .canceled = model.semanticIndexBuildState else {
+        guard case .canceled = model.searchModel.semanticIndexBuildState else {
             return XCTFail("Late Core build report must not replace the canceled UI state.")
         }
-        XCTAssertEqual(model.searchState.page?.semanticPage?.indexStatus, .canceled)
+        XCTAssertEqual(model.searchModel.searchState.page?.semanticPage?.indexStatus, .canceled)
         await searcher.assertObservedCancellationCount(1)
     }
 

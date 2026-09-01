@@ -164,7 +164,8 @@ final class MacOSAppCompositionGovernanceTests: MacOSGovernanceTestCase {
         let hiddenRuntimeReferences = try bridgeFiles.flatMap {
             try sourceRegexMatches(
                 in: $0,
-                pattern: #"CoreBridge\s*\(|CoreBridgeRuntime\.shared|AppLanguageRuntime\.shared|ObservabilityRuntimeAssembly\.shared|AppLogger\.shared|CoreImportObservabilityRecorder\.live"#
+                pattern: #"CoreBridge\s*\(|CoreBridgeRuntime\.shared|AppLanguageRuntime\.shared|"#
+                    + #"ObservabilityRuntimeAssembly\.shared|AppLogger\.shared|CoreImportObservabilityRecorder\.live"#
             )
         }
         XCTAssertEqual(
